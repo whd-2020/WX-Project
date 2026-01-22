@@ -181,14 +181,6 @@ export default {
       list_user_group: [],
     };
   },
-  watch: {
-    // 用户名变化时，如果尚未填写昵称，则自动使用用户名第一个字符作为昵称
-    'form.username'(val) {
-      if (val && !this.form.nickname) {
-        this.form.nickname = val.charAt(0);
-      }
-    },
-  },
   methods: {
     as(obj, query, all) {
       if (obj) {

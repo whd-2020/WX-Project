@@ -135,7 +135,7 @@
 				  });
 				  console.log('---登录成功---');
 			  }else{
-				  this.$toast("您的账号不支持在用户端登录！", 'error');
+				  this.$toast("请登录账号", 'error');
 			  }
               
             } else if (res.error) {
