@@ -43,10 +43,35 @@
       </view>
 
       <!-- 轮播图模块(开始) -->
-      <view class="swiper">
+      <view class="swiper" v-if="list_slide && list_slide.length > 0">
         <Slide :list="list_slide" :show_title="true" />
       </view>
       <!-- 轮播图模块(结束) -->
+
+      <!-- 游戏特色卡片(开始) -->
+      <view class="game-features" v-if="!list_slide || list_slide.length === 0">
+        <view class="feature-card" @click="$navTo('/pages/track/rope')">
+          <view class="feature-icon">🎯</view>
+          <view class="feature-title">结绳计数</view>
+          <view class="feature-desc">体验古代计数智慧</view>
+        </view>
+        <view class="feature-card" @click="$navTo('/pages/track/counting_rods')">
+          <view class="feature-icon">📊</view>
+          <view class="feature-title">筹算</view>
+          <view class="feature-desc">感受古代数学工具</view>
+        </view>
+        <view class="feature-card" @click="$navTo('/pages/track/abacus')">
+          <view class="feature-icon">🧮</view>
+          <view class="feature-title">珠算</view>
+          <view class="feature-desc">学习传统计算方式</view>
+        </view>
+        <view class="feature-card" @click="$navTo('/pages/track/comprehensive')">
+          <view class="feature-icon">🏆</view>
+          <view class="feature-title">综合挑战</view>
+          <view class="feature-desc">挑战更高难度</view>
+        </view>
+      </view>
+      <!-- 游戏特色卡片(结束) -->
 
       <!-- 菜单模块(开始) -->
       <view class="menu" v-if="list_menu.length > 0">
@@ -81,12 +106,6 @@
 
       <view class="split-line"></view>
       <!-- 推荐通知公告模块(结束) -->
-
-      <!-- 版权模块(开始) -->
-      <view class="copyright">
-        <text>@版权归属 XX 所有</text>
-      </view>
-      <!-- 版权模块(结束) -->
     </view>
 
               

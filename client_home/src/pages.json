@@ -1,6 +1,18 @@
 {
   "pages": [
     {
+      "name": "游戏加载页",
+      "path": "pages/loading_page/loading_page",
+      "style": {
+        "navigationBarTitleText": "",
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": false
+      },
+      "meta": {
+        "noAuth": true
+      }
+    },
+    {
       "name": "首页",
       "path": "pages/index/index",
       "style": {
@@ -87,6 +99,42 @@
       }
     },
     {
+      "path": "pages/track/rope",
+      "style": {
+        "navigationBarTitleText": "结绳计数"
+      },
+      "meta": {
+        "noAuth": true
+      }
+    },
+    {
+      "path": "pages/track/counting_rods",
+      "style": {
+        "navigationBarTitleText": "筹算"
+      },
+      "meta": {
+        "noAuth": true
+      }
+    },
+    {
+      "path": "pages/track/abacus",
+      "style": {
+        "navigationBarTitleText": "珠算"
+      },
+      "meta": {
+        "noAuth": true
+      }
+    },
+    {
+      "path": "pages/track/comprehensive",
+      "style": {
+        "navigationBarTitleText": "综合挑战"
+      },
+      "meta": {
+        "noAuth": true
+      }
+    },
+    {
       "path": "pages/user/info",
       "style": {
         "navigationBarTitleText": "基本信息"
@@ -161,154 +209,132 @@
     {
       "root": "pagesC",
       "pages": [
-                    // 游戏关卡列表路由
         {
           "path": "game_levels/list",
           "style": {
             "navigationBarTitleText": "游戏关卡列表"
           }
         },
-            // 游戏关卡详情路由
         {
           "path": "game_levels/details",
           "style": {
             "navigationBarTitleText": "游戏关卡"
           }
         },
-              // 游戏记录编辑路由
         {
           "path": "game_record/edit",
           "style": {
             "navigationBarTitleText": "游戏记录"
           }
         },
-            // 游戏记录列表路由
         {
           "path": "game_record/list",
           "style": {
             "navigationBarTitleText": "游戏记录列表"
           }
         },
-                  // 道具商店列表路由
         {
           "path": "props/list",
           "style": {
             "navigationBarTitleText": "道具商店列表"
           }
         },
-            // 道具商店详情路由
         {
           "path": "props/details",
           "style": {
             "navigationBarTitleText": "道具商店"
           }
         },
-              // 购买记录编辑路由
         {
           "path": "purchase_record/edit",
           "style": {
             "navigationBarTitleText": "购买记录"
           }
         },
-                            // 玩家成就列表路由
         {
           "path": "achievements/list",
           "style": {
             "navigationBarTitleText": "玩家成就列表"
           }
         },
-                    // 游戏玩家列表路由
         {
             "path": "gamer/table",
             "style": {
               "navigationBarTitleText": "游戏玩家列表"
             }
         },
-        // 游戏玩家编辑路由
         {
             "path": "gamer/view",
             "style": {
               "navigationBarTitleText": "游戏玩家详情"
             }
         },
-                    // 游戏关卡列表路由
         {
             "path": "game_levels/table",
             "style": {
               "navigationBarTitleText": "游戏关卡列表"
             }
         },
-        // 游戏关卡编辑路由
         {
             "path": "game_levels/view",
             "style": {
               "navigationBarTitleText": "游戏关卡详情"
             }
         },
-                    // 游戏记录列表路由
         {
             "path": "game_record/table",
             "style": {
               "navigationBarTitleText": "游戏记录列表"
             }
         },
-        // 游戏记录编辑路由
         {
             "path": "game_record/view",
             "style": {
               "navigationBarTitleText": "游戏记录详情"
             }
         },
-                    // 道具商店列表路由
         {
             "path": "props/table",
             "style": {
               "navigationBarTitleText": "道具商店列表"
             }
         },
-        // 道具商店编辑路由
         {
             "path": "props/view",
             "style": {
               "navigationBarTitleText": "道具商店详情"
             }
         },
-                    // 购买记录列表路由
         {
             "path": "purchase_record/table",
             "style": {
               "navigationBarTitleText": "购买记录列表"
             }
         },
-        // 购买记录编辑路由
         {
             "path": "purchase_record/view",
             "style": {
               "navigationBarTitleText": "购买记录详情"
             }
         },
-                    // 游戏成就列表路由
         {
             "path": "game_achievements/table",
             "style": {
               "navigationBarTitleText": "游戏成就列表"
             }
         },
-        // 游戏成就编辑路由
         {
             "path": "game_achievements/view",
             "style": {
               "navigationBarTitleText": "游戏成就详情"
             }
         },
-                    // 玩家成就列表路由
         {
           "path": "achievements/table",
           "style": {
             "navigationBarTitleText": "玩家成就列表"
           }
         },
-        // 玩家成就编辑路由
         {
           "path": "achievements/view",
           "style": {

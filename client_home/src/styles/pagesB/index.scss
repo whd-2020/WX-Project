@@ -286,6 +286,35 @@
     font-size: 40rpx;
     color: $main-color;
   }
+  
+  .back-button {
+    position: fixed;
+    left: 30rpx;
+    top: calc(var(--status-bar-height, 0) + 20rpx);
+    z-index: 9999;
+    width: 72rpx;
+    height: 72rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 50%;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10rpx);
+    transition: all 0.3s ease;
+    
+    &:active {
+      transform: scale(0.92);
+      background-color: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 1rpx 6rpx rgba(0, 0, 0, 0.15);
+    }
+    
+    .back-icon {
+      font-size: 36rpx;
+      color: #333;
+      font-weight: 500;
+    }
+  }
 
   .confirm-btn {
     width: 100%;

@@ -1,5 +1,10 @@
 <template>
   <view id="account_login" class="user_account account_login">
+    <!-- 返回按钮 -->
+    <view class="back-button" @click="goBack">
+      <view class="tn-icon-left-arrow back-icon"></view>
+    </view>
+    
     <view class="container">
       <view class="custom-1"></view>
       <view class="custom-2"></view>
@@ -110,6 +115,18 @@
       console.log(this.$u.route);
     },
     methods: {
+      goBack() {
+        // 返回到上一页
+        uni.navigateBack({
+          delta: 1,
+          fail: () => {
+            // 如果没有上一页，则跳转到首页
+            uni.switchTab({
+              url: '/pages/index/index'
+            });
+          }
+        });
+      },
       closePopup() {
         this.logining = false;
       },
