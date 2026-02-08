@@ -48,7 +48,14 @@
             </view>
           </view>
         </view>
-        <button class="confirm-btn" @click="login" :disabled="logining">登录</button>
+        <!-- 原来账号登录的按钮，注销掉，采用微信一键登录 -->
+        <button class="confirm-btn" @click="login" :disabled="logining">账号登录</button>
+        
+        <!-- 微信登录按钮 -->
+        <button class="wechat-login-btn" @click="wechatLogin" :disabled="logining">
+          <text>微信一键登录</text>
+        </button>
+        
         <view class="forget-section">
           <view @click="$navTo('/pagesB/account/forgot')">忘记密码?</view>
         </view>
@@ -64,7 +71,8 @@
 
 <script>
   import mixin from '@/libs/mixins/page.js';
-  import {loginApi} from '@/api/login.js';
+  // 新增wechatLoginApi,api接口
+  import {loginApi, wechatLoginApi} from '@/api/login.js';
   import jsencrypt from '@/components/jsencrypt/jsencrypt.vue';
 
   export default {
@@ -168,6 +176,85 @@
        */
       resetForm() {
         this.$refs.form.resetFields();
+      },
+      /**
+       * 微信登录
+       */
+      wechatLogin() {
+        this.logining = true;
+        // 第一步：获取微信登录 code
+        uni.login({
+          provider: 'weixin',
+          success: (loginRes) => {
+            if (loginRes.code) {
+              // 第二步：获取用户信息（需要用户授权）
+              uni.getUserProfile({
+                desc: '用于完善用户资料',
+                success: (userRes) => {
+                  // 第三步：将 code 和用户信息发送到后端
+                  const loginData = {
+                    code: loginRes.code,
+                    nickName: userRes.userInfo.nickName,
+                    avatarUrl: userRes.userInfo.avatarUrl,
+                    gender: userRes.userInfo.gender,
+                    country: userRes.userInfo.country,
+                    province: userRes.userInfo.province,
+                    city: userRes.userInfo.city,
+                  };
+                  
+                  wechatLoginApi(loginData)
+                    .then((res) => {
+                      if (res.result && res.result.obj) {
+                        let user = res.result.obj;
+                        if(this.allow_user.includes(user.user_group)){
+                          // 缓存token
+                          this.$u.vuex('token', user.token);
+                          // 存储用户信息
+                          this.$u.vuex('userInfo', user);
+                          // 设置权限集
+                          this.$u.vuex('userGroup', user.user_group);
+                          // 前往首页
+                          uni.switchTab({
+                            url: '/pages/index/index',
+                          });
+                          console.log('---微信登录成功---');
+                          this.$toast('登录成功', 'success');
+                        }else{
+                          this.$toast("该账号无权限登录", 'error');
+                        }
+                      } else if (res.error) {
+                        this.$toast(res.error.message || '登录失败，请重试', 'error');
+                      }
+                    })
+                    .catch((err) => {
+                      console.error('微信登录失败:', err);
+                      this.$toast(err.error?.message || '登录失败，请重试', 'error');
+                    })
+                    .finally(() => {
+                      this.logining = false;
+                    });
+                },
+                fail: (err) => {
+                  console.error('获取用户信息失败:', err);
+                  this.logining = false;
+                  if (err.errMsg && err.errMsg.includes('deny')) {
+                    this.$toast('需要授权才能登录', 'error');
+                  } else {
+                    this.$toast('获取用户信息失败', 'error');
+                  }
+                }
+              });
+            } else {
+              this.logining = false;
+              this.$toast('获取微信登录凭证失败', 'error');
+            }
+          },
+          fail: (err) => {
+            console.error('微信登录失败:', err);
+            this.logining = false;
+            this.$toast('微信登录失败，请重试', 'error');
+          }
+        });
       },
     },
     onBackPress() {

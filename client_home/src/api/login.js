@@ -48,3 +48,20 @@ export const getUserAuthApi = (userGroup = '游客') => {
     params,
   });
 };
+/**
+ * 新增微信登录
+ */
+export const wechatLoginApi = (data) => {
+  return http.request({
+    url: `/user/wechat/login`,
+    method: 'POST',
+    header: {
+      'content-type': 'application/json'
+    },
+    custom: {
+      isDeduplication: false,
+      isLoading: true,
+    },
+    data,
+  });
+};

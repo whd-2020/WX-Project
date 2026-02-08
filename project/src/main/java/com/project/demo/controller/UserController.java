@@ -10,6 +10,7 @@ import com.project.demo.service.UserService;
 
 import com.project.demo.controller.base.BaseController;
 import com.project.demo.util.RsaUtils;
+import com.project.demo.util.WechatUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -43,6 +44,9 @@ public class UserController extends BaseController<User, UserService> {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private WechatUtil wechatUtil;
 
     /**
      * 注册
@@ -303,6 +307,151 @@ public class UserController extends BaseController<User, UserService> {
             log.error("[tokenGetUserId] redis读取失败，降级为未登录，token={}", token, e);
             return 0;
         }
+    }
+
+    /**
+     * 微信登录
+     * @param data 包含code和用户信息的Map
+     * @param httpServletRequest
+     * @return
+     */
+    @PostMapping("wechat/login")
+    public Map<String, Object> wechatLogin(@RequestBody Map<String, Object> data, HttpServletRequest httpServletRequest) {
+        log.info("[执行微信登录接口]");
+
+        String code = (String) data.get("code");
+        String nickName = (String) data.get("nickName");
+        String avatarUrl = (String) data.get("avatarUrl");
+
+        // 验证code
+        if (code == null || code.isEmpty()) {
+            return error(30000, "微信登录code不能为空");
+        }
+
+        // 调用微信API获取openid
+        Map<String, String> wechatInfo = wechatUtil.getOpenIdByCode(code);
+        if (wechatInfo == null || wechatInfo.get("openid") == null) {
+            return error(30000, "微信登录失败，请重试");
+        }
+
+        String openid = wechatInfo.get("openid");
+
+        // 根据openid查询用户是否存在
+        Map<String, String> query = new HashMap<>();
+        query.put("open_id", openid);
+        List resultList = service.selectBaseList(service.select(query, new HashMap<>()));
+
+        User user;
+        boolean isNewUser = false;
+
+        if (resultList != null && resultList.size() > 0) {
+            // 用户已存在，更新用户信息
+            user = (User) resultList.get(0);
+            
+            // 更新用户信息（可选：每次登录都更新）
+            Map<String, Object> updateMap = new HashMap<>();
+            if (nickName != null && !nickName.isEmpty()) {
+                updateMap.put("nickname", nickName);
+            }
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                updateMap.put("avatar", avatarUrl);
+            }
+            
+            if (!updateMap.isEmpty()) {
+                Map<String, String> updateQuery = new HashMap<>();
+                updateQuery.put("user_id", String.valueOf(user.getUserId()));
+                service.update(updateQuery, service.readConfig(httpServletRequest), updateMap);
+                
+                // 重新查询获取最新数据
+                resultList = service.selectBaseList(service.select(query, new HashMap<>()));
+                user = (User) resultList.get(0);
+            }
+        } else {
+            // 用户不存在，创建新用户
+            isNewUser = true;
+            Map<String, Object> insertMap = new HashMap<>();
+            
+            // 生成用户名（使用openid后8位 + 随机数）
+            String username = "wx_" + openid.substring(Math.max(0, openid.length() - 8)) + "_" + System.currentTimeMillis() % 10000;
+            insertMap.put("username", username);
+            
+            // 设置密码（微信登录用户不需要密码，但数据库字段可能非空，设置一个默认值）
+            insertMap.put("password", "wechat_login_no_password");
+            
+            // 设置昵称
+            insertMap.put("nickname", nickName != null ? nickName : "微信用户");
+            
+            // 设置头像
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                insertMap.put("avatar", avatarUrl);
+            }
+            
+            // 设置openid
+            insertMap.put("open_id", openid);
+            
+            // 设置用户组（默认设置为"游戏玩家"，你可以根据实际需求修改）
+            insertMap.put("user_group", "游戏玩家");
+            
+            // 设置状态为可用
+            insertMap.put("state", 1);
+            
+            // 插入新用户
+            service.insert(insertMap);
+            
+            // 重新查询获取新创建的用户
+            resultList = service.selectBaseList(service.select(query, new HashMap<>()));
+            if (resultList == null || resultList.size() == 0) {
+                return error(30000, "创建用户失败");
+            }
+            user = (User) resultList.get(0);
+        }
+
+        // 检查用户组是否存在
+        Map<String, String> groupMap = new HashMap<>();
+        groupMap.put("name", user.getUserGroup());
+        List groupList = userGroupService.selectBaseList(userGroupService.select(groupMap, new HashMap<>()));
+        if (groupList.size() < 1) {
+            return error(30000, "用户组不存在");
+        }
+
+        UserGroup userGroup = (UserGroup) groupList.get(0);
+
+        // 查询用户审核状态（如果是新用户，可能需要审核）
+        if (!StringUtils.isEmpty(userGroup.getSourceTable())) {
+            String res = service.selectExamineState(userGroup.getSourceTable(), user.getUserId());
+            if (res == null && !isNewUser) {
+                return error(30000, "用户不存在");
+            }
+            if (res != null && !res.equals("已通过")) {
+                return error(30000, "该用户审核未通过");
+            }
+        }
+
+        // 查询用户状态
+        if (user.getState() != 1) {
+            return error(30000, "用户非可用状态，不能登录");
+        }
+
+        // 生成Token
+        AccessToken accessToken = new AccessToken();
+        accessToken.setToken(UUID.randomUUID().toString().replaceAll("-", ""));
+        accessToken.setUser_id(user.getUserId());
+
+        try {
+            Duration duration = Duration.ofSeconds(7200L);
+            redisTemplate.opsForValue().set(accessToken.getToken(), accessToken, duration);
+        } catch (Exception e) {
+            log.warn("Redis连接失败，Token存储到数据库失败: {}", e.getMessage());
+        }
+
+        // 返回用户信息
+        JSONObject userJson = JSONObject.parseObject(JSONObject.toJSONString(user));
+        userJson.put("token", accessToken.getToken());
+        JSONObject ret = new JSONObject();
+        ret.put("obj", userJson);
+        
+        log.info("[微信登录成功] userId={}, openid={}", user.getUserId(), openid);
+        return success(ret);
     }
 
     /**

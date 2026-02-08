@@ -60,3 +60,9 @@ mybatis-plus:
     aggressive-lazy-loading: false
     use-generated-keys: true
 
+# 微信小程序配置
+wechat:
+  # 微信小程序的AppID（在微信公众平台获取）
+  appid: your_appid_here
+  # 微信小程序的AppSecret（在微信公众平台获取）
+  secret: your_secret_here

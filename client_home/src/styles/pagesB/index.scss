@@ -330,6 +330,38 @@
     }
   }
 
+  .wechat-login-btn {
+    width: 100%;
+    height: 100rpx;
+    line-height: 100rpx;
+    border-radius: 15rpx;
+    background: #07c160;
+    color: #fff;
+    font-size: 40rpx;
+    margin-top: 30rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+
+    &:after {
+      border: none;
+    }
+
+    .wechat-icon {
+      font-size: 40rpx;
+      margin-right: 10rpx;
+    }
+
+    text {
+      color: #fff;
+    }
+
+    &[disabled] {
+      opacity: 0.6;
+    }
+  }
+
   .forget-section {
     font-size: 28rpx;
     color: $tn-font-color;
