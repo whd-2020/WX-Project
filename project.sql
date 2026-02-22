@@ -158,6 +158,7 @@ DROP TABLE IF EXISTS `game_levels`;
 CREATE TABLE `game_levels` (
   `game_levels_id` int(11) NOT NULL AUTO_INCREMENT COMMENT '游戏关卡ID',
   `track_id` int(11) DEFAULT 0 COMMENT '所属赛道ID',
+  `game_type` varchar(32) COMMENT '所属游戏类型代码（与 question_bank.game_type 对应，例如 rope_mode1-绳结+装饰）',
   `level_order` int(11) DEFAULT 0 COMMENT '关卡顺序（同一赛道内）',
   `unlock_condition` varchar(255) COMMENT '解锁条件（如：需要完成上一关卡）',
   `level_type` varchar(32) DEFAULT 'interactive' COMMENT '关卡类型（interactive-交互/quiz-问答）',

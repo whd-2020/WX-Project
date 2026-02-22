@@ -24,6 +24,14 @@ public class GameLevels implements Serializable {
     @TableId(value = "game_levels_id", type = IdType.AUTO)
     private Integer game_levels_id;
 
+    // 所属赛道ID
+    @TableField(value = "`track_id`")
+    private Integer track_id;
+
+    // 关卡顺序
+    @TableField(value = "`level_order`")
+    private Integer level_order;
+
     // 关卡名称
     @TableField(value = "`level_name`")
     private String level_name;

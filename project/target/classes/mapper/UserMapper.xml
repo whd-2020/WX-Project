@@ -108,7 +108,16 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         </foreach>
     </delete>
 
+    <!--
+        查询用户审核状态
+        说明：理论上同一 user_id 在审核表中只应有一条记录；
+        为防止脏数据导致 TooManyResultsException，这里增加 LIMIT 1，
+        只取第一条记录的 examine_state。
+    -->
     <select id="selectExamineState" resultType="String">
-        select examine_state from ${sourceTable} WHERE user_id = #{userId}
+        select examine_state
+        from ${sourceTable}
+        where user_id = #{userId}
+        limit 1
     </select>
 </mapper>

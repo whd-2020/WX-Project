@@ -10,10 +10,29 @@
       <view class="track-info">
         <view class="track-title">结绳计数</view>
         <view class="track-desc">通过打结的方式记录数字，体验古代计数智慧</view>
-        <view class="track-levels">
-          <view class="level-item" v-for="(level, index) in levelList" :key="index" @click="startLevel(level)">
-            <text class="level-name">{{ level.name || `关卡 ${index + 1}` }}</text>
-            <text class="level-status">{{ level.status }}</text>
+        <view class="track-levels" v-if="loading">
+          <view class="loading-text">加载中...</view>
+        </view>
+        <view class="track-levels" v-else>
+          <view 
+            class="level-item" 
+            :class="{ 'level-locked': level.isUnlocked === 0 }"
+            v-for="(level, index) in levelList" 
+            :key="level.levelId || index" 
+            @click="startLevel(index)"
+          >
+            <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
+            <text 
+              class="level-status" 
+              :class="{
+                'status-unlocked': level.isUnlocked === 1 && level.isCompleted === 0,
+                'status-completed': level.isCompleted === 1,
+                'status-locked': level.isUnlocked === 0,
+                'status-stars': level.totalStars > 0 && (level.status.includes('星') || level.status.includes('/'))
+              }"
+            >
+              {{ level.status }}
+            </text>
           </view>
         </view>
       </view>
@@ -23,30 +42,158 @@
 
 <script>
 import mixin from '@/libs/mixins/page.js';
+import { getLevelProgressApi } from '@/api/game.js';
 
 export default {
   mixins: [mixin],
   data() {
     return {
       trackCode: 'rope',
-      levelList: [
-        { name: '关卡一', status: '已解锁' },
-        { name: '关卡二', status: '已解锁' },
-        { name: '关卡三', status: '未解锁' },
-      ]
+      trackId: 1, // 结绳计数赛道ID
+      levelList: [],
+      loading: true,
+      gamerId: null
     };
   },
+  onLoad(options) {
+    // 获取玩家ID（从用户信息或store中获取）
+    this.getGamerId();
+  },
+  onShow() {
+    // 每次显示页面时刷新关卡进度
+    if (this.gamerId) {
+      this.loadLevelProgress();
+    }
+  },
   methods: {
-    startLevel(level) {
-      if (level.status === '未解锁') {
+    /**
+     * 获取玩家ID
+     */
+    getGamerId() {
+      // 检查是否登录
+      if (!this.token) {
+        uni.showToast({
+          title: '请先登录',
+          icon: 'none'
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: '/pagesB/account/login'
+          });
+        }, 1500);
+        return;
+      }
+      
+      // 从store中获取用户信息
+      const userInfo = this.userInfo || {};
+      const userId = userInfo.user_id;
+      
+      if (!userId) {
+        uni.showToast({
+          title: '请先登录',
+          icon: 'none'
+        });
+        setTimeout(() => {
+          uni.navigateTo({
+            url: '/pagesB/account/login'
+          });
+        }, 1500);
+        return;
+      }
+      
+      // 通过 user_id 查询 gamer 信息
+      this.$get('/gamer/get_obj', { user_id: userId }, (json) => {
+        // 兼容后端返回结构：result.obj 或 直接 result
+        const gamerObj = json.result ? (json.result.obj || json.result) : null;
+        if (gamerObj && gamerObj.gamer_id) {
+          // 已有玩家记录
+          this.gamerId = gamerObj.gamer_id;
+          this.loadLevelProgress();
+        } else {
+          // 如果没有 gamer 记录，自动创建
+          const userInfo = this.userInfo || {};
+          // 统一使用 username 作为玩家展示名
+          const screenName = userInfo.username || ('玩家' + userId);
+          const data = {
+            player_screen_name: screenName,
+            gold_coin_balance: 0,
+            user_id: userId
+          };
+          this.$post('~/api/gamer/add?', data, (res) => {
+            if (res.result) {
+              // 创建成功后再次查询获取 gamer_id
+              this.$get('/gamer/get_obj', { user_id: userId }, (json2) => {
+                const gamerObj2 = json2.result ? (json2.result.obj || json2.result) : null;
+                if (gamerObj2 && gamerObj2.gamer_id) {
+                  this.gamerId = gamerObj2.gamer_id;
+                  this.loadLevelProgress();
+                }
+              });
+            } else if (res.error) {
+              uni.showToast({
+                title: res.error.message || '创建玩家信息失败',
+                icon: 'none'
+              });
+            }
+          });
+        }
+      });
+    },
+    
+    /**
+     * 加载关卡进度
+     */
+    async loadLevelProgress() {
+      if (!this.gamerId) {
+        return;
+      }
+      
+      this.loading = true;
+      try {
+        const res = await getLevelProgressApi(this.gamerId, this.trackId);
+        if (res.result && res.result.levels) {
+          this.levelList = res.result.levels;
+        } else {
+          uni.showToast({
+            title: res.error?.message || '获取关卡进度失败',
+            icon: 'none'
+          });
+        }
+      } catch (error) {
+        console.error('获取关卡进度失败:', error);
+        uni.showToast({
+          title: '获取关卡进度失败',
+          icon: 'none'
+        });
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    /**
+     * 开始关卡
+     * 通过下标从 levelList 中取，避免点击事件参数异常导致 level 为 undefined
+     */
+    startLevel(index) {
+      const level = this.levelList[index];
+      if (!level) {
+        console.error('关卡数据不存在', index, this.levelList);
+        return;
+      }
+      if (level.isUnlocked === 0) {
         uni.showToast({
           title: '该关卡尚未解锁',
           icon: 'none'
         });
         return;
       }
-      // 跳转到游戏关卡详情页
-      this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_name=${level.name}`);
+      // 结绳计数第一关：跳转到专属互动页面（直接用 index 判断，避免后端字段不一致）
+      if (index === 0) {
+        this.$navTo(`/pagesC/rope/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else {
+        // 其他关卡暂时仍然跳到通用详情页
+        this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+      }
     }
   }
 };
@@ -118,9 +265,43 @@ export default {
 
 .level-status {
   font-size: 24rpx;
-  color: #999;
   padding: 8rpx 16rpx;
-  background-color: #e8e8e8;
   border-radius: 8rpx;
+  transition: all 0.3s;
+}
+
+.status-unlocked {
+  color: #666;
+  background-color: #e8e8e8;
+}
+
+.status-completed {
+  color: #fff;
+  background-color: #4CAF50;
+}
+
+.status-locked {
+  color: #999;
+  background-color: #e0e0e0;
+}
+
+.status-stars {
+  color: #ff9800;
+  font-weight: 600;
+}
+
+.level-locked {
+  opacity: 0.6;
+}
+
+.level-item.level-locked:active {
+  transform: none;
+}
+
+.loading-text {
+  text-align: center;
+  padding: 40rpx;
+  color: #999;
+  font-size: 28rpx;
 }
 </style>
