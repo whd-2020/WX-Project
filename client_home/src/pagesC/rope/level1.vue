@@ -38,13 +38,16 @@
       <view class="rope-area">
         <view class="rope-title">点击绳子打结，表示数字{{ targetNumberText }}</view>
         <view class="rope-wrapper" @click="handleRopeClick">
-          <view class="rope-line"></view>
+          <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
           <view
             v-for="(knot, index) in knots"
             :key="knot.id"
             class="rope-knot"
+            :class="{ 'knot-animating': knot.animating }"
             :style="{ left: knot.x + '%' }"
-          ></view>
+          >
+            <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+          </view>
         </view>
         <view class="rope-info">
           <text>当前绳结数量：{{ knots.length }}</text>
@@ -414,7 +417,7 @@ export default {
       });
     },
 
-    // 点击绳子：如果附近已有绳结则“解结”，否则新增一个绳结
+    // 点击绳子：如果附近已有绳结则"解结"，否则新增一个绳结
     handleRopeClick(e) {
       const query = uni.createSelectorQuery().in(this);
       query
@@ -429,18 +432,27 @@ export default {
           // 限制在 5% ~ 95% 之间，避免太靠边
           percent = Math.max(5, Math.min(95, percent));
 
-          // 查找距离点击位置很近的结（±4%），有的话移除这个结
-          const threshold = 4;
+          // 查找距离点击位置很近的结（±5%），有的话移除这个结
+          const threshold = 5;
           const idx = this.knots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
           if (idx !== -1) {
             // 解结
             this.knots.splice(idx, 1);
-          } else {
-            // 打结
-            this.knots.push({
+          } else if (this.knots.length < 9) {
+            // 打结（最多 9 个绳结）：添加绳结并触发出现动画
+            const newKnot = {
               id: Date.now() + '_' + this.knots.length,
               x: percent,
-            });
+              animating: true,
+            };
+            this.knots.push(newKnot);
+            // 动画结束后移除 animating 标记
+            setTimeout(() => {
+              const idx = this.knots.findIndex((k) => k.id === newKnot.id);
+              if (idx !== -1) {
+                this.$set(this.knots[idx], 'animating', false);
+              }
+            }, 400);
           }
         })
         .exec();
@@ -912,7 +924,7 @@ export default {
 
 .rope-area {
   margin: 0;
-  padding: 28rpx 24rpx 16rpx;
+  padding: 28rpx 0 16rpx;
   background: transparent;
   border-radius: 0;
   box-shadow: none;
@@ -926,6 +938,7 @@ export default {
   font-size: 30rpx;
   color: #2c2c2c;
   margin-bottom: 20rpx;
+  padding: 0 40rpx;
   font-weight: 700;
   text-align: center;
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.9);
@@ -935,40 +948,71 @@ export default {
 
 .rope-wrapper {
   position: relative;
-  height: 80rpx;
+  width: 100%;
+  height: 120rpx;
   margin: 10rpx 0;
+  cursor: pointer;
+  /* 与按钮同宽：game-popup 内容区 520rpx */
 }
 
-.rope-line {
+.rope-image {
   position: absolute;
   left: 0;
-  right: 0;
   top: 50%;
-  height: 8rpx;
+  width: 100%;
+  height: 50rpx;
   transform: translateY(-50%);
-  background: repeating-linear-gradient(
-    -45deg,
-    #c58b4b 0,
-    #c58b4b 8rpx,
-    #e0b37a 8rpx,
-    #e0b37a 16rpx
-  );
-  border-radius: 999rpx;
+  object-fit: contain;
+  object-position: center;
 }
 
+/* 绳结与绳子精确对齐：使用相同垂直参考线，微调上移贴合绳子 */
 .rope-knot {
   position: absolute;
   top: 50%;
-  width: 26rpx;
-  height: 26rpx;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ffe7b5, #c46b2c);
-  box-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.2);
+  left: 0;
+  width: 12%;
+  min-width: 64rpx;
+  max-width: 88rpx;
+  height: 80rpx;
+  transform: translate(-50%, calc(-50% - 14rpx));
+  transform-origin: center center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.knot-image {
+  width: 100%;
+  height: 100%;
+  transform: rotate(90deg);
+  object-fit: contain;
+}
+
+/* 绳结出现动画：从小到大的打结过程（.knot-image 的 transform 独立于 .rope-knot） */
+.rope-knot.knot-animating .knot-image {
+  animation: knotTieIn 0.4s ease-out forwards;
+}
+
+@keyframes knotTieIn {
+  0% {
+    transform: rotate(90deg) scale(0.2);
+    opacity: 0;
+  }
+  50% {
+    transform: rotate(90deg) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(90deg) scale(1);
+    opacity: 1;
+  }
 }
 
 .rope-info {
   margin-top: 10rpx;
+  padding: 0 40rpx;
   font-size: 26rpx;
   color: #2c2c2c;
   font-weight: 600;
