@@ -4,7 +4,9 @@ import Qs from 'qs';
 const baseUrl = process.env.VUE_APP_BASE_HOST + process.env.VUE_APP_BASE_API;
 const http = new Request({
   baseURL: baseUrl,
-  timeout: 8000,
+  // 全局请求超时时间（毫秒），原来是 8000，在微信登录等场景下可能不够
+  // 微信接口有时会比较慢，这里适当放宽到 20000ms，以避免前端先超时而后端其实已经成功
+  timeout: 20000,
   header: {
     'content-type': 'application/json;charset=UTF-8',
   },

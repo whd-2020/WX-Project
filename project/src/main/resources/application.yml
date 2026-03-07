@@ -63,6 +63,6 @@ mybatis-plus:
 # 微信小程序配置
 wechat:
   # 微信小程序的AppID（在微信公众平台获取）
-  appid: your_appid_here
+  appid: wx38a73a73346150dd
   # 微信小程序的AppSecret（在微信公众平台获取）
-  secret: your_secret_here
+  secret: a00b2e78aafdedb80fd762b980c7895c

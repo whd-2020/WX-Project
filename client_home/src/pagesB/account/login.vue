@@ -182,45 +182,106 @@
        */
       wechatLogin() {
         this.logining = true;
-        // 第一步：获取微信登录 code
-        uni.login({
-          provider: 'weixin',
-          success: (loginRes) => {
-            if (loginRes.code) {
-              // 第二步：获取用户信息（需要用户授权）
-              uni.getUserProfile({
-                desc: '用于完善用户资料',
-                success: (userRes) => {
+        // 注意：微信要求 getUserProfile 必须直接在用户点击事件中调用
+        // 所以先调用 getUserProfile，成功后再去 uni.login 获取 code
+        console.log('---点击微信一键登录---');
+        uni.getUserProfile({
+          desc: '用于完善用户资料',
+          success: (userRes) => {
+            console.log('getUserProfile 返回 userRes:', userRes);
+            
+            // 检查是否获取到真实的用户信息
+            let nickName = userRes.userInfo.nickName;
+            let avatarUrl = userRes.userInfo.avatarUrl;
+            
+            // 如果获取到的是默认值，提示用户
+            if (nickName === '微信用户' || !nickName || nickName.trim() === '') {
+              console.warn('获取到的昵称为默认值，可能用户拒绝了授权');
+              // 仍然允许登录，但使用默认值，后续用户可以完善信息
+              nickName = '微信用户';
+            }
+            
+            // 第二步：获取微信登录 code
+            uni.login({
+              provider: 'weixin',
+              success: (loginRes) => {
+                console.log('uni.login 返回 loginRes:', loginRes);
+                if (loginRes.code) {
                   // 第三步：将 code 和用户信息发送到后端
                   const loginData = {
                     code: loginRes.code,
-                    nickName: userRes.userInfo.nickName,
-                    avatarUrl: userRes.userInfo.avatarUrl,
+                    nickName: nickName,
+                    avatarUrl: avatarUrl,
                     gender: userRes.userInfo.gender,
                     country: userRes.userInfo.country,
                     province: userRes.userInfo.province,
                     city: userRes.userInfo.city,
                   };
-                  
+                  console.log('准备提交到后端的微信登录数据 loginData:', loginData);
+
                   wechatLoginApi(loginData)
                     .then((res) => {
+                      console.log('后端 wechatLoginApi 返回结果:', res);
                       if (res.result && res.result.obj) {
                         let user = res.result.obj;
-                        if(this.allow_user.includes(user.user_group)){
+                        if (this.allow_user.includes(user.user_group)) {
                           // 缓存token
                           this.$u.vuex('token', user.token);
                           // 存储用户信息
                           this.$u.vuex('userInfo', user);
                           // 设置权限集
                           this.$u.vuex('userGroup', user.user_group);
-                          // 前往首页
-                          uni.switchTab({
-                            url: '/pages/index/index',
-                          });
-                          console.log('---微信登录成功---');
+                          
+                          // 检查是否需要完善用户信息
+                          const needCompleteInfo = user.nickname === '微信用户' || !user.nickname || user.nickname.trim() === '';
+                          
+                          if (needCompleteInfo) {
+                            // 如果需要完善信息，直接跳转到基本信息页面
+                            uni.navigateTo({
+                              url: '/pages/user/info',
+                              success: () => {
+                                // 跳转成功后提示
+                                setTimeout(() => {
+                                  uni.showToast({
+                                    title: '请完善您的昵称和头像',
+                                    icon: 'none',
+                                    duration: 2000
+                                  });
+                                }, 500);
+                              },
+                              fail: () => {
+                                // 如果跳转失败，则跳转到首页
+                                uni.switchTab({
+                                  url: '/pages/index/index',
+                                });
+                                setTimeout(() => {
+                                  uni.showModal({
+                                    title: '完善信息',
+                                    content: '检测到您的昵称为默认值，建议前往个人中心完善昵称和头像',
+                                    showCancel: true,
+                                    cancelText: '稍后',
+                                    confirmText: '去完善',
+                                    success: (modalRes) => {
+                                      if (modalRes.confirm) {
+                                        uni.navigateTo({
+                                          url: '/pages/user/info'
+                                        });
+                                      }
+                                    }
+                                  });
+                                }, 1000);
+                              }
+                            });
+                          } else {
+                            // 不需要完善信息，直接前往首页
+                            uni.switchTab({
+                              url: '/pages/index/index',
+                            });
+                          }
+                          console.log('---微信登录成功---, 最终 userInfo:', user);
                           this.$toast('登录成功', 'success');
-                        }else{
-                          this.$toast("该账号无权限登录", 'error');
+                        } else {
+                          this.$toast('该账号无权限登录', 'error');
                         }
                       } else if (res.error) {
                         this.$toast(res.error.message || '登录失败，请重试', 'error');
@@ -233,26 +294,26 @@
                     .finally(() => {
                       this.logining = false;
                     });
-                },
-                fail: (err) => {
-                  console.error('获取用户信息失败:', err);
+                } else {
                   this.logining = false;
-                  if (err.errMsg && err.errMsg.includes('deny')) {
-                    this.$toast('需要授权才能登录', 'error');
-                  } else {
-                    this.$toast('获取用户信息失败', 'error');
-                  }
+                  this.$toast('获取微信登录凭证失败', 'error');
                 }
-              });
-            } else {
-              this.logining = false;
-              this.$toast('获取微信登录凭证失败', 'error');
-            }
+              },
+              fail: (err) => {
+                console.error('微信登录失败:', err);
+                this.logining = false;
+                this.$toast('微信登录失败，请重试', 'error');
+              }
+            });
           },
           fail: (err) => {
-            console.error('微信登录失败:', err);
+            console.error('获取用户信息失败:', err);
             this.logining = false;
-            this.$toast('微信登录失败，请重试', 'error');
+            if (err.errMsg && err.errMsg.includes('deny')) {
+              this.$toast('需要授权才能登录', 'error');
+            } else {
+              this.$toast('获取用户信息失败', 'error');
+            }
           }
         });
       },

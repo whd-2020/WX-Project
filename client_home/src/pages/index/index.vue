@@ -4,21 +4,19 @@
     <tn-nav-bar fixed :isBack="false">
       <view class="nav-wrapper">
         <view class="nav-user" @click="$navTo('/pages/user/info')">
-          <image :src="$fullImgUrl(userInfo.avatar) || '/static/img/default.png'"></image>
+          <!-- 头像：优先使用微信头像的完整https地址，其次再走资源拼接 -->
+          <image :src="avatarUrl"></image>
         </view>
-        <view class="tabs">
-          <view :class="['tab-item', tabIndex === 0 ? 'active' : '']" @click="onClickTab(0)">
-            <view class="name">推荐</view>
-            <view class="active-flag" v-if="tabIndex === 0"> </view>
-          </view>
-                      </view>
+        <!-- 昵称：优先显示微信昵称，没有则回退到用户名 -->
+        <view class="nav-username">
+          {{ displayName }}
+        </view>
+        <!-- 原“推荐”标签已去掉，只保留头像区域 -->
       </view>
     </tn-nav-bar>
 
     <view class="tab-pane" v-show="tabIndex === 0">
-      <view class="search-wrapper" @click.stop="$navTo('/pages/search/index')">
-        <Search disabled placeholder="搜索内容" @cancel="cancel" />
-      </view>
+      <!-- 顶部搜索框已去掉 -->
 
       <view class="scroll-x">
         <view class="left">
@@ -80,32 +78,7 @@
       <!-- 菜单模块(结束) -->
 	  <view class="home_recommend">
               	  </view>
-      <Card
-        v-if="$check_action('/notice/list', 'get')"
-        class="notice_list list_diy"
-        title="游戏公告"
-        url="/pages/notice/list"
-        :list="list_notice"
-      >
-        <view class="gg-list-wrap">
-          <view
-            class="gg-list-item"
-            v-for="(o, i) in list_notice"
-            :key="i"
-            @click="$navTo('/pages/notice/details?notice_id=' + o['notice_id'])"
-          >
-            <view class="content">
-              <text class="num">{{ i + 1 }}.</text>
-              <text class="title">{{ o.title }}</text>
-            </view>
-			<view class="time"> {{ $toTime(o.create_time, "yyyy-MM-dd hh:mm:ss") }}</view>
-			<rich-text class="desc" :nodes="$setRichTextImage(o.content)"></rich-text>
-          </view>
-        </view>
-      </Card>
-
-      <view class="split-line"></view>
-      <!-- 推荐通知公告模块(结束) -->
+      <!-- 底部“游戏公告”和“更多”区域已移除 -->
     </view>
 
               
@@ -153,6 +126,24 @@ export default {
       list_menu: [],
       list_notice: [],
     };
+  },
+  computed: {
+    // 头像地址：如果是完整 http(s) 链接，直接用；否则走后端资源拼接；都没有时用默认图
+    avatarUrl() {
+      const avatar = this.userInfo && this.userInfo.avatar;
+      if (!avatar) {
+        return '/static/img/default.png';
+      }
+      if (/^https?:\/\//.test(avatar)) {
+        return avatar;
+      }
+      return this.$fullImgUrl(avatar) || '/static/img/default.png';
+    },
+    // 展示用昵称：优先昵称，其次用户名
+    displayName() {
+      const userInfo = this.userInfo || {};
+      return userInfo.nickname || userInfo.username || '游客';
+    },
   },
   created() {
   },

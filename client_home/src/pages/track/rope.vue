@@ -187,9 +187,11 @@ export default {
         });
         return;
       }
-      // 结绳计数第一关：跳转到专属互动页面（直接用 index 判断，避免后端字段不一致）
+      // 结绳计数第一关、第二关：跳转到专属互动页面（直接用 index 判断，避免后端字段不一致）
       if (index === 0) {
         this.$navTo(`/pagesC/rope/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 1) {
+        this.$navTo(`/pagesC/rope/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else {
         // 其他关卡暂时仍然跳到通用详情页
         this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);

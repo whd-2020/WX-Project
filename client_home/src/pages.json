@@ -228,6 +228,12 @@
           }
         },
         {
+          "path": "rope/level2",
+          "style": {
+            "navigationBarTitleText": "结绳计数 · 第二关"
+          }
+        },
+        {
           "path": "game_record/edit",
           "style": {
             "navigationBarTitleText": "游戏记录"

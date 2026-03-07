@@ -317,11 +317,12 @@ public class UserController extends BaseController<User, UserService> {
      */
     @PostMapping("wechat/login")
     public Map<String, Object> wechatLogin(@RequestBody Map<String, Object> data, HttpServletRequest httpServletRequest) {
-        log.info("[执行微信登录接口]");
+        log.info("[执行微信登录接口] 收到的原始请求体: {}", JSON.toJSONString(data));
 
         String code = (String) data.get("code");
         String nickName = (String) data.get("nickName");
         String avatarUrl = (String) data.get("avatarUrl");
+        log.info("[微信登录参数] code={}, nickName={}, avatarUrl={}", code, nickName, avatarUrl);
 
         // 验证code
         if (code == null || code.isEmpty()) {
@@ -335,6 +336,7 @@ public class UserController extends BaseController<User, UserService> {
         }
 
         String openid = wechatInfo.get("openid");
+        log.info("[微信登录] 通过code换取的 openid={}", openid);
 
         // 根据openid查询用户是否存在
         Map<String, String> query = new HashMap<>();
@@ -351,9 +353,12 @@ public class UserController extends BaseController<User, UserService> {
             // 更新用户信息（可选：每次登录都更新）
             Map<String, Object> updateMap = new HashMap<>();
             if (nickName != null && !nickName.isEmpty()) {
+                // 昵称和用户名都同步为微信昵称
                 updateMap.put("nickname", nickName);
+                updateMap.put("username", nickName);
             }
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                // 头像始终使用微信头像
                 updateMap.put("avatar", avatarUrl);
             }
             
@@ -371,15 +376,20 @@ public class UserController extends BaseController<User, UserService> {
             isNewUser = true;
             Map<String, Object> insertMap = new HashMap<>();
             
-            // 生成用户名（使用openid后8位 + 随机数）
-            String username = "wx_" + openid.substring(Math.max(0, openid.length() - 8)) + "_" + System.currentTimeMillis() % 10000;
+            // 生成用户名：优先使用微信昵称；如果没有昵称再使用 openid 尾号规则
+            String username;
+            if (nickName != null && !nickName.isEmpty()) {
+                username = nickName;
+            } else {
+                username = "wx_" + openid.substring(Math.max(0, openid.length() - 8)) + "_" + System.currentTimeMillis() % 10000;
+            }
             insertMap.put("username", username);
             
             // 设置密码（微信登录用户不需要密码，但数据库字段可能非空，设置一个默认值）
             insertMap.put("password", "wechat_login_no_password");
             
-            // 设置昵称
-            insertMap.put("nickname", nickName != null ? nickName : "微信用户");
+            // 设置昵称：和用户名保持一致（都尽量用微信昵称）
+            insertMap.put("nickname", nickName != null && !nickName.isEmpty() ? nickName : username);
             
             // 设置头像
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
@@ -396,6 +406,7 @@ public class UserController extends BaseController<User, UserService> {
             insertMap.put("state", 1);
             
             // 插入新用户
+            log.info("[微信登录] 准备创建新用户, username={}, nickname={}, avatar={}", username, insertMap.get("nickname"), insertMap.get("avatar"));
             service.insert(insertMap);
             
             // 重新查询获取新创建的用户

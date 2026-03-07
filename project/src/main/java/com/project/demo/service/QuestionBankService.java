@@ -143,15 +143,17 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             log.info("最近一次答题记录: questionId={}, isCorrect={}, answerTime={}, 计算星级={}", 
                     lastRecord.getQuestion_id(), lastRecord.getIs_correct(), lastRecord.getAnswer_time(), lastStars);
             
-            // 星级 < 3，则继续这道题
-            if (lastStars < 3) {
+            // 修改逻辑：
+            // - lastStars == 0（还没答对）：继续当前这道题，方便孩子再练一次
+            // - lastStars >= 1（已经答对拿到 1/2/3 星）：从未满3星的题目中随机抽取新题
+            if (lastStars == 0) {
                 QuestionBank currentQuestion = questionBankMapper.selectById(lastRecord.getQuestion_id());
                 if (currentQuestion != null && currentQuestion.getIs_enabled() != null && currentQuestion.getIs_enabled() == 1) {
-                    log.info("继续当前题目（星级<3）: questionId={}", currentQuestion.getQuestion_id());
+                    log.info("继续当前题目（最近一次未拿到星，答题还未通过）: questionId={}", currentQuestion.getQuestion_id());
                     return Collections.singletonList(currentQuestion);
                 }
             } else {
-                log.info("最近一次答题已满3星，跳过继续当前题，开始抽取新题");
+                log.info("最近一次答题已获得星星（{} 星），开始从未满3星的题目中随机抽取新题", lastStars);
             }
         }
 
@@ -224,7 +226,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
     }
 
     /**
-     * 更新关卡星星记录，累计星星数，并在累计星星数>30时解锁下一关
+     * 更新关卡星星记录，累计星星数，并在累计星星数>20时解锁下一关
      * @param gamerId 玩家ID
      * @param levelId 关卡ID
      * @param trackId 赛道ID
@@ -282,15 +284,15 @@ public class QuestionBankService extends BaseService<QuestionBank> {
                     gamerId, levelId, stars, newTotalStars);
         }
 
-        // 检查累计星星数是否>=30，如果是则解锁下一关
+        // 检查累计星星数是否>=20，如果是则解锁下一关
         int totalStars = starRecord.getTotal_stars() != null ? starRecord.getTotal_stars() : 0;
-        if (totalStars >= 30) {
+        if (totalStars >= 20) {
             unlockNextLevel(gamerId, levelId, trackId);
         }
     }
 
     /**
-     * 解锁下一关（当累计星星数>=30时调用）
+     * 解锁下一关（当累计星星数>=20时调用）
      * 
      * 注意：
      * 1. 只解锁同一赛道（track_id）内的下一关，不同赛道之间完全隔离
@@ -339,13 +341,13 @@ public class QuestionBankService extends BaseService<QuestionBank> {
                 nextUnlock.setIs_completed(0);
                 nextUnlock.setComplete_times(0);
                 playerLevelUnlockMapper.insert(nextUnlock);
-                log.info("累计星星数>30，解锁下一关: gamerId={}, currentLevelId={}, nextLevelId={}, trackId={}", 
+                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelId={}, nextLevelId={}, trackId={}", 
                         gamerId, levelId, nextLevelId, trackId);
             } else if (nextUnlock.getIs_unlocked() == null || nextUnlock.getIs_unlocked() == 0) {
                 // 如果下一关未解锁，则解锁它
                 nextUnlock.setIs_unlocked(1);
                 playerLevelUnlockMapper.updateById(nextUnlock);
-                log.info("累计星星数>30，解锁下一关: gamerId={}, currentLevelId={}, nextLevelId={}, trackId={}", 
+                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelId={}, nextLevelId={}, trackId={}", 
                         gamerId, levelId, nextLevelId, trackId);
             }
         }

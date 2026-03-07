@@ -6,10 +6,11 @@
       <!-- 头像 -->
       <view class="left">
         <view class="avatar">
-          <image :src="$fullImgUrl(userInfo.avatar) || '/static/img/default.png'"></image>
+          <!-- 头像：兼容微信返回的完整 https 链接 -->
+          <image :src="avatarUrl"></image>
         </view>
         <view class="base-info" v-if="token">
-          <view class="username">{{ userInfo.nickname }}</view>
+          <view class="username">{{ displayName }}</view>
           <view class="signature">{{ userInfo.user_group }}</view>
         </view>
         <view class="base-info" v-else @click="toLogin">
@@ -25,20 +26,6 @@
       </view>
     </view>
     <!-- 用户栏模块(结束) -->
-    <view class="split"></view>
-    <view class="menu-group my-data">
-      <view class="menu-row-sm">
-        <view v-if="$check_action('/comment/table', 'get')" class="menu-item comment" @click="$navTo('/pages/user/comment')">
-          <image class="menu-img" :src="'/static/img/default.png'"></image>
-          <view class="name">评论</view>
-        </view>
-        <view class="menu-item data" v-if="chartAble" @click="$navTo('/pagesA/user_center/index')">
-          <image class="menu-img" :src="'/static/img/default.png'"></image>
-          <view class="name">统计</view>
-        </view>
-      </view>
-    </view>
-
     <view class="split"></view>
     <!-- 自定义栏模块(开始) -->
     <view class="nav-list">
@@ -83,50 +70,44 @@
         tabbarIndex: 0,
         chartAble: false,
         cellList: [
-            {
-            title: '游戏玩家',
-            auth: '/gamer/table',
-            url: '/pagesC/gamer/table',
-            icon: 'icon-yonghu',
-          },
-              {
-            title: '游戏关卡',
-            auth: '/game_levels/table',
-            url: '/pagesC/game_levels/table',
-            icon: 'icon-yonghu',
-          },
-              {
+          {
             title: '游戏记录',
             auth: '/game_record/table',
             url: '/pagesC/game_record/table',
             icon: 'icon-yonghu',
           },
-              {
-            title: '道具商店',
-            auth: '/props/table',
-            url: '/pagesC/props/table',
-            icon: 'icon-yonghu',
-          },
-              {
-            title: '购买记录',
-            auth: '/purchase_record/table',
-            url: '/pagesC/purchase_record/table',
-            icon: 'icon-yonghu',
-          },
-              {
+          {
             title: '游戏成就',
             auth: '/game_achievements/table',
             url: '/pagesC/game_achievements/table',
             icon: 'icon-yonghu',
           },
-              {
-            title: '玩家成就',
+          {
+            title: '个人成就',
             auth: '/achievements/table',
             url: '/pagesC/achievements/table',
             icon: 'icon-yonghu',
           },
-          ],
+        ],
       };
+    },
+    computed: {
+      // 头像地址：如果是完整 http(s) 链接，直接用；否则走后端资源拼接；都没有时用默认图
+      avatarUrl() {
+        const avatar = this.userInfo && this.userInfo.avatar;
+        if (!avatar) {
+          return '/static/img/default.png';
+        }
+        if (/^https?:\/\//.test(avatar)) {
+          return avatar;
+        }
+        return this.$fullImgUrl(avatar) || '/static/img/default.png';
+      },
+      // 展示昵称：优先昵称，其次用户名
+      displayName() {
+        const userInfo = this.userInfo || {};
+        return userInfo.nickname || userInfo.username || '游客';
+      },
     },
     onLoad() {
                   },
