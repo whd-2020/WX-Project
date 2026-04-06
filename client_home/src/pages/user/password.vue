@@ -9,17 +9,7 @@
         :labelPosition="labelPosition"
         :labelAlign="labelAlign"
       >
-        <tn-form-item
-          label="原密码"
-          prop="o_password"
-          :required="true"
-          :labelPosition="labelPosition"
-          :labelAlign="labelAlign"
-          :labelWidth="200"
-        >
-          <tn-input v-model="form.o_password" placeholder="请输入密码" :border="border"></tn-input>
-        </tn-form-item>
-        <tn-form-item
+          <tn-form-item
           label="密码"
           prop="password"
           :required="true"
@@ -69,7 +59,6 @@ export default {
         user_group: [],
       },
       form: {
-        o_password: '',
         password: '',
         confirm_password: '',
       },
@@ -84,19 +73,6 @@ export default {
             min: 5,
             max: 16,
             message: '密码长度在5到16个字符',
-            trigger: ['change', 'blur'],
-          },
-        ],
-        o_password: [
-          {
-            required: true,
-            message: '请输入原密码',
-            trigger: 'blur',
-          },
-          {
-            min: 5,
-            max: 16,
-            message: '原密码长度在5到16个字符',
             trigger: ['change', 'blur'],
           },
         ],
@@ -126,15 +102,14 @@ export default {
         this.$toast('密码不相同', 'error');
         return;
       }
-	  if (!this.form.o_password || !this.form.password || !this.form.confirm_password){
+	  if (!this.form.password || !this.form.confirm_password){
 	  		this.$toast("密码不能为空", "error");
 	  		return;
 	  }
       this.loading = true;
       this.$refs.formRef.validate((valid) => {
         if (valid) {
-          const data = { ...this.form };
-          delete data.confirm_password;
+          const data = { password: this.form.password };
           changePasswordApi(data)
             .then((res) => {
               if (res.result) {

@@ -65,3 +65,17 @@ export const wechatLoginApi = (data) => {
     data,
   });
 };
+
+/**
+ * 更新用户个人信息
+ */
+export const updateProfileApi = (data) => {
+  return http.request({
+    url: `/user/update_profile`,
+    method: 'POST',
+    custom: {
+      isLoading: true,
+    },
+    data,
+  });
+};

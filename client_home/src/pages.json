@@ -196,6 +196,15 @@
           }
         },
         {
+          "path": "account/setup_profile",
+          "style": {
+            "navigationBarTitleText": "完善个人信息"
+          },
+          "meta": {
+            "noAuth": false
+          }
+        },
+        {
           "path": "account/forgot",
           "style": {
             "navigationBarTitleText": "找回密码"

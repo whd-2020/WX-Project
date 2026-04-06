@@ -190,16 +190,18 @@
           success: (userRes) => {
             console.log('getUserProfile 返回 userRes:', userRes);
             
-            // 检查是否获取到真实的用户信息
-            let nickName = userRes.userInfo.nickName;
-            let avatarUrl = userRes.userInfo.avatarUrl;
-            
-            // 如果获取到的是默认值，提示用户
-            if (nickName === '微信用户' || !nickName || nickName.trim() === '') {
-              console.warn('获取到的昵称为默认值，可能用户拒绝了授权');
-              // 仍然允许登录，但使用默认值，后续用户可以完善信息
-              nickName = '微信用户';
+            // 获取用户信息
+            let nickName = userRes.userInfo.nickName || '';
+            let avatarUrl = userRes.userInfo.avatarUrl || '';
+
+            // 验证昵称和头像，排除默认值"微信用户"
+            if (!nickName || nickName.trim() === '' || nickName === '微信用户') {
+              nickName = '';  // 使用空字符串，后端会保持原有昵称
             }
+            if (!avatarUrl || avatarUrl.trim() === '') {
+              avatarUrl = '';  // 使用空字符串，后端会保持原有头像
+            }
+            console.log('处理后的用户信息 - nickName:', nickName, ', avatarUrl:', avatarUrl);
             
             // 第二步：获取微信登录 code
             uni.login({
@@ -231,55 +233,16 @@
                           this.$u.vuex('userInfo', user);
                           // 设置权限集
                           this.$u.vuex('userGroup', user.user_group);
-                          
-                          // 检查是否需要完善用户信息
-                          const needCompleteInfo = user.nickname === '微信用户' || !user.nickname || user.nickname.trim() === '';
-                          
-                          if (needCompleteInfo) {
-                            // 如果需要完善信息，直接跳转到基本信息页面
-                            uni.navigateTo({
-                              url: '/pages/user/info',
-                              success: () => {
-                                // 跳转成功后提示
-                                setTimeout(() => {
-                                  uni.showToast({
-                                    title: '请完善您的昵称和头像',
-                                    icon: 'none',
-                                    duration: 2000
-                                  });
-                                }, 500);
-                              },
-                              fail: () => {
-                                // 如果跳转失败，则跳转到首页
-                                uni.switchTab({
-                                  url: '/pages/index/index',
-                                });
-                                setTimeout(() => {
-                                  uni.showModal({
-                                    title: '完善信息',
-                                    content: '检测到您的昵称为默认值，建议前往个人中心完善昵称和头像',
-                                    showCancel: true,
-                                    cancelText: '稍后',
-                                    confirmText: '去完善',
-                                    success: (modalRes) => {
-                                      if (modalRes.confirm) {
-                                        uni.navigateTo({
-                                          url: '/pages/user/info'
-                                        });
-                                      }
-                                    }
-                                  });
-                                }, 1000);
-                              }
-                            });
-                          } else {
-                            // 不需要完善信息，直接前往首页
-                            uni.switchTab({
-                              url: '/pages/index/index',
-                            });
-                          }
+
                           console.log('---微信登录成功---, 最终 userInfo:', user);
                           this.$toast('登录成功', 'success');
+
+                          // 新用户直接跳转到设置页面完善信息
+                          setTimeout(() => {
+                            uni.navigateTo({
+                              url: '/pagesB/account/setup_profile'
+                            });
+                          }, 800);
                         } else {
                           this.$toast('该账号无权限登录', 'error');
                         }

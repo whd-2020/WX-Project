@@ -217,20 +217,22 @@ public class UserController extends BaseController<User, UserService> {
         // 根据Token获取UserId
         String token = request.getHeader("x-auth-token");
         Integer userId = tokenGetUserId(token);
-        // 根据UserId和旧密码获取用户
-        Map<String, String> query = new HashMap<>();
-        String o_password = data.get("o_password");
-        query.put("user_id" ,String.valueOf(userId));
-				query.put("password" ,o_password);
-		        int count = service.selectBaseCount(service.count(query, service.readConfig(request)));
-        if(count > 0){
-            // 修改密码
-            Map<String,Object> form = new HashMap<>();
-						form.put("password",data.get("password"));
-			            service.update(query,service.readConfig(request),form);
-            return success(1);
+
+        String newPassword = data.get("password");
+        if (StringUtils.isEmpty(newPassword)) {
+            return error(10000, "新密码不能为空");
         }
-        return error(10000,"密码修改失败！");
+
+        // 直接修改密码，不需要验证原密码
+        Map<String, String> query = new HashMap<>();
+        query.put("user_id", String.valueOf(userId));
+
+        Map<String, Object> form = new HashMap<>();
+        form.put("password", newPassword);
+        service.update(query, service.readConfig(request), form);
+
+        log.info("[修改密码成功] userId={}", userId);
+        return success(1);
     }
 
 
@@ -349,72 +351,93 @@ public class UserController extends BaseController<User, UserService> {
         if (resultList != null && resultList.size() > 0) {
             // 用户已存在，更新用户信息
             user = (User) resultList.get(0);
-            
-            // 更新用户信息（可选：每次登录都更新）
+
+            // 更新用户信息（每次登录都更新微信昵称和头像）
             Map<String, Object> updateMap = new HashMap<>();
-            if (nickName != null && !nickName.isEmpty()) {
+            boolean needUpdate = false;
+
+            // 如果前端传来了有效的昵称，就更新
+            if (nickName != null && !nickName.isEmpty() && !nickName.equals("微信用户")) {
                 // 昵称和用户名都同步为微信昵称
                 updateMap.put("nickname", nickName);
                 updateMap.put("username", nickName);
+                needUpdate = true;
+                log.info("[微信登录] 更新昵称: {}", nickName);
+            } else if (nickName == null || nickName.isEmpty()) {
+                // 如果昵称为null或空，保持原有昵称不变
+                log.info("[微信登录] 昵称为null或空，保持原有昵称不变");
             }
+
+            // 头像始终使用微信头像（如果有的话）
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
-                // 头像始终使用微信头像
                 updateMap.put("avatar", avatarUrl);
+                needUpdate = true;
+                log.info("[微信登录] 更新头像: {}", avatarUrl);
+            } else if (avatarUrl == null || avatarUrl.isEmpty()) {
+                // 如果头像为null或空，保持原有头像不变
+                log.info("[微信登录] 头像为null或空，保持原有头像不变");
             }
-            
-            if (!updateMap.isEmpty()) {
+
+            if (needUpdate) {
                 Map<String, String> updateQuery = new HashMap<>();
                 updateQuery.put("user_id", String.valueOf(user.getUserId()));
                 service.update(updateQuery, service.readConfig(httpServletRequest), updateMap);
-                
-                // 重新查询获取最新数据
-                resultList = service.selectBaseList(service.select(query, new HashMap<>()));
+                log.info("[微信登录] 更新用户信息: userId={}, updateMap={}", user.getUserId(), JSON.toJSONString(updateMap));
+            }
+
+            // 重新查询获取最新数据
+            resultList = service.selectBaseList(service.select(query, new HashMap<>()));
+            if (resultList != null && resultList.size() > 0) {
                 user = (User) resultList.get(0);
+                log.info("[微信登录] 重新查询用户信息: userId={}, nickname={}, avatar={}", user.getUserId(), user.getNickname(), user.getAvatar());
             }
         } else {
             // 用户不存在，创建新用户
             isNewUser = true;
             Map<String, Object> insertMap = new HashMap<>();
-            
+
             // 生成用户名：优先使用微信昵称；如果没有昵称再使用 openid 尾号规则
             String username;
-            if (nickName != null && !nickName.isEmpty()) {
+            if (nickName != null && !nickName.isEmpty() && !nickName.equals("微信用户")) {
                 username = nickName;
             } else {
                 username = "wx_" + openid.substring(Math.max(0, openid.length() - 8)) + "_" + System.currentTimeMillis() % 10000;
             }
             insertMap.put("username", username);
-            
+
             // 设置密码（微信登录用户不需要密码，但数据库字段可能非空，设置一个默认值）
             insertMap.put("password", "wechat_login_no_password");
-            
-            // 设置昵称：和用户名保持一致（都尽量用微信昵称）
-            insertMap.put("nickname", nickName != null && !nickName.isEmpty() ? nickName : username);
-            
+
+            // 设置昵称：优先使用微信昵称，否则使用生成的用户名
+            String finalNickname = (nickName != null && !nickName.isEmpty() && !nickName.equals("微信用户")) ? nickName : username;
+            insertMap.put("nickname", finalNickname);
+
             // 设置头像
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 insertMap.put("avatar", avatarUrl);
+                log.info("[微信登录] 新用户设置头像: {}", avatarUrl);
             }
-            
+
             // 设置openid
             insertMap.put("open_id", openid);
-            
-            // 设置用户组（默认设置为"游戏玩家"，你可以根据实际需求修改）
+
+            // 设置用户组（默认设置为"游戏玩家"）
             insertMap.put("user_group", "游戏玩家");
-            
+
             // 设置状态为可用
             insertMap.put("state", 1);
-            
+
             // 插入新用户
-            log.info("[微信登录] 准备创建新用户, username={}, nickname={}, avatar={}", username, insertMap.get("nickname"), insertMap.get("avatar"));
+            log.info("[微信登录] 准备创建新用户, username={}, nickname={}, avatar={}", username, finalNickname, avatarUrl);
             service.insert(insertMap);
-            
+
             // 重新查询获取新创建的用户
             resultList = service.selectBaseList(service.select(query, new HashMap<>()));
             if (resultList == null || resultList.size() == 0) {
                 return error(30000, "创建用户失败");
             }
             user = (User) resultList.get(0);
+            log.info("[微信登录] 新用户创建成功: userId={}, nickname={}, avatar={}", user.getUserId(), user.getNickname(), user.getAvatar());
         }
 
         // 检查用户组是否存在
@@ -463,6 +486,70 @@ public class UserController extends BaseController<User, UserService> {
         
         log.info("[微信登录成功] userId={}, openid={}", user.getUserId(), openid);
         return success(ret);
+    }
+
+    /**
+     * 更新用户个人信息
+     */
+    @PostMapping("/update_profile")
+    @Transactional
+    public Map<String, Object> updateProfile(HttpServletRequest request) throws IOException {
+        try {
+            // 获取当前登录用户ID
+            String token = request.getHeader("x-auth-token");
+            Integer userId = tokenGetUserId(token);
+            if (userId == null || userId == 0) {
+                log.error("[更新个人信息] 用户未登录");
+                return error(10000, "用户未登录");
+            }
+
+            Map<String, Object> map = service.readBody(request.getReader());
+            String nickname = (String) map.get("nickname");
+            String password = (String) map.get("password");
+            String avatar = (String) map.get("avatar");
+
+            log.info("[更新个人信息] userId={}, nickname={}, hasPassword={}, hasAvatar={}",
+                userId, nickname, password != null, avatar != null);
+
+            // 查询用户
+            Map<String, String> query = new HashMap<>();
+            query.put("user_id", String.valueOf(userId));
+            List<?> resultList = service.selectBaseList(service.select(query, new HashMap<>()));
+            if (resultList == null || resultList.size() == 0) {
+                log.error("[更新个人信息] 用户不存在 userId={}", userId);
+                return error(10000, "用户不存在");
+            }
+
+            // 准备更新数据
+            Map<String, Object> updateMap = new HashMap<>();
+            if (!StringUtils.isEmpty(nickname)) {
+                updateMap.put("nickname", nickname.trim());
+            }
+            if (!StringUtils.isEmpty(password)) {
+                updateMap.put("password", password);
+            }
+            if (!StringUtils.isEmpty(avatar)) {
+                updateMap.put("avatar", avatar);
+            }
+
+            // 保存到数据库
+            service.update(query, service.readConfig(request), updateMap);
+
+            // 重新查询获取最新数据
+            resultList = service.selectBaseList(service.select(query, new HashMap<>()));
+            User user = (User) resultList.get(0);
+
+            log.info("[更新个人信息成功] userId={}, nickname={}, avatar={}",
+                userId, user.getNickname(), user.getAvatar());
+
+            JSONObject userJson = JSONObject.parseObject(JSONObject.toJSONString(user));
+            JSONObject ret = new JSONObject();
+            ret.put("obj", userJson);
+            return success(ret);
+        } catch (Exception e) {
+            log.error("[更新个人信息异常]", e);
+            return error(10000, "更新失败，请重试");
+        }
     }
 
     /**

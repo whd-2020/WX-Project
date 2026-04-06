@@ -32,7 +32,7 @@
       </tn-list-cell>
 
       <tn-list-cell class="user_item" @click="$navTo('/pages/user/password')" :arrow="true">修改密码</tn-list-cell>
-      <tn-list-cell class="user_item" v-if="canEditInfo" :unlined="true" @click="$navTo(source_table_url)" :arrow="true"
+      <tn-list-cell class="user_item" v-if="canEditInfo" :unlined="true" @click="navigateToEditInfo" :arrow="true"
         >修改资料</tn-list-cell
       >
 
@@ -168,6 +168,13 @@ export default {
 			  }
 		  }
 	  }
+    },
+    navigateToEditInfo() {
+      if (this.source_table_url) {
+        uni.navigateTo({
+          url: this.source_table_url
+        });
+      }
     },
 	
   },
