@@ -180,13 +180,25 @@ export default {
         console.error('关卡数据不存在', index, this.levelList);
         return;
       }
-      if (level.isUnlocked === 0) {
-        uni.showToast({
-          title: '该关卡尚未解锁',
-          icon: 'none'
+
+      // 打印调试信息
+      console.log('点击关卡:', index, 'level数据:', level);
+      console.log('status值:', level.status);
+
+      // 根据 status 字段判断是否解锁
+      // 如果 status 包含"未解锁"，则阻止跳转
+      if (level.status && level.status.includes('未解锁')) {
+        console.log('关卡未解锁，阻止跳转');
+        uni.showModal({
+          title: '提示',
+          content: '小朋友，你还没有解锁这一关哦~',
+          showCancel: false,
+          confirmText: '知道了'
         });
         return;
       }
+
+      console.log('关卡已解锁，准备跳转');
       // 结绳计数第一关、第二关：跳转到专属互动页面（直接用 index 判断，避免后端字段不一致）
       if (index === 0) {
         this.$navTo(`/pagesC/rope/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
