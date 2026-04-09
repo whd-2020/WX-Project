@@ -237,11 +237,21 @@
                           console.log('---微信登录成功---, 最终 userInfo:', user);
                           this.$toast('登录成功', 'success');
 
-                          // 新用户直接跳转到设置页面完善信息
+                          // 根据 isNewUser 判断跳转目标
                           setTimeout(() => {
-                            uni.navigateTo({
-                              url: '/pagesB/account/setup_profile'
-                            });
+                            if (user.isNewUser) {
+                              // 新用户跳转到设置页面完善信息
+                              console.log('新用户，跳转到设置页面');
+                              uni.navigateTo({
+                                url: '/pagesB/account/setup_profile'
+                              });
+                            } else {
+                              // 老用户直接进入首页
+                              console.log('老用户，跳转到首页');
+                              uni.switchTab({
+                                url: '/pages/index/index'
+                              });
+                            }
                           }, 800);
                         } else {
                           this.$toast('该账号无权限登录', 'error');
