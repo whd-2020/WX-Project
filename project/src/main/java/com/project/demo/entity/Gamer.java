@@ -27,17 +27,14 @@ public class Gamer implements Serializable {
     // 玩家网名
     @TableField(value = "`player_screen_name`")
     private String player_screen_name;
+
     // 金币余额
     @TableField(value = "`gold_coin_balance`")
     private Double gold_coin_balance;
 
-
-
-
-
-
-
-
+    // 审核状态
+    @TableField(value = "`examine_state`")
+    private String examine_state;
 
     // 用户编号
     @TableField(value = "user_id")

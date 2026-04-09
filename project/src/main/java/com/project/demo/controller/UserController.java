@@ -5,8 +5,10 @@ import com.alibaba.fastjson.JSONObject;
 import com.project.demo.entity.AccessToken;
 import com.project.demo.entity.User;
 import com.project.demo.entity.UserGroup;
+import com.project.demo.entity.Gamer;
 import com.project.demo.service.UserGroupService;
 import com.project.demo.service.UserService;
+import com.project.demo.service.GamerService;
 
 import com.project.demo.controller.base.BaseController;
 import com.project.demo.util.RsaUtils;
@@ -41,6 +43,9 @@ public class UserController extends BaseController<User, UserService> {
 
     @Autowired
     private UserGroupService userGroupService;
+
+    @Autowired
+    private GamerService gamerService;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -450,13 +455,29 @@ public class UserController extends BaseController<User, UserService> {
 
         UserGroup userGroup = (UserGroup) groupList.get(0);
 
-        // 查询用户审核状态（如果是新用户，可能需要审核）
+        // 查询用户审核状态
         if (!StringUtils.isEmpty(userGroup.getSourceTable())) {
             String res = service.selectExamineState(userGroup.getSourceTable(), user.getUserId());
-            if (res == null && !isNewUser) {
-                return error(30000, "用户不存在");
-            }
-            if (res != null && !res.equals("已通过")) {
+
+            // 如果查询结果为 null，说明 gamer 表中没有记录，需要创建
+            if (res == null) {
+                log.warn("[微信登录] 用户 userId={} 在 gamer 表中没有记录，自动创建", user.getUserId());
+                try {
+                    Gamer gamer = new Gamer();
+                    String screenName = (user.getNickname() != null && !user.getNickname().isEmpty())
+                        ? user.getNickname() + "_" + user.getUserId()
+                        : user.getUsername() + "_" + user.getUserId();
+                    gamer.setPlayer_screen_name(screenName);
+                    gamer.setUserId(user.getUserId());
+                    gamer.setExamine_state("已通过");
+                    gamer.setGold_coin_balance(0.0);
+                    gamerService.save(gamer);
+                    log.info("[微信登录] 为用户自动创建 gamer 记录成功: userId={}, playerScreenName={}", user.getUserId(), screenName);
+                } catch (Exception e) {
+                    log.error("[微信登录] 自动创建 gamer 记录失败: userId={}, error={}", user.getUserId(), e.getMessage(), e);
+                    return error(30000, "创建游戏玩家信息失败，请联系管理员");
+                }
+            } else if (!res.equals("已通过")) {
                 return error(30000, "该用户审核未通过");
             }
         }
@@ -481,10 +502,11 @@ public class UserController extends BaseController<User, UserService> {
         // 返回用户信息
         JSONObject userJson = JSONObject.parseObject(JSONObject.toJSONString(user));
         userJson.put("token", accessToken.getToken());
+        userJson.put("isNewUser", isNewUser);
         JSONObject ret = new JSONObject();
         ret.put("obj", userJson);
-        
-        log.info("[微信登录成功] userId={}, openid={}", user.getUserId(), openid);
+
+        log.info("[微信登录成功] userId={}, openid={}, isNewUser={}", user.getUserId(), openid, isNewUser);
         return success(ret);
     }
 
