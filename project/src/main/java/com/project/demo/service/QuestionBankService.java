@@ -239,11 +239,22 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             return; // 没有获得星星，不更新
         }
 
-        // 查询或创建关卡星星记录
+        // 优先按 gamer_id + level_id + track_id 查询；如果查不到，再兜底兼容历史遗留数据
         QueryWrapper<LevelStarRecord> wrapper = new QueryWrapper<>();
         wrapper.eq("gamer_id", gamerId);
         wrapper.eq("level_id", levelId);
+        wrapper.eq("track_id", trackId);
         LevelStarRecord starRecord = levelStarRecordMapper.selectOne(wrapper);
+
+        if (starRecord == null) {
+            QueryWrapper<LevelStarRecord> legacyWrapper = new QueryWrapper<>();
+            legacyWrapper.eq("gamer_id", gamerId);
+            legacyWrapper.eq("level_id", levelId);
+            starRecord = levelStarRecordMapper.selectOne(legacyWrapper);
+            if (starRecord != null && (starRecord.getTrack_id() == null || !trackId.equals(starRecord.getTrack_id()))) {
+                starRecord.setTrack_id(trackId);
+            }
+        }
 
         java.sql.Timestamp now = new java.sql.Timestamp(System.currentTimeMillis());
 
@@ -259,29 +270,30 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             starRecord.setComplete_count(1);
             starRecord.setLast_complete_time(now);
             levelStarRecordMapper.insert(starRecord);
-            log.info("创建关卡星星记录: gamerId={}, levelId={}, stars={}, totalStars={}", 
-                    gamerId, levelId, stars, stars);
+            log.info("创建关卡星星记录: gamerId={}, levelId={}, trackId={}, stars={}, totalStars={}",
+                    gamerId, levelId, trackId, stars, stars);
         } else {
             // 更新记录：累计星星数
             int newTotalStars = (starRecord.getTotal_stars() != null ? starRecord.getTotal_stars() : 0) + stars;
+            starRecord.setTrack_id(trackId);
             starRecord.setTotal_stars(newTotalStars);
-            
+
             // 更新最佳时间
             if (answerTime != null && (starRecord.getBest_time() == null || answerTime < starRecord.getBest_time())) {
                 starRecord.setBest_time(answerTime);
             }
-            
+
             // 更新最佳星星数
             if (stars > (starRecord.getBest_stars() != null ? starRecord.getBest_stars() : 0)) {
                 starRecord.setBest_stars(stars);
             }
-            
+
             // 更新完成次数
             starRecord.setComplete_count((starRecord.getComplete_count() != null ? starRecord.getComplete_count() : 0) + 1);
             starRecord.setLast_complete_time(now);
             levelStarRecordMapper.updateById(starRecord);
-            log.info("更新关卡星星记录: gamerId={}, levelId={}, 本次获得={}, 累计总数={}", 
-                    gamerId, levelId, stars, newTotalStars);
+            log.info("更新关卡星星记录: gamerId={}, levelId={}, trackId={}, 本次获得={}, 累计总数={}",
+                    gamerId, levelId, trackId, stars, newTotalStars);
         }
 
         // 检查累计星星数是否>=20，如果是则解锁下一关
@@ -460,7 +472,52 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             JSONObject correctJson = JSON.parseObject(correctAnswer);
             JSONObject userJson = JSON.parseObject(userAnswer);
 
-            // 比较答案
+            // 第三关：绳结+装饰物（单一物品）
+            // 格式：{"decoration":"LuPi","count":5}
+            if (correctJson.containsKey("decoration") && correctJson.containsKey("count")) {
+                String correctDecoration = correctJson.getString("decoration");
+                Integer correctCount = correctJson.getInteger("count");
+                String userDecoration = userJson.getString("decoration");
+                Integer userCount = userJson.getInteger("count");
+
+                return correctDecoration != null && correctDecoration.equals(userDecoration)
+                    && correctCount != null && correctCount.equals(userCount);
+            }
+
+            // 第三关：绳结+装饰物（组合物品）
+            // 格式：{"items":[{"decoration":"LuPi","count":2},{"decoration":"YuMao","count":3}]}
+            if (correctJson.containsKey("items")) {
+                JSONArray correctItems = correctJson.getJSONArray("items");
+                JSONArray userItems = userJson.getJSONArray("items");
+
+                if (correctItems == null || userItems == null) {
+                    return false;
+                }
+
+                if (correctItems.size() != userItems.size()) {
+                    return false;
+                }
+
+                // 逐个比较每个装饰物
+                for (int i = 0; i < correctItems.size(); i++) {
+                    JSONObject correctItem = correctItems.getJSONObject(i);
+                    JSONObject userItem = userItems.getJSONObject(i);
+
+                    String correctDecoration = correctItem.getString("decoration");
+                    Integer correctCount = correctItem.getInteger("count");
+                    String userDecoration = userItem.getString("decoration");
+                    Integer userCount = userItem.getInteger("count");
+
+                    if (!correctDecoration.equals(userDecoration) || !correctCount.equals(userCount)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            // 第一关、第二关：简单数字答案
+            // 格式：{"answer":"7"}
             String correctValue = correctJson.getString("answer");
             String userValue = userJson.getString("answer");
 
@@ -480,7 +537,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             // 字符串或数字比较
             return correctValue != null && correctValue.equals(userValue);
         } catch (Exception e) {
-            log.error("答案校验失败: {}", e.getMessage());
+            log.error("答案校验失败: correctAnswer={}, userAnswer={}, error={}", correctAnswer, userAnswer, e.getMessage());
             return false;
         }
     }

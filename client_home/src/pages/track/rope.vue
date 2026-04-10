@@ -22,13 +22,13 @@
             @click="startLevel(index)"
           >
             <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
-            <text 
-              class="level-status" 
+            <text
+              class="level-status"
               :class="{
                 'status-unlocked': level.isUnlocked === 1 && level.isCompleted === 0,
                 'status-completed': level.isCompleted === 1,
                 'status-locked': level.isUnlocked === 0,
-                'status-stars': level.totalStars > 0 && (level.status.includes('星') || level.status.includes('/'))
+                'status-stars': level.status && level.status.includes('星')
               }"
             >
               {{ level.status }}
@@ -147,12 +147,36 @@ export default {
       if (!this.gamerId) {
         return;
       }
-      
+
       this.loading = true;
       try {
         const res = await getLevelProgressApi(this.gamerId, this.trackId);
         if (res.result && res.result.levels) {
-          this.levelList = res.result.levels;
+          // 统一处理关卡数据：已解锁关卡一律显示累计星数，避免出现“已解锁”文案
+          this.levelList = res.result.levels.map(level => {
+            const isUnlocked = Number(level.isUnlocked ?? level.is_unlocked ?? 0) === 1;
+            const isCompleted = Number(level.isCompleted ?? level.is_completed ?? 0) === 1;
+            const totalStarsRaw = level.totalStars ?? level.total_stars;
+            const totalStars = Number.isNaN(Number(totalStarsRaw)) ? 0 : Number(totalStarsRaw);
+
+            let status = '';
+            if (isUnlocked || isCompleted) {
+              status = `${totalStars}星`;
+            } else {
+              status = '未解锁';
+            }
+
+            return {
+              ...level,
+              isUnlocked: isUnlocked ? 1 : 0,
+              isCompleted: isCompleted ? 1 : 0,
+              totalStars,
+              status,
+            };
+          });
+
+          // 调试：打印关卡数据
+          console.log('关卡列表数据:', this.levelList);
         } else {
           uni.showToast({
             title: res.error?.message || '获取关卡进度失败',
@@ -199,11 +223,13 @@ export default {
       }
 
       console.log('关卡已解锁，准备跳转');
-      // 结绳计数第一关、第二关：跳转到专属互动页面（直接用 index 判断，避免后端字段不一致）
+      // 结绳计数第一关、第二关、第三关：跳转到专属互动页面（直接用 index 判断，避免后端字段不一致）
       if (index === 0) {
         this.$navTo(`/pagesC/rope/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 1) {
         this.$navTo(`/pagesC/rope/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 2) {
+        this.$navTo(`/pagesC/rope/level3?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else {
         // 其他关卡暂时仍然跳到通用详情页
         this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);

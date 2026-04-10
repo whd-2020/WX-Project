@@ -30,6 +30,11 @@ public class QuestionBank implements Serializable {
     @TableField(value = "`level_id`")
     private Integer level_id;
 
+    // 题目类型
+    @TableField(value = "`question_type`")
+    private String question_type;
+
+
 
     // 题目标题/描述
     @TableField(value = "`question_title`")

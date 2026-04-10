@@ -303,6 +303,7 @@ export default {
         gamerId,
         levelId,
         trackId,
+        question_type: 'rope_knot_number',
       };
 
       this.$get('/question_bank/get_level_questions', params, (json) => {
