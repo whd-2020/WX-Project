@@ -13,7 +13,7 @@
     <view class="scene">
       <!-- 左侧：族长 -->
       <view class="elder-area">
-        <view class="speech-bubble" :class="{ expanded: showFullSpeech }" @click="toggleSpeech">
+        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
         <image class="elder-img" src="/static/img/rope/LaoRen.png" mode="aspectFit" />
@@ -25,7 +25,7 @@
           <text class="child-speech-text">{{ childSpeechText }}</text>
         </view>
         <view class="child-tip" v-if="showChildTip">
-          <text class="tip-text">点击这里，来挑战吧</text>
+          <text class="tip-text">点击这里，来试试吧</text>
         </view>
         <image class="child-img" src="/static/img/rope/XiaoHai.png" mode="aspectFit" />
       </view>
@@ -34,70 +34,13 @@
     <!-- 游戏弹窗 -->
     <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
-      <!-- 装饰物选择区域（仅单一题目显示） -->
-      <view class="decoration-selector" v-if="!isComboQuestion && currentDecorations.length > 0">
-        <view class="decoration-title">选择装饰物类型：</view>
-        <view class="decoration-list">
-          <view
-            v-for="deco in currentDecorations"
-            :key="deco.type"
-            class="decoration-item"
-            :class="{ active: selectedDecoration === deco.type }"
-            @click="selectDecoration(deco.type)"
-          >
-            <text class="decoration-icon">{{ deco.icon }}</text>
-            <text class="decoration-name">{{ deco.name }}</text>
-          </view>
-        </view>
-      </view>
-
       <!-- 绳结互动区域 -->
-      <view class="rope-area" v-if="isComboQuestion">
-        <!-- 组合题目：显示多根绳子 -->
-        <view class="rope-title">
-          {{ question.title || '用不同的绳子记录不同的物品' }}
-          <br />
-          <text style="font-size: 24rpx; font-weight: 400;">
-            提示：点击绳子打结，<text style="font-weight: 700">点击绳结可以解开</text>
-          </text>
-        </view>
-        <view
-          v-for="(rope, index) in ropes"
-          :key="index"
-          class="rope-section"
-        >
-          <view class="rope-header">
-            <text class="rope-label">{{ rope.decoration ? getDecorationName(rope.decoration) : '未选择装饰物' }}</text>
-            <text class="rope-count">{{ rope.knots.length }} 个</text>
-          </view>
-          <view class="rope-wrapper" :data-index="index" @click="handleRopeClick">
-            <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
-            <view
-              v-for="knot in rope.knots"
-              :key="knot.id"
-              class="rope-knot"
-              :class="{ 'knot-animating': knot.animating }"
-              :style="{ left: knot.x + '%' }"
-            >
-              <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
-              <text class="knot-decoration">{{ getDecorationIcon(rope.decoration) }}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-      <view class="rope-area" v-else>
-        <!-- 单一题目：显示一根绳子 -->
-        <view class="rope-title">
-          {{ question.title || '点击绳子打结' }}
-          <br />
-          <text style="font-size: 24rpx; font-weight: 400;">
-            提示：点击绳子打结，<text style="font-weight: 700">点击绳结可以解开</text>
-          </text>
-        </view>
-        <view class="rope-wrapper" @click="handleSingleRopeClick">
+      <view class="rope-area">
+        <view class="rope-title">{{ question && question.questionTitle ? question.questionTitle : '点击绳子打结' }}</view>
+        <view class="rope-wrapper" @click="handleRopeClick">
           <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
           <view
-            v-for="knot in knots"
+            v-for="(knot, index) in knots"
             :key="knot.id"
             class="rope-knot"
             :class="{ 'knot-animating': knot.animating }"
@@ -113,28 +56,15 @@
         </view>
       </view>
 
-      <!-- 底部操作区 -->
+      <!-- 底部操作区：只保留提交按钮 -->
       <view class="bottom-bar">
-        <button
-          class="btn-submit"
-          type="primary"
+        <button 
+          class="btn-submit" 
+          :class="{ 'btn-disabled': !canSubmit }"
+          type="primary" 
           @click="submitAnswer"
-        >
-          提交答案
-        </button>
-      </view>
-    </view>
-
-    <!-- 答错提示弹窗 -->
-    <view class="error-modal" v-if="showErrorModal" @click.stop>
-      <view class="error-content" @click.stop>
-        <view class="error-icon">✗</view>
-        <view class="error-title">有点小问题哦～</view>
-        <view class="error-message">再想一想，你可以的！</view>
-        <view class="error-buttons">
-          <button class="error-btn retry-btn" @click="retryQuestion">重新尝试</button>
-          <button class="error-btn next-btn" @click="skipQuestion">换一题</button>
-        </view>
+          :disabled="!canSubmit"
+        >提交答案</button>
       </view>
     </view>
 
@@ -183,21 +113,13 @@ export default {
   data() {
     return {
       gamerId: null,
-      trackId: 1,
-      levelId: 3,
+      trackId: 1, // 结绳计数赛道
+      levelId: 3, // 第三关
       question: null,
-      currentQuestionId: null,
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
       typingTimer: null,
-      // 单一题目的绳结
       knots: [],
-      // 组合题目的多根绳子
-      ropes: [],
-      // 当前选中的装饰物类型
-      selectedDecoration: null,
-      // 当前题目的装饰物列表
-      currentDecorations: [],
       startTime: 0,
       elapsedSeconds: 0,
       elapsedTimer: null,
@@ -206,8 +128,6 @@ export default {
       successMessage: '',
       successStarCount: 0,
       successTime: 0,
-      // 答错弹窗相关
-      showErrorModal: false,
       // 所有题目满3星弹窗
       showAllCompleteModal: false,
       // 是否显示默认题目提示
@@ -225,9 +145,13 @@ export default {
       // 小孩提示相关
       showChildTip: false,
       childTipTimer: null,
+      // 装饰物相关
+      currentDecorations: [],
+      selectedDecoration: null,
     };
   },
   onLoad(options) {
+    // 从路由参数中接收 gamer_id / level_id / track_id（如果有）
     if (options && options.gamer_id) {
       const gid = Number(options.gamer_id);
       if (!Number.isNaN(gid) && gid > 0) {
@@ -250,15 +174,21 @@ export default {
     this.fetchQuestion();
   },
   computed: {
-    // 是否为组合题目
-    isComboQuestion() {
-      return this.question && this.question.question_type === 'rope_decoration_combo';
+    // 获取目标数字文本
+    targetNumberText() {
+      if (this.question && this.question.targetNumber) {
+        return this.question.targetNumber;
+      }
+      return '';
     },
-    // 选中装饰物的名称
-    selectedDecorationName() {
-      if (!this.selectedDecoration) return '';
-      const deco = this.currentDecorations.find(d => d.type === this.selectedDecoration);
-      return deco ? deco.name : '';
+    // 判断是否可以提交（是否达到目标结数）
+    canSubmit() {
+      if (!this.question || !this.question.targetNumber) {
+        return false;
+      }
+      const target = Number(this.question.targetNumber);
+      const current = this.knots.length;
+      return current === target;
     },
     // 选中装饰物的图标
     selectedDecorationIcon() {
@@ -272,7 +202,8 @@ export default {
     playTyping(text) {
       this.fullText = text;
       this.displayText = '';
-      this.showFullSpeech = false;
+      this.showFullSpeech = false; // 重置展开状态
+      // 重置小孩说话和提示
       this.showChildSpeech = false;
       this.showChildTip = false;
       this.childSpeechText = '';
@@ -288,6 +219,7 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
+          // 打字机效果完成后，显示小孩说话
           this.displayChildSpeech();
           return;
         }
@@ -300,11 +232,14 @@ export default {
     displayChildSpeech() {
       this.childSpeechText = '好哒爷爷~，我来试一试';
       this.showChildSpeech = true;
+      // 清除之前的提示定时器
       if (this.childTipTimer) {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
+      // 清除之前的提示显示
       this.showChildTip = false;
+      // 6秒后如果弹窗还没打开，显示提示
       this.childTipTimer = setTimeout(() => {
         if (!this.showGamePopup) {
           this.showChildTip = true;
@@ -324,113 +259,206 @@ export default {
       }, 1000);
     },
 
-    // 从后端获取题目
+    // 从后端获取本关的一道随机题（优先本地随机）
     fetchQuestion() {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.levelId);
       const trackId = Number(this.trackId);
 
+      // 前端兜底：如果参数不合法，就不用访问后端，直接给默认题
       if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
+        // 如果没拿到 gamerId，也先给一条本地题，保证可以玩
         const local = {
           question_id: 0,
-          question_type: 'rope_decoration',
-          title: '今日族长笑着对你说：今天打到了1头鹿，用绳结+鹿皮标记记录下来吧',
-          correct_answer: { decoration: 'LuPi', count: 1 },
-          decorations: [{ type: 'LuPi', name: '鹿皮', icon: '🦌' }],
+          targetNumber: 1,
+          title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
+          decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
         };
         this.question = local;
-        this.currentQuestionId = local.question_id;
-        this.currentDecorations = local.decorations;
-        this.selectedDecoration = local.decorations[0].type;
+        this.currentDecorations = local.decorations || [];
+        this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
         this.playTyping(local.title);
         return;
       }
-
-      const params = { gamerId, levelId, trackId };
+      const params = {
+        gamerId,
+        levelId,
+        trackId,
+      };
       this.$get('/question_bank/get_level_questions', params, (json) => {
-        const allThreeStars = json.result && (json.result.all_three_stars || json.result.allThreeStars);
-        if (allThreeStars) {
-          setTimeout(() => {
-            this.showAllCompleteModal = true;
-            setTimeout(() => {
-              this.goToNextLevel();
-            }, 3000);
-          }, 1000);
+        // 打印后端返回的参数
+        console.log('=== 后端返回参数 ===');
+        console.log('完整返回:', JSON.stringify(json, null, 2));
+        console.log('json.result:', json.result);
+        if (json.result) {
+          console.log('questions:', json.result.questions);
+          // 兼容两种命名方式：驼峰和下划线
+          console.log('allThreeStars (驼峰):', json.result.allThreeStars);
+          console.log('all_three_stars (下划线):', json.result.all_three_stars);
+          console.log('isCompleted (驼峰):', json.result.isCompleted);
+          console.log('is_completed (下划线):', json.result.is_completed);
+          console.log('questionCount (驼峰):', json.result.questionCount);
+          console.log('question_count (下划线):', json.result.question_count);
+          console.log('message:', json.result.message);
+        }
+        
+        // 如果后端返回错误，直接提示出来，方便排查，而不是静默用本地题
+        if (json && json.error) {
+          uni.showToast({
+            title: json.error.message || '获取题目失败',
+            icon: 'none',
+          });
           return;
         }
 
-        if (json.result && json.result.questions && json.result.questions.length > 0) {
-          const list = json.result.questions;
-          const availableList =
-            list.length > 1 ? list.filter(item => item.question_id !== this.currentQuestionId) : list;
-          const q = availableList[Math.floor(Math.random() * availableList.length)];
-
-          // 解析题目内容
-          let content = {};
-          let answer = {};
-          try {
-            content = typeof q.question_content === 'string' ? JSON.parse(q.question_content) : q.question_content;
-            answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
-          } catch (e) {
-            console.error('解析题目JSON失败', e);
-          }
-
-          this.question = {
-            question_id: q.question_id,
-            question_type: q.question_type,
-            title: content.options && content.options[0] ? content.options[0] : '请完成题目',
-            correct_answer: answer,
-            decorations: content.decorations || [],
-          };
-          this.currentQuestionId = q.question_id;
-
-          this.currentDecorations = this.question.decorations;
-
-          // 初始化绳子
-          if (this.question.question_type === 'rope_decoration_combo') {
-            // 组合题目：根据答案初始化多根绳子，每根绳子预设对应的装饰物类型
-            this.ropes = Array.isArray(answer.items)
-              ? answer.items.map(item => ({
-                  decoration: item.decoration,
-                  knots: [],
-                }))
-              : [];
-            // 默认选中第一个装饰物
-            if (this.currentDecorations.length > 0) {
-              this.selectedDecoration = this.currentDecorations[0].type;
-            }
-          } else {
-            // 单一题目：默认选中唯一的装饰物
-            this.knots = [];
-            if (this.currentDecorations.length > 0) {
-              this.selectedDecoration = this.currentDecorations[0].type;
-            }
-          }
-
-          this.playTyping(this.question.title);
+        // 检查是否所有题目都满3星（优先检查，避免显示默认题目）
+        // 兼容两种命名方式：驼峰和下划线
+        const allThreeStars = json.result && (
+          json.result.allThreeStars === true || 
+          json.result.all_three_stars === true
+        );
+        
+        console.log('判断所有题目满3星标识:', {
+          allThreeStars: allThreeStars,
+          allThreeStars_camel: json.result?.allThreeStars,
+          all_three_stars_snake: json.result?.all_three_stars
+        });
+        
+        if (allThreeStars) {
+          console.log('✅ 检测到所有题目都满3星，显示弹窗并准备跳转');
+          // 显示所有题目满3星弹窗
+          this.showAllCompleteModal = true;
+          console.log('弹窗状态 showAllCompleteModal:', this.showAllCompleteModal);
+          
+          // 3秒后自动跳转到关卡选择页面
+          setTimeout(() => {
+            console.log('3秒后自动跳转到关卡选择页面');
+            this.showAllCompleteModal = false;
+            uni.redirectTo({
+              url: '/pages/track/rope',
+              success: () => {
+                console.log('跳转成功');
+              },
+              fail: (err) => {
+                console.error('跳转失败:', err);
+              }
+            });
+          }, 3000);
+          return;
         }
+
+        // 如果题目列表为空，但不是所有题目都满3星，显示默认题目并提示
+        if (!json.result || !json.result.questions || json.result.questions.length === 0) {
+          const local = {
+            question_id: 0,
+            targetNumber: 1,
+            title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
+            decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
+          };
+          this.question = local;
+          this.currentDecorations = local.decorations || [];
+          this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
+          this.showDefaultQuestionTip = true; // 显示默认题目提示
+          
+          // 清除之前的定时器（如果存在）
+          if (this.defaultQuestionTipTimer) {
+            clearTimeout(this.defaultQuestionTipTimer);
+          }
+          
+          // 2秒后隐藏提示
+          this.defaultQuestionTipTimer = setTimeout(() => {
+            this.showDefaultQuestionTip = false;
+            this.defaultQuestionTipTimer = null;
+          }, 2000);
+          
+          this.playTyping(local.title);
+          return;
+        }
+        
+        // 有正常题目时，隐藏默认题目提示
+        this.showDefaultQuestionTip = false;
+        // 清除定时器（如果存在）
+        if (this.defaultQuestionTipTimer) {
+          clearTimeout(this.defaultQuestionTipTimer);
+          this.defaultQuestionTipTimer = null;
+        }
+        const list = json.result.questions;
+        const q = list[Math.floor(Math.random() * list.length)];
+        let target = 1;
+        let elderSpeech = '';
+        let questionTitle = '';
+        let decorations = [];
+
+        try {
+          // 解析 question_content，取出 options[0] 与 question_title 拼接
+          if (q.question_content) {
+            const content = JSON.parse(q.question_content);
+            if (content.options && Array.isArray(content.options) && content.options.length > 0) {
+              // 拼接：question_title + options[0]
+              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              // 保存 options[0] 用于弹窗标题
+              questionTitle = content.options[0];
+            }
+            // 如果 question_content 里有 targetNumber，优先用它
+            if (content.targetNumber) {
+              target = Number(content.targetNumber);
+            }
+            // 获取装饰物列表
+            if (content.decorations && Array.isArray(content.decorations)) {
+              decorations = content.decorations;
+            }
+          }
+
+          // 从 correct_answer 解析目标数字（如果 question_content 里没有 targetNumber）
+          if (target === 1 && q.correct_answer) {
+            try {
+              const answer = JSON.parse(q.correct_answer);
+              if (answer.answer) {
+                const answerNum = Number(answer.answer);
+                if (!Number.isNaN(answerNum) && answerNum > 0) {
+                  target = answerNum;
+                }
+              }
+              // 如果 correct_answer 中有 count，使用它作为目标数字
+              if (answer.count) {
+                const countNum = Number(answer.count);
+                if (!Number.isNaN(countNum) && countNum > 0) {
+                  target = countNum;
+                }
+              }
+            } catch (e) {
+              // 忽略解析错误
+            }
+          }
+        } catch (e) {
+          // 忽略解析错误，按默认处理
+        }
+
+        // 如果拼接后还是空的，用默认文案
+        if (!elderSpeech || elderSpeech.trim() === '') {
+          elderSpeech = `今日族长笑着对你说：用绳结表示数字 ${target}，你会怎么打结呢？`;
+        }
+
+        // 如果 questionTitle 为空，使用默认标题
+        if (!questionTitle || questionTitle.trim() === '') {
+          questionTitle = `点击绳子打结，表示数字${target}`;
+        }
+
+        this.question = {
+          question_id: q.question_id,
+          targetNumber: target,
+          title: elderSpeech,
+          questionTitle: questionTitle,
+          decorations: decorations,
+        };
+        this.currentDecorations = decorations;
+        this.selectedDecoration = decorations.length > 0 ? decorations[0].type : null;
+        this.playTyping(this.question.title);
       });
     },
 
-    // 选择装饰物
-    selectDecoration(type) {
-      this.selectedDecoration = type;
-    },
-
-    // 获取装饰物名称
-    getDecorationName(type) {
-      const deco = this.currentDecorations.find(d => d.type === type);
-      return deco ? deco.name : '';
-    },
-
-    // 获取装饰物图标
-    getDecorationIcon(type) {
-      const deco = this.currentDecorations.find(d => d.type === type);
-      return deco ? deco.icon : '';
-    },
-
-    // 计算点击位置（参考第二关）
-    computeClickPercent(e, callback) {
+    // 点击绳子：如果附近已有绳结则"解结"，否则新增一个绳结
+    handleRopeClick(e) {
       const query = uni.createSelectorQuery().in(this);
       query
         .select('.rope-wrapper')
@@ -441,194 +469,195 @@ export default {
           if (rect.width > 0) {
             percent = (x / rect.width) * 100;
           }
+          // 限制在 5% ~ 95% 之间，避免太靠边
           percent = Math.max(5, Math.min(95, percent));
-          callback(percent);
+
+          // 查找距离点击位置很近的结（±5%），有的话移除这个结
+          const threshold = 5;
+          const idx = this.knots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+          if (idx !== -1) {
+            // 解结
+            this.knots.splice(idx, 1);
+          } else if (this.knots.length < 9) {
+            // 打结（最多 9 个绳结）：添加绳结并触发出现动画
+            const newKnot = {
+              id: Date.now() + '_' + this.knots.length,
+              x: percent,
+              animating: true,
+            };
+            this.knots.push(newKnot);
+            // 动画结束后移除 animating 标记
+            setTimeout(() => {
+              const idx = this.knots.findIndex((k) => k.id === newKnot.id);
+              if (idx !== -1) {
+                this.$set(this.knots[idx], 'animating', false);
+              }
+            }, 400);
+          }
         })
         .exec();
     },
 
-    // 单一题目：点击绳子打结或解结
-    handleSingleRopeClick(e) {
-      if (!this.selectedDecoration) {
-        uni.showToast({ title: '请先选择装饰物', icon: 'none' });
-        return;
-      }
-
-      this.computeClickPercent(e, (percent) => {
-        const threshold = 5;
-        // 先看附近有没有绳结，有就解结
-        const idx = this.knots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
-        if (idx !== -1) {
-          this.knots.splice(idx, 1);
-          return;
-        }
-        // 否则新增一个绳结
-        const newKnot = {
-          id: Date.now() + '_' + this.knots.length,
-          x: percent,
-          animating: true,
-        };
-        this.knots.push(newKnot);
-        setTimeout(() => {
-          const idx2 = this.knots.findIndex((k) => k.id === newKnot.id);
-          if (idx2 !== -1) {
-            this.$set(this.knots[idx2], 'animating', false);
-          }
-        }, 300);
-      });
-    },
-
-    // 组合题目：点击某根绳子打结或解结
-    handleRopeClick(e) {
-      // 从事件中获取绳子索引
-      const ropeIndex = e.currentTarget.dataset.index;
-      if (ropeIndex === undefined) return;
-
-      const rope = this.ropes[ropeIndex];
-      if (!rope.decoration) {
-        uni.showToast({ title: '绳子装饰物未设置', icon: 'none' });
-        return;
-      }
-
-      this.computeClickPercent(e, (percent) => {
-        const threshold = 5;
-        // 先看附近有没有绳结，有就解结
-        const idx = rope.knots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
-        if (idx !== -1) {
-          rope.knots.splice(idx, 1);
-          return;
-        }
-        // 否则新增一个绳结
-        const newKnot = {
-          id: Date.now() + '_' + rope.knots.length,
-          x: percent,
-          animating: true,
-        };
-        rope.knots.push(newKnot);
-        setTimeout(() => {
-          const idx2 = rope.knots.findIndex((k) => k.id === newKnot.id);
-          if (idx2 !== -1) {
-            this.$set(rope.knots[idx2], 'animating', false);
-          }
-        }, 300);
-      });
-    },
-
-    // 提交答案
+    // 提交答案：前端先根据绳结数量判断，再调用后端记录
     submitAnswer() {
-      const actualTime = Math.round((Date.now() - this.startTime) / 1000);
+      if (!this.question) return;
+      // 如果未达到目标结数，不允许提交
+      if (!this.canSubmit) return;
+      const count = this.knots.length;
+      const target = Number(this.question.targetNumber || 0);
 
-      let userAnswer;
-      if (this.isComboQuestion) {
-        userAnswer = {
-          items: this.ropes.map(rope => ({
-            decoration: rope.decoration,
-            count: rope.knots.length,
-          })),
-        };
-      } else {
-        userAnswer = {
-          decoration: this.selectedDecoration,
-          count: this.knots.length,
-        };
+      const isCorrectFront = count === target;
+
+      const usedTime = (Date.now() - this.startTime) / 1000.0;
+      const stars = this.calculateStars(isCorrectFront, usedTime);
+
+      if (!this.gamerId || !this.question.question_id) {
+        // 没有 gamerId 或题目ID，使用前端判断
+        if (isCorrectFront) {
+          // 答对了：显示弹窗
+          const actualTime = usedTime;
+          let encouragement = '';
+          if (stars === 3) {
+            encouragement = '太厉害了！1分钟内完成，获得3颗星！';
+          } else if (stars === 2) {
+            encouragement = '不错！1分半内完成，获得2颗星！';
+          } else if (stars === 1) {
+            encouragement = '很好！2分钟内完成，获得1颗星！';
+          } else {
+            encouragement = '答对了！继续努力，争取获得更多星星！';
+          }
+          
+          // 关闭游戏弹窗
+          this.showGamePopup = false;
+          this.successMessage = encouragement;
+          this.successStarCount = stars;
+          this.successTime = Math.round(actualTime);
+          this.showSuccessModal = true;
+          this.$forceUpdate();
+        } else {
+          // 答错了：显示提示
+          uni.showToast({
+            title: '再试试，多打几个结～',
+            icon: 'none',
+          });
+        }
+        return;
       }
 
-      const params = {
+      // 调用后端提交答案（使用JSON格式：{"answer":"7"}）
+      const body = {
         gamerId: this.gamerId,
         questionId: this.question.question_id,
-        trackId: this.trackId,
         levelId: this.levelId,
-        userAnswer: JSON.stringify(userAnswer),
-        answerTime: actualTime,
+        trackId: this.trackId,
+        userAnswer: JSON.stringify({ answer: String(count) }),
+        answerTime: usedTime,
       };
 
-      this.$post('/question_bank/submit_answer', params, (json) => {
+      this.$post('/question_bank/submit_answer', body, (res) => {
+        // 调试：打印完整返回结果
+        console.log('=== 提交答案返回结果 ===');
+        console.log('完整 res:', JSON.stringify(res, null, 2));
+        console.log('res.result:', res.result);
+        console.log('res.result?.isCorrect:', res.result?.isCorrect);
+        console.log('res.result?.is_correct:', res.result?.is_correct);
+        console.log('res.result?.isCorrect 类型:', typeof res.result?.isCorrect);
+
+        // 信任后端的判断结果（使用更宽松的判断，兼容多种格式）
         let isCorrect = false;
-        if (json && json.result) {
-          const result = json.result;
-          const isCorrectValue = result.isCorrect !== undefined ? result.isCorrect : result.is_correct;
+        if (res && res.result) {
+          const result = res.result;
+          // 优先检查下划线格式（is_correct），再检查驼峰格式（isCorrect）
+          const isCorrectValue = result.is_correct !== undefined ? result.is_correct : result.isCorrect;
+
+          // 判断是否为 true（兼容布尔值、数字、字符串）
           if (isCorrectValue === true || isCorrectValue === 1 || isCorrectValue === '1' || isCorrectValue === 'true') {
             isCorrect = true;
           } else if (isCorrectValue === false || isCorrectValue === 0 || isCorrectValue === '0' || isCorrectValue === 'false') {
             isCorrect = false;
           } else if (isCorrectValue != null) {
+            // 其他情况，转换为布尔值
             isCorrect = Boolean(isCorrectValue);
           }
         }
-
+        
+        console.log('最终判断 isCorrect:', isCorrect);
+        console.log('提交时的 usedTime:', usedTime);
+        console.log('当前 elapsedSeconds:', this.elapsedSeconds);
+        
         if (isCorrect) {
+          // 答对了：重新计算用时（使用实际经过的秒数，更准确）
+          // 注意：elapsedSeconds 是整数秒，usedTime 是精确的秒数（带小数）
+          const actualTime = usedTime; // 使用提交时的精确时间
+          console.log('实际用时 actualTime:', actualTime, '秒');
+          console.log('elapsedSeconds:', this.elapsedSeconds);
+          
+          // 根据用时计算星级并显示鼓励语
           const starCount = this.calculateStars(true, actualTime);
-
+          console.log('计算出的星级 starCount:', starCount, '（用时:', actualTime, '秒）');
+          
           let encouragement = '';
           if (starCount === 3) {
             encouragement = '太厉害了！1分钟内完成，获得3颗星！';
           } else if (starCount === 2) {
-            encouragement = '不错！2分钟内完成，获得2颗星！';
+            encouragement = '不错！1分半内完成，获得2颗星！';
           } else if (starCount === 1) {
-            encouragement = '很好！完成了题目，获得1颗星！';
+            encouragement = '很好！2分钟内完成，获得1颗星！';
           } else {
             encouragement = '答对了！继续努力，争取获得更多星星！';
           }
-
+          
+          console.log('显示的鼓励语:', encouragement);
+          console.log('星级数量:', starCount);
+          console.log('用时:', Math.round(actualTime));
+          
+          // 关闭游戏弹窗
           this.showGamePopup = false;
+          // 显示自定义成功弹窗
           this.successMessage = encouragement;
           this.successStarCount = starCount;
           this.successTime = Math.round(actualTime);
           this.showSuccessModal = true;
+          
+          console.log('弹窗数据设置完成:', {
+            showSuccessModal: this.showSuccessModal,
+            successMessage: this.successMessage,
+            successStarCount: this.successStarCount,
+            successTime: this.successTime
+          });
+          
+          // 强制更新视图
+          this.$forceUpdate();
         } else {
-          // 答错了：显示错误弹窗
-          this.showErrorModal = true;
+          // 答错了：显示提示
+          uni.showToast({
+            title: '有点小问题，再想一想～',
+            icon: 'none',
+          });
         }
       });
     },
 
-    // 重新尝试（清空绳结，重新开始）
-    retryQuestion() {
-      this.showErrorModal = false;
-      // 清空绳结
-      if (this.isComboQuestion) {
-        this.ropes.forEach(rope => {
-          rope.knots = [];
-        });
-      } else {
-        this.knots = [];
-      }
-      // 重置计时器
-      this.resetTimer();
-    },
-
-    // 换一题
-    skipQuestion() {
-      this.showErrorModal = false;
-      // 先关闭游戏弹窗，再加载新题目
-      this.showGamePopup = false;
-      // 清空当前题目数据
-      this.knots = [];
-      this.ropes = [];
-      this.selectedDecoration = null;
-      this.currentDecorations = [];
-      this.resetTimer();
-      this.showFullSpeech = false;
-      this.showChildSpeech = false;
-      this.showChildTip = false;
-      this.childSpeechText = '';
-      if (this.childTipTimer) {
-        clearTimeout(this.childTipTimer);
-        this.childTipTimer = null;
-      }
-      // 重新获取题目
-      this.fetchQuestion();
-    },
-
-    // 计算星级
+    // 根据是否答对 + 用时计算星级
+    // 规则：≤60秒=3颗星，≤120秒=2颗星，>120秒=1颗星
     calculateStars(isCorrect, usedTime) {
-      if (!isCorrect) return 0;
-      if (usedTime <= 60) return 3;
-      if (usedTime <= 120) return 2;
-      return 1;
+      console.log('calculateStars 调用: isCorrect=', isCorrect, 'usedTime=', usedTime);
+      if (!isCorrect) {
+        console.log('答错了，返回0颗星');
+        return 0;
+      }
+      if (usedTime <= 60) {
+        console.log('用时≤60秒，返回3颗星');
+        return 3;
+      } else if (usedTime <= 120) {
+        console.log('用时≤120秒，返回2颗星');
+        return 2;
+      }
+      console.log('用时>120秒，返回1颗星');
+      return 1; // 超过2分钟
     },
 
-    // 格式化时间显示
+    // 格式化时间显示（超过60秒显示为分钟+秒）
     formatTime(seconds) {
       if (seconds < 60) {
         return `${seconds} 秒`;
@@ -644,6 +673,7 @@ export default {
     // 关闭成功弹窗并刷新题目
     closeSuccessModal() {
       this.showSuccessModal = false;
+      // 关闭后自动刷新题目
       this.startNextQuestion();
     },
 
@@ -655,18 +685,19 @@ export default {
     // 前往下一关
     goToNextLevel() {
       this.showAllCompleteModal = false;
-      uni.navigateBack({ delta: 1 });
+      // 返回关卡列表页
+      uni.navigateBack({
+        delta: 1
+      });
     },
 
-    // 切到下一题
+    // 切到下一题：清空绳结、重置计时器并重新拉题
     startNextQuestion() {
       this.knots = [];
-      this.ropes = [];
-      this.selectedDecoration = null;
-      this.currentDecorations = [];
       this.resetTimer();
-      this.showFullSpeech = false;
-      this.showGamePopup = false;
+      this.showFullSpeech = false; // 重置展开状态
+      this.showGamePopup = false; // 关闭游戏弹窗
+      // 重置小孩说话和提示
       this.showChildSpeech = false;
       this.showChildTip = false;
       this.childSpeechText = '';
@@ -685,6 +716,7 @@ export default {
     // 打开游戏弹窗
     openGamePopup() {
       this.showGamePopup = true;
+      // 关闭小孩提示
       this.showChildTip = false;
       if (this.childTipTimer) {
         clearTimeout(this.childTipTimer);
@@ -737,6 +769,7 @@ export default {
   object-fit: cover;
 }
 
+/* 默认题目提示样式 */
 .default-question-tip {
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   padding: 20rpx 30rpx;
@@ -862,14 +895,29 @@ export default {
   margin-bottom: 20rpx;
   margin-right: 10rpx;
   padding: 20rpx 24rpx;
-  background: linear-gradient(135deg, #a8e6cf 0%, #7fcdbb 100%);
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
   border-radius: 24rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 24rpx;
   color: #333;
   max-width: 300rpx;
   position: relative;
   z-index: 3;
+  animation: fadeInUp 0.3s ease;
+}
+
+.child-speech-bubble::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  bottom: auto;
+  right: 40rpx;
+  width: 0;
+  height: 0;
+  border-left: 14rpx solid transparent;
+  border-right: 14rpx solid transparent;
+  border-top: 14rpx solid #90caf9;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
 }
 
 .child-speech-text {
@@ -879,16 +927,32 @@ export default {
 
 .child-tip {
   position: absolute;
-  top: -60rpx;
+  top: -80rpx;
   right: 0;
-  background: rgba(255, 152, 0, 0.95);
-  color: #fff;
   padding: 12rpx 20rpx;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   border-radius: 20rpx;
-  font-size: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.4);
+  z-index: 4;
+  animation: bounce 1s ease infinite;
+}
+
+.child-tip .tip-text {
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 600;
   white-space: nowrap;
-  animation: bounce 1s infinite;
-  box-shadow: 0 4rpx 12rpx rgba(255, 152, 0, 0.4);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes bounce {
@@ -900,166 +964,65 @@ export default {
   }
 }
 
-/* 弹窗样式 */
-.popup-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 100;
-}
-
-.game-popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 700rpx;
-  max-height: 80vh;
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 40rpx;
-  z-index: 101;
-  overflow-y: auto;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
-}
-
-/* 装饰物选择器 */
-.decoration-selector {
-  margin-bottom: 30rpx;
-}
-
-.decoration-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20rpx;
-}
-
-.decoration-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-}
-
-.decoration-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20rpx;
-  border: 2rpx solid #ddd;
-  border-radius: 16rpx;
-  background: #f9f9f9;
-  cursor: pointer;
-  transition: all 0.3s;
-  min-width: 120rpx;
-}
-
-.decoration-item.active {
-  border-color: #ffc107;
-  background: #fff9e6;
-  box-shadow: 0 4rpx 12rpx rgba(255, 193, 7, 0.3);
-}
-
-.decoration-icon {
-  font-size: 48rpx;
-  margin-bottom: 8rpx;
-}
-
-.decoration-name {
-  font-size: 24rpx;
-  color: #666;
-}
-
-/* 绳结区域 */
 .rope-area {
-  margin-bottom: 30rpx;
+  margin: 0;
+  padding: 28rpx 0 16rpx;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  position: relative;
+  z-index: 1;
+  border: none;
 }
 
 .rope-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #333;
+  font-size: 30rpx;
+  color: #2c2c2c;
   margin-bottom: 20rpx;
+  padding: 0 40rpx;
+  font-weight: 700;
   text-align: center;
-}
-
-.rope-section {
-  margin-bottom: 30rpx;
-  padding: 20rpx;
-  background: #f5f5f5;
-  border-radius: 16rpx;
-}
-
-.rope-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15rpx;
-}
-
-.rope-label {
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #333;
-}
-
-.rope-count {
-  font-size: 24rpx;
-  color: #666;
+  text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.9);
+  letter-spacing: 1rpx;
+  -webkit-font-smoothing: antialiased;
 }
 
 .rope-wrapper {
   position: relative;
   width: 100%;
   height: 120rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin: 10rpx 0;
   cursor: pointer;
+  /* 与按钮同宽：game-popup 内容区 520rpx */
 }
 
 .rope-image {
+  position: absolute;
+  left: 0;
+  top: 50%;
   width: 100%;
-  height: auto;
+  height: 50rpx;
+  transform: translateY(-50%);
+  object-fit: contain;
+  object-position: center;
 }
 
+/* 绳结与绳子精确对齐：使用相同垂直参考线，微调上移贴合绳子 */
 .rope-knot {
   position: absolute;
   top: 50%;
   left: 0;
-  width: 15%;
-  min-width: 80rpx;
-  max-width: 110rpx;
-  height: 100rpx;
-  transform: translate(-50%, calc(-50% - 18rpx));
+  width: 12%;
+  min-width: 64rpx;
+  max-width: 88rpx;
+  height: 80rpx;
+  transform: translate(-50%, calc(-50% - 14rpx));
   transform-origin: center center;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
   pointer-events: none;
-}
-
-.knot-animating {
-  animation: knotAppear 0.3s ease;
-}
-
-@keyframes knotAppear {
-  0% {
-    transform: translate(-50%, calc(-50% - 18rpx)) scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: translate(-50%, calc(-50% - 18rpx)) scale(1.2);
-  }
-  100% {
-    transform: translate(-50%, calc(-50% - 18rpx)) scale(1);
-    opacity: 1;
-  }
 }
 
 .knot-image {
@@ -1077,226 +1040,302 @@ export default {
   filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.2));
 }
 
+/* 绳结出现动画：从小到大的打结过程（.knot-image 的 transform 独立于 .rope-knot） */
+.rope-knot.knot-animating .knot-image {
+  animation: knotTieIn 0.4s ease-out forwards;
+}
+
+@keyframes knotTieIn {
+  0% {
+    transform: rotate(90deg) scale(0.2);
+    opacity: 0;
+  }
+  50% {
+    transform: rotate(90deg) scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(90deg) scale(1);
+    opacity: 1;
+  }
+}
+
 .rope-info {
+  margin-top: 10rpx;
+  padding: 0 40rpx;
+  font-size: 26rpx;
+  color: #2c2c2c;
+  font-weight: 600;
+  text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
+  -webkit-font-smoothing: antialiased;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20rpx;
-  font-size: 24rpx;
-  color: #666;
+  gap: 20rpx; /* 两个文本之间的间距 */
 }
 
-.time-text {
-  color: #ff9800;
-  font-weight: 600;
+.rope-info .time-text {
+  margin-left: auto; /* 确保用时文本靠右 */
 }
 
-/* 底部操作栏 */
 .bottom-bar {
+  margin: 20rpx 0 0;
   display: flex;
-  justify-content: center;
-  gap: 20rpx;
-  margin-top: 30rpx;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.btn-reset {
+  flex: 1;
+  margin: 0 10rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  background: #f5f5f5;
+  color: #666;
 }
 
 .btn-submit {
   flex: 1;
+  margin: 0;
   height: 80rpx;
   line-height: 80rpx;
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-  color: #fff;
-  border: none;
   border-radius: 40rpx;
   font-size: 28rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(255, 152, 0, 0.3);
+  border: none;
+  /* 醒目的橙色 */
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 50%, #ff5722 100%);
+  color: #fff;
+  box-shadow: 0 6rpx 20rpx rgba(255, 107, 53, 0.4);
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.btn-disabled {
-  background: #ccc;
-  box-shadow: none;
+/* hover效果 - 轻微缩放和阴影变化 */
+.btn-submit:not(.btn-disabled):hover {
+  transform: scale(1.05);
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 53, 0.5);
 }
 
-/* 成功弹窗 */
+/* 点击效果 - 轻微缩放和阴影变化 */
+.btn-submit:not(.btn-disabled):active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 53, 0.3);
+}
+
+/* 禁用状态 - 半透明 */
+.btn-submit.btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: scale(1);
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 53, 0.2);
+}
+
+.btn-submit.btn-disabled:hover {
+  transform: scale(1);
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 53, 0.2);
+}
+
+/* 成功弹窗样式 */
 .success-modal {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 200;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
-  width: 80%;
-  max-width: 500rpx;
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 60rpx 40rpx 40rpx;
-  text-align: center;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+  width: 640rpx;
+  max-width: 90%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 40rpx;
+  padding: 80rpx 50rpx 60rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-icon {
-  width: 100rpx;
-  height: 100rpx;
-  line-height: 100rpx;
-  margin: 0 auto 30rpx;
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  color: #fff;
-  font-size: 60rpx;
+  width: 140rpx;
+  height: 140rpx;
+  background: #fff;
   border-radius: 50%;
-  box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 100rpx;
+  color: #4caf50;
+  font-weight: bold;
+  margin-bottom: 40rpx;
+  box-shadow: 0 8rpx 24rpx rgba(76, 175, 80, 0.4);
+  line-height: 1;
 }
 
 .modal-title {
-  font-size: 32rpx;
+  font-size: 36rpx;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 30rpx;
+  color: #fff;
+  text-align: center;
+  line-height: 1.8;
+  margin-bottom: 50rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+  padding: 0 20rpx;
+  word-break: break-all;
 }
 
 .modal-stars {
   display: flex;
+  gap: 30rpx;
+  margin-bottom: 40rpx;
+  align-items: center;
   justify-content: center;
-  gap: 10rpx;
-  margin-bottom: 20rpx;
 }
 
 .star {
-  font-size: 48rpx;
-  opacity: 0.3;
-  transition: all 0.3s;
+  font-size: 60rpx;
+  opacity: 0.25;
+  transition: all 0.4s ease;
+  color: #ffd700;
+  filter: grayscale(0.8);
 }
 
 .star-active {
   opacity: 1;
-  animation: starShine 0.5s ease;
+  transform: scale(1.3);
+  color: #ffd700;
+  filter: drop-shadow(0 6rpx 12rpx rgba(255, 215, 0, 0.8)) grayscale(0);
+  animation: starPulse 0.6s ease;
 }
 
-@keyframes starShine {
-  0%, 100% {
+@keyframes starPulse {
+  0% {
     transform: scale(1);
   }
   50% {
-    transform: scale(1.2);
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1.3);
   }
 }
 
 .modal-time {
-  font-size: 24rpx;
-  color: #666;
-  margin-bottom: 30rpx;
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 50rpx;
+  font-weight: 500;
 }
 
 .modal-btn {
   width: 100%;
-  height: 80rpx;
-  line-height: 80rpx;
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-  color: #fff;
-  border: none;
-  border-radius: 40rpx;
-  font-size: 28rpx;
+  height: 88rpx;
+  background: #fff;
+  color: #667eea;
+  border-radius: 44rpx;
+  font-size: 32rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(255, 152, 0, 0.3);
-}
-
-.all-complete-content .modal-icon {
-  background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
-  font-size: 60rpx;
-}
-
-.modal-desc {
-  font-size: 26rpx;
-  color: #666;
-  margin-bottom: 20rpx;
-}
-
-.modal-tip {
-  font-size: 24rpx;
-  color: #999;
-}
-
-/* 答错弹窗样式 */
-.error-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 300;
 }
 
-.error-content {
-  width: 80%;
-  max-width: 500rpx;
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 60rpx 40rpx 40rpx;
-  text-align: center;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+.modal-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
 }
 
-.error-icon {
-  width: 100rpx;
-  height: 100rpx;
-  line-height: 100rpx;
-  margin: 0 auto 30rpx;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: #fff;
-  font-size: 60rpx;
-  border-radius: 50%;
-  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.3);
+/* 所有题目满3星弹窗特殊样式 */
+.all-complete-content {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
-.error-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20rpx;
+.all-complete-content .modal-icon {
+  font-size: 120rpx;
+  color: #ffd700;
 }
 
-.error-message {
-  font-size: 26rpx;
-  color: #666;
-  margin-bottom: 40rpx;
-}
-
-.error-buttons {
-  display: flex;
-  gap: 20rpx;
-  justify-content: center;
-}
-
-.error-btn {
-  flex: 1;
-  height: 80rpx;
-  line-height: 80rpx;
-  border: none;
-  border-radius: 40rpx;
+.all-complete-content .modal-desc {
   font-size: 28rpx;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 30rpx;
+  font-weight: 500;
 }
 
-.retry-btn {
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
+.all-complete-content .modal-tip {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  font-weight: 400;
 }
 
-.next-btn {
-  background: linear-gradient(135deg, #2196f3 0%, #42a5f5 100%);
-  color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(33, 150, 243, 0.3);
+/* 游戏弹窗遮罩层 */
+.popup-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 998;
+}
+
+/* 游戏弹窗 */
+.game-popup {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999; /* 比绳子层级高 */
+  
+  width: 600rpx;
+  padding: 40rpx;
+  border-radius: 24rpx;
+  
+  /* 核心：磨砂玻璃背景 - 降低模糊，提高背景不透明度 */
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10rpx);
+  -webkit-backdrop-filter: blur(10rpx);
+  
+  border: 1rpx solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+  position: relative;
 }
 </style>
 

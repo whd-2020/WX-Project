@@ -157,9 +157,10 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             }
         }
 
-        // 2. 抽取新的题目：先查出本关卡所有可用题目
+        // 2. 抽取新的题目：优先按 game_levels_id 查题库；如果查不到，再按当前关卡在赛道内的 level_order 兜底
+        Integer effectiveQuestionLevelId = resolveQuestionBankLevelId(levelId, trackId);
         QueryWrapper<QuestionBank> questionWrapper = new QueryWrapper<>();
-        questionWrapper.eq("level_id", levelId);
+        questionWrapper.eq("level_id", effectiveQuestionLevelId);
         questionWrapper.eq("track_id", trackId);
         questionWrapper.eq("is_enabled", 1);
         questionWrapper.orderByAsc("sort_order");
@@ -366,12 +367,37 @@ public class QuestionBankService extends BaseService<QuestionBank> {
     }
 
     /**
+     * 解析题库使用的关卡ID。
+     *
+     * 优先直接按 game_levels_id 查题；如果当前数据库里的题库 level_id 录入的是“第几关(level_order)”，
+     * 则在查不到时自动回退到当前关卡在所属赛道中的 level_order，兼容历史错位数据。
+     */
+    private Integer resolveQuestionBankLevelId(Integer levelId, Integer trackId) {
+        if (levelId == null || levelId <= 0 || trackId == null || trackId <= 0) {
+            return levelId;
+        }
+
+        QueryWrapper<QuestionBank> directWrapper = new QueryWrapper<>();
+        directWrapper.eq("level_id", levelId);
+        directWrapper.eq("track_id", trackId);
+        directWrapper.eq("is_enabled", 1);
+        int count = questionBankMapper.selectCount(directWrapper);
+        
+        if (count == 0) {
+            log.error("关卡题库配置缺失: levelId={}, trackId={}, 请检查 question_bank 表中是否有对应题目", levelId, trackId);
+        }
+
+        return levelId;
+    }
+
+    /**
      * 检查题目是否已答完
      * @param gamerId 玩家ID
      * @param levelId 关卡ID
+     * @param trackId 赛道ID
      * @return true-已答完，false-未答完
      */
-    public boolean isLevelCompleted(Integer gamerId, Integer levelId) {
+    public boolean isLevelCompleted(Integer gamerId, Integer levelId, Integer trackId) {
         ValidationResult validation = new ValidationResult();
         if (gamerId == null || gamerId <= 0) {
             validation.addError("玩家ID不能为空且必须大于0");
@@ -382,20 +408,30 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         if (!validation.isValid()) {
             throw new IllegalArgumentException(validation.getErrorMessage());
         }
-        // 查询该关卡所有题目
+
+        Integer effectiveQuestionLevelId = resolveQuestionBankLevelId(levelId, trackId);
+
         QueryWrapper<QuestionBank> questionWrapper = new QueryWrapper<>();
-        questionWrapper.eq("level_id", levelId);
+        questionWrapper.eq("level_id", effectiveQuestionLevelId);
+        questionWrapper.eq("track_id", trackId);
         questionWrapper.eq("is_enabled", 1);
         int totalQuestions = questionBankMapper.selectCount(questionWrapper);
 
-        // 查询玩家已答对的题目数
+        // 统计该玩家在本关卡答对的不同题目数量（去重）
+        // 注意：同一道题可能答多次，只要有一次答对就算
         QueryWrapper<PlayerQuestionRecord> recordWrapper = new QueryWrapper<>();
         recordWrapper.eq("gamer_id", gamerId);
         recordWrapper.eq("level_id", levelId);
+        recordWrapper.eq("track_id", trackId);
         recordWrapper.eq("is_correct", 1);
-        int correctCount = playerQuestionRecordMapper.selectCount(recordWrapper);
+        recordWrapper.select("DISTINCT question_id");
+        List<PlayerQuestionRecord> distinctRecords = playerQuestionRecordMapper.selectList(recordWrapper);
+        int correctCount = distinctRecords.size();
 
-        return correctCount >= totalQuestions;
+        log.debug("关卡完成度检查: levelId={}, trackId={}, totalQuestions={}, correctCount={}",
+                levelId, trackId, totalQuestions, correctCount);
+
+        return totalQuestions > 0 && correctCount >= totalQuestions;
     }
 
     /**
@@ -405,8 +441,9 @@ public class QuestionBankService extends BaseService<QuestionBank> {
      * @return 题目总数
      */
     public int getLevelQuestionCount(Integer levelId, Integer trackId) {
+        Integer effectiveQuestionLevelId = resolveQuestionBankLevelId(levelId, trackId);
         QueryWrapper<QuestionBank> questionWrapper = new QueryWrapper<>();
-        questionWrapper.eq("level_id", levelId);
+        questionWrapper.eq("level_id", effectiveQuestionLevelId);
         questionWrapper.eq("track_id", trackId);
         questionWrapper.eq("is_enabled", 1);
         return questionBankMapper.selectCount(questionWrapper);
@@ -474,9 +511,24 @@ public class QuestionBankService extends BaseService<QuestionBank> {
 
             // 第三关：绳结+装饰物（单一物品）
             // 格式：{"decoration":"LuPi","count":5}
+            // 兼容前端简化格式：{"answer":"5"}（只比较数量）
             if (correctJson.containsKey("decoration") && correctJson.containsKey("count")) {
-                String correctDecoration = correctJson.getString("decoration");
                 Integer correctCount = correctJson.getInteger("count");
+
+                // 如果用户提交的是简化格式 {"answer":"2"}，只比较数量
+                if (userJson.containsKey("answer") && !userJson.containsKey("decoration")) {
+                    String userAnswerStr = userJson.getString("answer");
+                    try {
+                        Integer userCount = Integer.parseInt(userAnswerStr);
+                        return correctCount != null && correctCount.equals(userCount);
+                    } catch (NumberFormatException e) {
+                        log.warn("用户答案格式错误: userAnswer={}", userAnswer);
+                        return false;
+                    }
+                }
+
+                // 如果用户提交的是完整格式 {"decoration":"YuGu","count":2}，比较装饰物和数量
+                String correctDecoration = correctJson.getString("decoration");
                 String userDecoration = userJson.getString("decoration");
                 Integer userCount = userJson.getInteger("count");
 

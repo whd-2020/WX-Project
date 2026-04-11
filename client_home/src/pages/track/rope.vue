@@ -2,9 +2,9 @@
   <view class="track-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
     <tn-nav-bar>结绳计数</tn-nav-bar>
     <view class="track-content">
-      <image 
-        class="track-bg" 
-        src="/static/images/games/knot_counting.png" 
+      <image
+        class="track-bg"
+        src="/static/images/games/knot_counting.png"
         mode="aspectFill"
       />
       <view class="track-info">
@@ -14,11 +14,11 @@
           <view class="loading-text">加载中...</view>
         </view>
         <view class="track-levels" v-else>
-          <view 
-            class="level-item" 
+          <view
+            class="level-item"
             :class="{ 'level-locked': level.isUnlocked === 0 }"
-            v-for="(level, index) in levelList" 
-            :key="level.levelId || index" 
+            v-for="(level, index) in levelList"
+            :key="level.levelId || index"
             @click="startLevel(index)"
           >
             <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
@@ -83,11 +83,11 @@ export default {
         }, 1500);
         return;
       }
-      
+
       // 从store中获取用户信息
       const userInfo = this.userInfo || {};
       const userId = userInfo.user_id;
-      
+
       if (!userId) {
         uni.showToast({
           title: '请先登录',
@@ -100,7 +100,7 @@ export default {
         }, 1500);
         return;
       }
-      
+
       // 通过 user_id 查询 gamer 信息
       this.$get('/gamer/get_obj', { user_id: userId }, (json) => {
         // 兼容后端返回结构：result.obj 或 直接 result
@@ -139,7 +139,7 @@ export default {
         }
       });
     },
-    
+
     /**
      * 加载关卡进度
      */
@@ -152,25 +152,48 @@ export default {
       try {
         const res = await getLevelProgressApi(this.gamerId, this.trackId);
         if (res.result && res.result.levels) {
-          // 统一处理关卡数据：已解锁关卡一律显示累计星数，避免出现“已解锁”文案
-          this.levelList = res.result.levels.map(level => {
-            const isUnlocked = Number(level.isUnlocked ?? level.is_unlocked ?? 0) === 1;
+          // 第一次遍历：收集所有关卡的基础数据
+          const tempList = res.result.levels.map((level) => {
             const isCompleted = Number(level.isCompleted ?? level.is_completed ?? 0) === 1;
             const totalStarsRaw = level.totalStars ?? level.total_stars;
             const totalStars = Number.isNaN(Number(totalStarsRaw)) ? 0 : Number(totalStarsRaw);
 
+            return {
+              ...level,
+              isCompleted: isCompleted ? 1 : 0,
+              totalStars,
+            };
+          });
+
+          // 第二次遍历：根据解锁规则设置每个关卡的解锁状态
+          this.levelList = tempList.map((level, index) => {
+            let shouldUnlock = false;
+
+            // 第一关：默认解锁
+            if (index === 0) {
+              shouldUnlock = true;
+            }
+            // 第二关：第一关得星数 >= 9 才解锁
+            else if (index === 1) {
+              const level1Stars = tempList[0].totalStars;
+              shouldUnlock = level1Stars >= 9;
+            }
+            // 第三关及以后：上一个关卡得星数 > 20 才解锁
+            else if (index > 1) {
+              const prevStars = tempList[index - 1].totalStars;
+              shouldUnlock = prevStars > 20;
+            }
+
             let status = '';
-            if (isUnlocked || isCompleted) {
-              status = `${totalStars}星`;
+            if (shouldUnlock) {
+              status = `${level.totalStars}星`;
             } else {
               status = '未解锁';
             }
 
             return {
               ...level,
-              isUnlocked: isUnlocked ? 1 : 0,
-              isCompleted: isCompleted ? 1 : 0,
-              totalStars,
+              isUnlocked: shouldUnlock ? 1 : 0,
               status,
             };
           });
@@ -193,7 +216,7 @@ export default {
         this.loading = false;
       }
     },
-    
+
     /**
      * 开始关卡
      * 通过下标从 levelList 中取，避免点击事件参数异常导致 level 为 undefined
@@ -223,13 +246,19 @@ export default {
       }
 
       console.log('关卡已解锁，准备跳转');
-      // 结绳计数第一关、第二关、第三关：跳转到专属互动页面（直接用 index 判断，避免后端字段不一致）
+      // 结绳计数第一关到第六关：跳转到专属互动页面
       if (index === 0) {
         this.$navTo(`/pagesC/rope/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 1) {
         this.$navTo(`/pagesC/rope/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 2) {
         this.$navTo(`/pagesC/rope/level3?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 3) {
+        this.$navTo(`/pagesC/rope/level4?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 4) {
+        this.$navTo(`/pagesC/rope/level5?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 5) {
+        this.$navTo(`/pagesC/rope/level6?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else {
         // 其他关卡暂时仍然跳到通用详情页
         this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
@@ -237,6 +266,8 @@ export default {
     }
   }
 };
+
+
 </script>
 
 <style lang="scss" scoped>
@@ -290,7 +321,7 @@ export default {
   background-color: #f8f8f8;
   border-radius: 12rpx;
   transition: all 0.3s;
-  
+
   &:active {
     background-color: #eeeeee;
     transform: scale(0.98);

@@ -64,21 +64,25 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
             List<QuestionBank> questions = service.getLevelQuestions(gamerId, levelId, trackId);
             
             // 检查是否所有题目都已答完
-            boolean isCompleted = service.isLevelCompleted(gamerId, levelId);
+            boolean isCompleted = service.isLevelCompleted(gamerId, levelId, trackId);
             
             // 检查题库中是否有题目（用于区分"题库无题目"和"所有题目都满3星"）
             int totalQuestionCount = service.getLevelQuestionCount(levelId, trackId);
-            
+
             Map<String, Object> result = new HashMap<>();
             result.put("questions", questions);
             result.put("isCompleted", isCompleted);
             result.put("questionCount", questions.size());
-            
+            result.put("totalQuestionCount", totalQuestionCount);
+
             // 特殊标识：所有题目都满3星
             // 判断逻辑：题库有题目（totalQuestionCount > 0），但返回的questions为空，说明所有题目都满3星
             boolean allThreeStars = totalQuestionCount > 0 && questions.isEmpty();
             result.put("allThreeStars", allThreeStars);
-            
+
+            log.info("关卡题目查询结果: levelId={}, trackId={}, totalQuestionCount={}, returnedQuestions={}, allThreeStars={}",
+                    levelId, trackId, totalQuestionCount, questions.size(), allThreeStars);
+
             if (allThreeStars) {
                 result.put("message", "小朋友你也太厉害了，前往下一关吧！");
                 log.info("关卡{}所有题目都已满3星，提示前往下一关", levelId);
@@ -399,16 +403,18 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
 
     /**
      * 检查关卡是否已完成所有题目
-     * GET /question_bank/check_completed?gamerId=1&levelId=1
-     * 
+     * GET /question_bank/check_completed?gamerId=1&levelId=1&trackId=1
+     *
      * 必填参数：
      * - gamerId: 玩家ID（必填，必须>0）
      * - levelId: 关卡ID（必填，必须>0）
+     * - trackId: 赛道ID（可选，传了会按赛道精确判断题库）
      */
     @GetMapping("/check_completed")
     public Map<String, Object> checkCompleted(
             @RequestParam(required = false) Integer gamerId,
-            @RequestParam(required = false) Integer levelId) {
+            @RequestParam(required = false) Integer levelId,
+            @RequestParam(required = false) Integer trackId) {
         try {
             // 统一收集所有校验错误
             ValidationResult validation = new ValidationResult();
@@ -418,20 +424,23 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
             if (levelId == null || levelId <= 0) {
                 validation.addError("关卡ID不能为空且必须大于0");
             }
-            
+            if (trackId != null && trackId <= 0) {
+                validation.addError("赛道ID必须大于0");
+            }
+
             // 如果有校验错误，统一返回
             if (!validation.isValid()) {
                 return error(400, validation.getErrorMessage());
             }
-            
-            boolean isCompleted = service.isLevelCompleted(gamerId, levelId);
-            
+
+            boolean isCompleted = service.isLevelCompleted(gamerId, levelId, trackId);
+
             Map<String, Object> result = new HashMap<>();
             result.put("isCompleted", isCompleted);
             if (isCompleted) {
                 result.put("message", "你已经很厉害了，前往下一关吧！");
             }
-            
+
             return success(result);
         } catch (IllegalArgumentException e) {
             log.warn("参数校验失败: {}", e.getMessage());

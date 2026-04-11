@@ -248,6 +248,24 @@
             "navigationBarTitleText": "结绳计数 · 第三关"
           }
         },
+        {
+          "path": "rope/level4",
+          "style": {
+            "navigationBarTitleText": "结绳计数 · 第四关"
+          }
+        },
+        {
+          "path": "rope/level5",
+          "style": {
+            "navigationBarTitleText": "结绳计数 · 第五关"
+          }
+        },
+        {
+          "path": "rope/level6",
+          "style": {
+            "navigationBarTitleText": "结绳计数 · 第六关"
+          }
+        },
 
         {
           "path": "game_record/edit",

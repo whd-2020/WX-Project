@@ -36,7 +36,7 @@
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <!-- 绳结互动区域 -->
       <view class="rope-area">
-        <view class="rope-title">点击绳子打结，表示数字{{ targetNumberText }}</view>
+        <view class="rope-title">{{ question && question.questionTitle ? question.questionTitle : '点击绳子打结' }}</view>
         <view class="rope-wrapper" @click="handleRopeClick">
           <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
           <view
@@ -369,22 +369,25 @@ export default {
         const list = json.result.questions;
         const q = list[Math.floor(Math.random() * list.length)];
         let target = 1;
-        let elderSpeech = q.question_title || '';
-        
+        let elderSpeech = '';
+        let questionTitle = '';
+
         try {
           // 解析 question_content，取出 options[0] 与 question_title 拼接
           if (q.question_content) {
             const content = JSON.parse(q.question_content);
             if (content.options && Array.isArray(content.options) && content.options.length > 0) {
               // 拼接：question_title + options[0]
-              elderSpeech = (q.question_title || '') + content.options[0];
+              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              // 保存 options[0] 用于弹窗标题
+              questionTitle = content.options[0];
             }
             // 如果 question_content 里有 targetNumber，优先用它
             if (content.targetNumber) {
               target = Number(content.targetNumber);
             }
           }
-          
+
           // 从 correct_answer 解析目标数字（如果 question_content 里没有 targetNumber）
           if (target === 1 && q.correct_answer) {
             try {
@@ -402,16 +405,22 @@ export default {
         } catch (e) {
           // 忽略解析错误，按默认处理
         }
-        
+
         // 如果拼接后还是空的，用默认文案
         if (!elderSpeech || elderSpeech.trim() === '') {
           elderSpeech = `今日族长笑着对你说：用绳结表示数字 ${target}，你会怎么打结呢？`;
         }
-        
+
+        // 如果 questionTitle 为空，使用默认标题
+        if (!questionTitle || questionTitle.trim() === '') {
+          questionTitle = `点击绳子打结，表示数字${target}`;
+        }
+
         this.question = {
           question_id: q.question_id,
           targetNumber: target,
           title: elderSpeech,
+          questionTitle: questionTitle,
         };
         this.playTyping(this.question.title);
       });
