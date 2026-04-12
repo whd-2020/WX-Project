@@ -1,5 +1,5 @@
 <template>
-  <view id="home" class="page_home" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+  <view id="home" class="page_home"">
 	<view class="header_bg"></view>
     <tn-nav-bar fixed :isBack="false" :zIndex="999">
       <view class="nav-wrapper">
@@ -44,9 +44,9 @@
       <!-- 游戏特色卡片(结束) -->
 
       <!-- 菜单模块(开始) -->
-      <view class="menu" v-if="list_menu.length > 0">
+      <!-- <view class="menu" v-if="list_menu.length > 0">
         <list_menu :list="list_menu"></list_menu>
-      </view>
+      </view> -->
       <!-- 菜单模块(结束) -->
 	  <view class="home_recommend">
               	  </view>

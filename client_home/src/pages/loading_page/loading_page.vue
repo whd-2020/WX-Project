@@ -1,7 +1,5 @@
 <template>
   <view class="splash-container">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
     <!-- 游戏首页背景图 -->
     <image 
       class="splash-bg" 

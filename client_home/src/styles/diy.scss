@@ -1379,17 +1379,17 @@
 
 #home .header_bg {
 	position: absolute;
-	background: linear-gradient(135deg, #d4e4fe 30%, #eafffa 50%, white);
-	box-shadow: 0 5px 10px 0 #d4e4fe;
-	width: 500px;
-	height: 500px;
+	background: transparent;
+	box-shadow: none;
+	width: 0;
+	height: 0;
 	border-radius: 100%;
 	top: -226px;
 	left: -55px;
 }
 
 #home .tn-custom-nav-bar__bar {
-	background: linear-gradient(135deg, #d4e4fe, #eafffa, white) !important;
+	background: transparent !important;
 	box-shadow: none;
 }
 
