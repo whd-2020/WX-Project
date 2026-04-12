@@ -178,13 +178,9 @@
       },
     },
     onBackPress() {
-      var bl = false;
-      var user_id = this.user.user_id;
-      if (user_id == null || user_id < 1) {
-        // this.$nav('/pages/index/index');
-        bl = true;
-      }
-      return false;
+      // 阻止默认的返回行为，使用自定义的 goBack 方法
+      this.goBack();
+      return true;
     },
   };
 </script>
