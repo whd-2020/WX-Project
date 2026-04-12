@@ -85,7 +85,15 @@ export default {
   },
   methods: {
     goBack() {
-      uni.navigateBack();
+      const pages = getCurrentPages();
+      if (pages.length > 1) {
+        uni.navigateBack();
+      } else {
+        // 如果是第一个页面，跳转到首页
+        uni.reLaunch({
+          url: '/pages/index/index'
+        });
+      }
     },
     loadUserInfo() {
       console.log('加载用户信息:', this.userInfo);
