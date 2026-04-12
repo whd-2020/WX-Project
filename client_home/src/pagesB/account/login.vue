@@ -1,79 +1,40 @@
 <template>
   <view id="account_login" class="user_account account_login">
-    <!-- 返回按钮 -->
-    <view class="back-button" @click="goBack">
-      <view class="tn-icon-left-arrow back-icon"></view>
-    </view>
-    
-    <view class="container">
-      <view class="custom-1"></view>
-      <view class="custom-2"></view>
-      <view class="custom-3"></view>
-      <view class="custom-4"><text>开心消消乐游戏</text></view>
-      <view class="custom-5"></view>
+    <!-- 登录弹窗 -->
+    <view class="login-modal" @click="goBack">
+      <view class="modal-content" @click.stop>
+        <!-- 关闭按钮 -->
+        <view class="close-btn" @click="goBack">
+          <text class="close-icon">×</text>
+        </view>
 
-      <view class="login-wrapper">
-        <view class="input-content">
-          <view class="input-item">
-            <view class="input-item-icon">
-              <view class="tn-icon-my-lack"></view>
-            </view>
-            <input
-                type="text"
-                v-model="form.username"
-                placeholder="请输入用户名"
-                maxlength="16"
-                data-key="username"
-            />
-          </view>
-          <view class="input-item">
-            <view class="input-item-icon">
-              <view class="tn-icon-lock"></view>
-            </view>
-            <input
-                v-model="form.password"
-                placeholder="请输入密码"
-                placeholder-class="input-empty"
-                maxlength="20"
-                :password="!showPassword"
-                data-key="password"
-                @confirm="login"
-            />
-            <view class="input-item-icon">
-              <view
-                  @click="showPassword = !showPassword"
-                  :class="[showPassword ? 'tn-icon-eye' : 'tn-icon-eye-hide']"
-              >
-              </view>
+        <view class="modal-body">
+          <!-- 微信图标 -->
+          <view class="wechat-icon-wrapper">
+            <view class="wechat-icon">
+              <text class="icon-text">微信</text>
             </view>
           </view>
+
+          <text class="modal-title">欢迎使用</text>
+          <text class="modal-subtitle">请使用微信授权登录</text>
+
+          <!-- 微信登录按钮 -->
+          <button class="wechat-login-btn" @click="wechatLogin" :disabled="logining">
+            <text v-if="!logining">微信一键登录</text>
+            <text v-else>登录中...</text>
+          </button>
+
+          <text class="privacy-tip">登录即表示同意用户协议和隐私政策</text>
         </view>
-        <!-- 原来账号登录的按钮，注销掉，采用微信一键登录 -->
-        <button class="confirm-btn" @click="login" :disabled="logining">账号登录</button>
-        
-        <!-- 微信登录按钮 -->
-        <button class="wechat-login-btn" @click="wechatLogin" :disabled="logining">
-          <text>微信一键登录</text>
-        </button>
-        
-        <view class="forget-section">
-          <view @click="$navTo('/pagesB/account/forgot')">忘记密码?</view>
-        </view>
-                		<view class="register-section">
-			还没有账号?
-			<view @click="$navTo('/pagesB/account/register')" class="text">马上注册</view>
-		</view>
       </view>
     </view>
-
   </view>
 </template>
 
 <script>
   import mixin from '@/libs/mixins/page.js';
-  // 新增wechatLoginApi,api接口
-  import {loginApi, wechatLoginApi} from '@/api/login.js';
-  import jsencrypt from '@/components/jsencrypt/jsencrypt.vue';
+  import {wechatLoginApi} from '@/api/login.js';
 
   export default {
     mixins: [mixin],
@@ -81,42 +42,9 @@
       return {
         logining: false,
 		allow_user: [
-			'管理员'
-				,"游戏玩家"
-									],
-        form: {
-          username: '',
-          password: '',
-        },
-        rules: {
-          username: {
-            rules: [
-              {
-                required: true,
-                errorMessage: '请输入用户名',
-              },
-              {
-                minLength: 5,
-                maxLength: 16,
-                errorMessage: '用户名长度在 {minLength} 到 {maxLength} 个字符',
-              },
-            ],
-          },
-          password: {
-            rules: [
-              {
-                required: true,
-                errorMessage: '请输入密码',
-              },
-              {
-                minLength: 5,
-                maxLength: 16,
-                errorMessage: '密码长度在 {minLength} 到 {maxLength} 个字符',
-              },
-            ],
-          },
-        },
-        showPassword: false,
+			'管理员',
+			'游戏玩家'
+		],
       };
     },
     onLoad() {
@@ -134,48 +62,6 @@
             });
           }
         });
-      },
-      closePopup() {
-        this.logining = false;
-      },
-      login() {
-        this.logining = true;
-        let form = Object.assign({}, this.form);
-          const publicKey = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC+mEDzYLbKNB9rbOuvGgwdBUpPaHryRGarxBQppkOzlj+ouep8MMq1Xg7NBkjLOV2vnn4E5AVvX0XVOmBg8W5eNQ1uS1HCG2fie8BpXGgl1pWj/HYIrA2d/U7xxvMO8UMhAGfMdaGrPrGdZTr95pzL/q+VJZOcqSAgux/YEdu11wIDAQAB";
-        form.password = jsencrypt.setEncrypt(publicKey,form.password);
-          loginApi(form)
-          .then((res) => {
-            if (res.result && res.result.obj) {
-              let user = res.result.obj;
-			  if(this.allow_user.includes(user.user_group)){
-				  				  // 缓存token
-				  this.$u.vuex('token', user.token);
-				  // 存储用户信息
-				  this.$u.vuex('userInfo', user);
-				  // 设置权限集
-				  this.$u.vuex('userGroup', user.user_group);
-				  // 前往首页
-				  uni.switchTab({
-				    url: '/pages/index/index',
-				  });
-				  console.log('---登录成功---');
-			  }else{
-				  this.$toast("请登录账号", 'error');
-			  }
-              
-            } else if (res.error) {
-              this.$toast(res.error.message, 'error');
-            }
-          })
-          .finally(() => {
-            this.logining = false;
-          });
-      },
-      /**
-       * 手动重置表单
-       */
-      resetForm() {
-        this.$refs.form.resetFields();
       },
       /**
        * 微信登录
@@ -304,5 +190,174 @@
 </script>
 
 <style lang="scss" scoped>
-  @import 'styles/pagesB/index.scss';
+.user_account {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+}
+
+.login-modal {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  box-sizing: border-box;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  background: white;
+  border-radius: 20px;
+  overflow: visible;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(80px) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.04);
+  z-index: 10;
+  transition: all 0.2s;
+
+  &:active {
+    background: rgba(0, 0, 0, 0.1);
+    transform: scale(0.9);
+  }
+
+  .close-icon {
+    font-size: 32px;
+    color: #999;
+    line-height: 1;
+    font-weight: 200;
+  }
+}
+
+.modal-body {
+  padding: 60px 30px 35px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  .wechat-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 28px;
+
+    .wechat-icon {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #09bb07 0%, #07c160 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(7, 193, 96, 0.3);
+      position: relative;
+
+      .icon-text {
+        font-size: 24px;
+        font-weight: 600;
+        color: white;
+        letter-spacing: 2px;
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+        top: 0;
+        left: 0;
+      }
+    }
+  }
+
+  .modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+
+  .modal-subtitle {
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 36px;
+  }
+
+  .wechat-login-btn {
+    width: 100%;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #09bb07 0%, #07c160 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 17px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(7, 193, 96, 0.35);
+    transition: all 0.3s;
+    letter-spacing: 1px;
+
+    &:active {
+      transform: translateY(2px);
+      box-shadow: 0 4px 12px rgba(7, 193, 96, 0.35);
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      transform: none;
+    }
+  }
+
+  .privacy-tip {
+    font-size: 11px;
+    color: #bbb;
+    margin-top: 24px;
+    line-height: 1.6;
+  }
+}
 </style>

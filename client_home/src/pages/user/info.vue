@@ -1,189 +1,397 @@
 <template>
   <view class="page_user_info" id="page_user_info" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <tn-nav-bar>基本信息</tn-nav-bar>
-    <!-- 信息修改模块(开始) -->
-
-    <view class="base-info-list">
-      <tn-list-cell class="user_avatar"
-        ><view class="cell-wrap">
-          <view class="cell-wrap-left">
-            <view>头像</view>
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
+    <!-- 导航栏 -->
+    <view class="page-content">
+      <view class="user-info-container">
+        <!-- 头像区域 -->
+        <view class="avatar-section" @click="changeAvatar">
+          <view class="avatar-wrapper">
+            <!-- 圆形头像容器 -->
+            <view class="avatar-container">
+              <!-- 文字头像或图片头像 -->
+              <view v-if="!avatarUrl" class="text-avatar">
+                {{ getInitials(nickname) }}
+              </view>
+              <image v-else class="image-avatar" :src="avatarUrl" mode="aspectFill"></image>
+              <!-- 相机图标覆盖 -->
+              <view class="avatar-overlay">
+                <text class="camera-icon">📷</text>
+              </view>
+            </view>
           </view>
-          <view class="cell-wrap-right">
-            <tn-avatar size="lg" :src="$fullImgUrl(user.avatar)"></tn-avatar>
-          </view>
+          <view class="avatar-tip">点击更换头像</view>
         </view>
-      </tn-list-cell>
 
-      <tn-list-cell class="user_item"
-        ><view class="cell-wrap">
-          <view class="cell-wrap-left">
-            <view>昵称</view>
-          </view>
-          <view class="cell-wrap-right">
-            <tn-input
+        <!-- 信息列表 -->
+        <view class="info-list">
+          <!-- 昵称 -->
+          <view class="info-item">
+            <view class="info-label">
+              <text class="user-icon">👤</text>
+              <text class="label-text">昵称</text>
+            </view>
+            <input
               type="text"
-              v-model="form.nickname"
+              v-model="nickname"
               placeholder="请输入昵称"
-              inputAlign="right"
-            ></tn-input>
+              class="info-input"
+              @input="onNicknameInput"
+            />
           </view>
         </view>
-      </tn-list-cell>
 
-      <tn-list-cell class="user_item" @click="$navTo('/pages/user/password')" :arrow="true">修改密码</tn-list-cell>
-      <tn-list-cell class="user_item" v-if="canEditInfo" :unlined="true" @click="navigateToEditInfo" :arrow="true"
-        >修改资料</tn-list-cell
-      >
-
-      <view class="user-info-footer">
-        <view class="me-btn save-btn" @click="save_nickname">保存</view>
+        <!-- 保存按钮 -->
+        <view class="save-section">
+          <view class="save-btn" :class="{ disabled: !hasChanges }" @click="saveUserInfo">
+            <text>保存修改</text>
+          </view>
+        </view>
       </view>
     </view>
-    <!-- 信息修改模块(结束) -->
   </view>
 </template>
 
 <script>
 import mixin from '@/libs/mixins/page.js';
+import { mapState } from 'vuex';
+
 export default {
   mixins: [mixin],
   data() {
     return {
-      // 登录权限
       oauth: {
         signIn: true,
         user_group: '',
       },
-      href: 'https://uniapp.dcloud.io/component/README?id=uniui',
-      // 输入框是否隐藏
-      display_input: 'none',
-      display_name: 'block',
-      // 输入聚焦
-      focus_input: false,
-      // 有昵称的表格对象
-      form: {},
-      source_table_url: '',
-	  // 修改资料权限
-	  canEditInfo: false,
+      nickname: '',
+      avatarUrl: '',
+      uploadedAvatar: '', // 上传后的头像路径
+      originalNickname: '',
+      originalAvatar: '',
     };
   },
+  computed: {
+    ...mapState({
+      userInfo: state => state.app.userInfo
+    }),
+    hasChanges() {
+      return this.nickname !== this.originalNickname || this.uploadedAvatar !== '';
+    }
+  },
+  onShow() {
+    this.loadUserInfo();
+  },
   methods: {
-    change_avatar() {
-      var _self = this;
-      // 选择图像方法
+    goBack() {
+      uni.navigateBack();
+    },
+    loadUserInfo() {
+      console.log('加载用户信息:', this.userInfo);
+      if (this.userInfo) {
+        this.nickname = this.userInfo.nickname || '';
+        this.avatarUrl = this.$fullImgUrl(this.userInfo.avatar);
+        this.originalNickname = this.nickname;
+        this.originalAvatar = this.avatarUrl;
+        this.uploadedAvatar = '';
+      }
+    },
+    onNicknameInput(e) {
+      this.nickname = e.detail.value;
+    },
+    changeAvatar() {
+      const _self = this;
       uni.chooseImage({
         count: 1,
-        sizeType: ['original', 'compressed'], //可以指定是原图还是压缩图，默认二者都有
-        sourceType: ['album'], //从相册选择
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
         success: function (res) {
           const tempFilePaths = res.tempFilePaths;
-          const uploadTask = uni.uploadFile({
+          uni.showLoading({ title: '上传中...' });
+          uni.uploadFile({
             url: _self.$fullUrl('~/api/user/upload?'),
             filePath: tempFilePaths[0],
             name: 'file',
             header: {
-              'x-auth-token': _self.$store.state.app.userInfo.token,
+              'x-auth-token': _self.userInfo.token,
             },
             formData: {},
             success: function (uploadFileRes) {
-              var filename = JSON.parse(uploadFileRes.data).result.url;
-              console.log(filename);
-              // 改用户表中的头像
-              // var avatar = filename
-              var avatar = JSON.parse(uploadFileRes.data).result.url;
-              _self.$post(
-                '~/api/user/set?user_id=' + _self.user.user_id,
-                {
-                  avatar,
-                },
-                (res) => {
-                  console.log(res);
-                  _self.user.avatar = filename;
-                }
-              );
-            },
-          });
+              uni.hideLoading();
+              const result = JSON.parse(uploadFileRes.data);
+              console.log('上传结果:', result);
 
-          uploadTask.onProgressUpdate(function (res) {
-            _self.percent = res.progress;
-            console.log('上传进度' + res.progress);
-            console.log('已经上传的数据长度' + res.totalBytesSent);
-            console.log('预期需要上传的数据总长度' + res.totalBytesExpectedToSend);
+              if (result.result && result.result.url) {
+                _self.uploadedAvatar = result.result.url;
+                _self.avatarUrl = _self.$fullImgUrl(result.result.url);
+                _self.$toast('头像已选择，请点击保存');
+              } else {
+                _self.$toast('上传失败');
+              }
+            },
+            fail: function(err) {
+              uni.hideLoading();
+              console.error('上传失败:', err);
+              _self.$toast('上传失败');
+            }
           });
         },
-        error: function (e) {
-          console.log(e);
+        fail: function (e) {
+          console.log('选择图片失败:', e);
         },
       });
     },
-    // 跳出修改昵称输入框
-    change_nickname() {
-      this.display_input = 'flex';
-      this.display_name = 'none';
-      this.focus_input = true;
-    },
-    // 保存昵称修改
-    save_nickname() {
-      var user = this.user;
-      var nickname = this.form.nickname;
+    saveUserInfo() {
+      if (!this.hasChanges) {
+        return;
+      }
+
+      if (!this.nickname || !this.nickname.trim()) {
+        this.$toast('请输入昵称');
+        return;
+      }
+
+      uni.showLoading({ title: '保存中...' });
+
+      const updateData = {
+        nickname: this.nickname.trim(),
+      };
+
+      if (this.uploadedAvatar) {
+        updateData.avatar = this.uploadedAvatar;
+      }
+
       this.$post(
-        '~/api/user/set?user_id=' + user.user_id,
-        {
-          nickname,
-        },
+        '~/api/user/set?user_id=' + this.userInfo.user_id,
+        updateData,
         (res) => {
-          console.log(res);
-          this.focus_input = false;
-          this.display_input = 'none';
-          this.display_name = 'block';
-          this.user.nickname = nickname;
+          uni.hideLoading();
+          console.log('保存成功:', res);
+
+          // 更新 store
+          this.$store.commit('app/setUserInfo', {
+            ...this.userInfo,
+            nickname: this.nickname.trim(),
+            avatar: this.uploadedAvatar || this.userInfo.avatar
+          });
+
+          // 重置状态
+          this.originalNickname = this.nickname;
+          this.uploadedAvatar = '';
+
           this.$toast('保存成功');
+        },
+        (err) => {
+          uni.hideLoading();
+          console.error('保存失败:', err);
+          this.$toast('保存失败');
         }
       );
     },
-    async get_source_table_url() {
-      let user_group = this.userInfo.user_group;
-	  if(user_group != "管理员"){
-		  var json = await this.$get('~/api/user_group/get_obj?name=' + user_group);
-		  if (json.result && json.result.obj) {
-			  if(this.$check_action('/' + json.result.obj.source_table + '/view', 'get')){
-				  this.canEditInfo = true;
-				  var json_sub = await this.$get(
-				    '~/api/' + json.result.obj.source_table + '/get_obj?user_id=' + this.userInfo.user_id
-				  );
-				  if (json_sub.result && json_sub.result.obj) {
-				  	if(json.result.obj.source_table != ''){
-				  		let basePath = '/pagesC/';
-				  		this.source_table_url =
-				  		  	basePath +
-				  		  	json.result.obj.source_table +
-				  		  	'/view?' +
-				  		  	json.result.obj.source_field +
-				  		  	'=' +
-				  		  	json_sub.result.obj[json.result.obj.source_field];
-				  		  	console.log(this.source_table_url)
-				  	}
-				  }
-			  }
-		  }
-	  }
-    },
-    navigateToEditInfo() {
-      if (this.source_table_url) {
-        uni.navigateTo({
-          url: this.source_table_url
-        });
+    // 获取昵称首字母作为文字头像
+    getInitials(name) {
+      if (!name || !name.trim()) {
+        return '用';
       }
+      // 取昵称的第一个字符
+      return name.trim().charAt(0);
     },
-	
-  },
-  created() {
-    this.get_source_table_url();
-    this.form.nickname = this.userInfo.nickname;
   },
 };
 </script>
 <style lang="scss" scoped>
-@import 'styles/pages/index.scss';
+.page_user_info {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f8f9fe 0%, #ffffff 100%);
+}
+
+
+
+.page-content {
+  padding: 30rpx;
+}
+
+.user-info-container {
+  background-color: #fff;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+  min-height: 600rpx;
+}
+
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 0 50rpx;
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  position: relative;
+}
+
+.avatar-wrapper {
+  position: relative;
+  margin-bottom: 20rpx;
+}
+
+.avatar-container {
+  position: relative;
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #f0f0f0;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.text-avatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64rpx;
+  font-weight: 600;
+  color: #667eea;
+  background-color: #f8f9fe;
+}
+
+.image-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.avatar-overlay {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 60rpx;
+  height: 60rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4rpx solid #fff;
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.4);
+  z-index: 10;
+}
+
+.camera-icon {
+  font-size: 32rpx;
+}
+
+.avatar-tip {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.info-list {
+  padding: 0 40rpx;
+}
+
+.info-item {
+  padding: 40rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.info-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.user-icon {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.label-text {
+  font-size: 28rpx;
+  color: #666;
+  margin-left: 12rpx;
+  font-weight: 500;
+}
+
+.info-input {
+  width: 100%;
+  font-size: 32rpx;
+  padding: 24rpx;
+  background-color: #f8f9fe;
+  border-radius: 12rpx;
+  color: #333;
+  border: 2rpx solid transparent;
+  transition: all 0.3s;
+  min-height: 88rpx;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.info-input:focus {
+  background-color: #fff;
+  border-color: #667eea;
+}
+
+.save-section {
+  padding: 50rpx 40rpx 60rpx;
+}
+
+.save-btn {
+  width: 100%;
+  height: 96rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.4);
+  transition: all 0.3s;
+}
+
+.save-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+}
+
+.save-btn.disabled {
+  opacity: 0.5;
+  background: #e0e0e0;
+  box-shadow: none;
+}
+// 返回箭头样式
+.back-arrow {
+  position: fixed;
+  top: 20rpx;
+  left: 20rpx;
+  width: 60rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 1);
+  }
+
+  &::before {
+    content: '';
+    width: 20rpx;
+    height: 20rpx;
+    border-left: 3rpx solid #333;
+    border-bottom: 3rpx solid #333;
+    transform: rotate(45deg);
+    margin-left: 6rpx;
+  }
+}
 </style>

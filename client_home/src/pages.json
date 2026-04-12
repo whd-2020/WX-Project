@@ -94,12 +94,6 @@
       }
     },
     {
-      "path": "pages/user/password",
-      "style": {
-        "navigationBarTitleText": "修改密码"
-      }
-    },
-    {
       "path": "pages/track/rope",
       "style": {
         "navigationBarTitleText": "结绳计数"
