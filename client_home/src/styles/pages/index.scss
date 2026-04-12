@@ -1,3 +1,36 @@
+// ====== 通用返回箭头样式 ======
+.back-arrow {
+  position: fixed;
+  top: 20rpx;
+  left: 20rpx;
+  width: 60rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 1);
+  }
+
+  &::before {
+    content: '';
+    width: 20rpx;
+    height: 20rpx;
+    border-left: 3rpx solid #333;
+    border-bottom: 3rpx solid #333;
+    transform: rotate(45deg);
+    margin-left: 6rpx;
+  }
+}
+
 // ====== 新闻咨询相关 ======
 .page_article {
   padding: 0 40rpx;
@@ -39,15 +72,6 @@
   }
 }
 
-// ====== 购物车相关 ======
-
-// 购物车导航页
-.page_cart {
-}
-.page_cart_list {
-}
-
-// ====== 交流论坛 ======
 
 // 交流论坛导航页
 .page_forum {
@@ -129,24 +153,63 @@
 
 // 首页导航页
 .page_home {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
   background-color: hsl(0, 0%, 100%);
+
+  // 背景图片层 - 最底层
+  .bg-image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  // 顶部导航栏 - 高层级
+  tn-nav-bar {
+    position: relative;
+    z-index: 100;
+    padding-top: env(safe-area-inset-top, 0);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10rpx);
+  }
 
   .menu {
     margin-bottom: 30rpx;
+    position: relative;
+    z-index: 10;
   }
+
   .tab-pane {
+    height: 100%;
     padding: 0 30rpx;
+    padding-bottom: calc(var(--window-bottom) + 50px);
+    box-sizing: border-box;
+    position: relative;
+    z-index: 10;
+
     .search-wrapper {
       padding: 20rpx 0;
     }
   }
+
   .nav-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     width: 100%;
-    height: 100%;
+    min-height: 80rpx;
+    z-index: 100;
+    padding: 10rpx 0;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10rpx);
+
     .nav-user {
       position: absolute;
       left: 20rpx;
@@ -158,6 +221,115 @@
         width: 60rpx;
         height: 60rpx;
         border-radius: 50%;
+        border: 2rpx solid rgba(255, 255, 255, 0.8);
+      }
+    }
+    .nav-username {
+      font-size: 32rpx;
+      font-weight: 600;
+      color: #333;
+      text-shadow: 0 1rpx 2rpx rgba(255, 255, 255, 0.8);
+      padding: 8rpx 16rpx;
+      border-radius: 20rpx;
+      background: rgba(255, 255, 255, 0.6);
+      margin-top: 10rpx;
+    }
+  }
+
+  // 底部导航栏 - 最高层级
+  tn-tabbar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 10000 !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(20rpx) !important;
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0) !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 100rpx !important;
+
+    // 确保内部元素可见
+    .tn-tabbar__content {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+
+      &__item {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+
+        &__button {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+
+        &__icon {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          font-size: 40rpx !important;
+        }
+
+        &__image {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+
+        &__text {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          font-size: 24rpx !important;
+        }
+      }
+    }
+  }
+
+  // 自定义底部导航栏
+  .custom-tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120rpx;
+    background: #ffffff;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
+    z-index: 10000;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+
+    .tabbar-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+
+       .tabbar-icon {
+        width: 40rpx;
+        height: 40rpx;
+        margin-bottom: 10rpx;
+      }
+
+      .tabbar-text {
+        font-size: 28rpx;
+        color: #999999;
+      }
+
+      &.active .tabbar-text {
+        color: #FF6B35;
       }
     }
   }
@@ -457,76 +629,40 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 20rpx;
     padding: 30rpx;
+    margin-top: 600rpx;
     margin-bottom: 20rpx;
-    
+    position: relative;
+    z-index: 100;
+
     .feature-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border-radius: 20rpx;
-      padding: 40rpx 30rpx;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8rpx 20rpx rgba(102, 126, 234, 0.3);
       transition: all 0.3s ease;
       position: relative;
-      overflow: hidden;
-      
-      &:nth-child(2) {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        box-shadow: 0 8rpx 20rpx rgba(245, 87, 108, 0.3);
-      }
-      
-      &:nth-child(3) {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        box-shadow: 0 8rpx 20rpx rgba(79, 172, 254, 0.3);
-      }
-      
-      &:nth-child(4) {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-        box-shadow: 0 8rpx 20rpx rgba(67, 233, 123, 0.3);
-      }
-      
-      &::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-        transition: all 0.5s ease;
-      }
-      
-      &:active {
-        transform: scale(0.95);
-        box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
-        
-        &::before {
-          top: -30%;
-          right: -30%;
+      z-index: 100;
+
+      .feature-image-wrapper {
+        width: 100%;
+        height: 200rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        z-index: 100;
+
+        .feature-image {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          display: block;
+          position: relative;
+          z-index: 100;
         }
       }
-      
-      .feature-icon {
-        font-size: 64rpx;
-        margin-bottom: 20rpx;
-        filter: drop-shadow(0 4rpx 8rpx rgba(0, 0, 0, 0.2));
-      }
-      
-      .feature-title {
-        font-size: 32rpx;
-        font-weight: 700;
-        color: #fff;
-        margin-bottom: 12rpx;
-        text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.2);
-      }
-      
-      .feature-desc {
-        font-size: 24rpx;
-        color: rgba(255, 255, 255, 0.9);
-        text-align: center;
-        line-height: 1.4;
+
+      &:active {
+        transform: scale(0.95);
       }
     }
   }
@@ -788,13 +924,30 @@
 
 // ====== 用户相关 ======
 .page_user {
+  position: relative;
+  min-height: 100vh;
+  background-color: #ffffff;
+
+  // 导航栏包裹层
+  .nav-wrapper {
+    margin-top: 40rpx;
+  }
+
+  // 顶部导航栏 - 与首页风格一致
+  tn-nav-bar {
+    position: relative;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10rpx);
+  }
+
   .user {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     padding: 40rpx 30rpx 0 30rpx;
+    margin-top: 20rpx;
     .left {
       display: flex;
       align-items: center;
@@ -808,6 +961,7 @@
           width: 160rpx;
           height: 160rpx;
           border-radius: 100%;
+          border: 2rpx solid rgba(255, 255, 255, 0.8);
         }
       }
       .base-info {
@@ -815,30 +969,26 @@
         margin-left: 40rpx;
         .username {
           font-size: 40upx;
+          font-weight: 600;
+          color: #333;
+          text-shadow: 0 1rpx 2rpx rgba(255, 255, 255, 0.8);
         }
         .signature {
           font-size: 28upx;
+          color: #666;
         }
       }
     }
 
     .other {
-      // flex-shrink: 0;
-      // width: 10vw;
-      // height: 10vw;
-      // margin-left: 5vw;
-      // border-radius: 100%;
-
-      // display: flex;
-      // justify-content: center;
-      // align-items: center;
-      // background: linear-gradient(to left, #fbbb37 0%, #fcf0d0 105%);
       .user-info-btn {
         color: $main-color;
         padding: 8rpx 20rpx;
         border: 1px solid $main-color;
         border-radius: 30rpx;
         font-size: 12px;
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(5rpx);
         .icon-jinggao {
           margin-right: 10rpx;
         }
@@ -941,43 +1091,113 @@
   .nav-list {
     // 与顶部用户信息蓝色背景保持适当间距
     margin-top: 20rpx;
+    background-color: #fff;
+    border-radius: 16rpx;
+    margin: 20rpx 30rpx;
+    overflow: hidden;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+    
     .nav-list-row {
       display: flex;
       align-items: center;
+      padding: 24rpx 30rpx;
+      border-bottom: 1rpx solid #f0f0f0;
+      
+      &:last-child {
+        border-bottom: none;
+      }
+      
       .menu-img {
         width: 40rpx;
         height: 40rpx;
-        margin-right: 10rpx;
+        margin-right: 20rpx;
+      }
+      
+      text {
+        font-size: 28rpx;
+        color: #333;
       }
     }
   }
   .user-center-footer {
-    // 固定在页面底部导航栏上方
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 160rpx; // 预留给底部 Tabbar 的高度
-    z-index: 10;
+    margin-top: 40rpx;
+    margin-bottom: 140rpx; // 预留给底部 Tabbar 的高度
     display: flex;
     padding: 0 40rpx 20rpx 40rpx;
-    background-color: #fff;
-
+    
     .logout-btn {
       width: 100%;
       height: 80rpx;
       font-size: 32rpx;
       background-color: $color_red;
+      border-radius: 40rpx;
+      box-shadow: 0 4rpx 12rpx rgba(255, 87, 34, 0.3);
+      transition: all 0.3s ease;
+      
+      &:active {
+        transform: scale(0.98);
+        box-shadow: 0 2rpx 8rpx rgba(255, 87, 34, 0.4);
+      }
     }
     .login-btn {
       width: 100%;
       height: 80rpx;
       font-size: 32rpx;
+      border-radius: 40rpx;
+      box-shadow: 0 4rpx 12rpx rgba(255, 107, 53, 0.3);
+      transition: all 0.3s ease;
+      
+      &:active {
+        transform: scale(0.98);
+        box-shadow: 0 2rpx 8rpx rgba(255, 107, 53, 0.4);
+      }
     }
   }
   .split {
     // 用户信息区域与下方列表的过渡留白
     height: 40rpx;
     background-color: #ffffff;
+  }
+  
+  // 自定义底部导航栏
+  .custom-tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120rpx;
+    background: #ffffff;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
+    z-index: 10000;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+
+    .tabbar-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+
+       .tabbar-icon {
+        width: 40rpx;
+        height: 40rpx;
+        margin-bottom: 10rpx;
+      }
+
+      .tabbar-text {
+        font-size: 28rpx;
+        color: #999999;
+      }
+
+      &.active .tabbar-text {
+        color: #FF6B35;
+      }
+    }
   }
 }
 

@@ -4,7 +4,7 @@ import store from './store';
 import './filters';
 import plugins from './plugins'; // plugins
 import { router, RouterMount } from './router/index';
-import TuniaoUI from 'tuniao-ui';
+import TuniaoUI from './tuniao-ui';
 // import './router/routeIntercept.js';
 
 Vue.config.productionTip = false;

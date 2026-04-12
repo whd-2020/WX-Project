@@ -17,7 +17,8 @@
       "path": "pages/index/index",
       "style": {
         "navigationBarTitleText": "首页",
-        "enablePullDownRefresh": false
+        "enablePullDownRefresh": false,
+        "disableScroll": true
       },
       "meta": {
         "noAuth": true

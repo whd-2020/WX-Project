@@ -1,7 +1,7 @@
 <template>
   <view id="home" class="page_home" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
 	<view class="header_bg"></view>
-    <tn-nav-bar fixed :isBack="false">
+    <tn-nav-bar fixed :isBack="false" :zIndex="999">
       <view class="nav-wrapper">
         <view class="nav-user" @click="$navTo('/pages/user/info')">
           <!-- 头像：优先使用微信头像的完整https地址，其次再走资源拼接 -->
@@ -11,62 +11,34 @@
         <view class="nav-username">
           {{ displayName }}
         </view>
-        <!-- 原“推荐”标签已去掉，只保留头像区域 -->
       </view>
     </tn-nav-bar>
 
-    <view class="tab-pane" v-show="tabIndex === 0">
-      <!-- 顶部搜索框已去掉 -->
 
-      <view class="scroll-x">
-        <view class="left">
-          <scroll-view class="scroll-view" :style="[!isExpand ? expandStyle : '']" scroll-x="true">
-		    <view class="item">
-		      推荐
-		    </view>
-            <view
-              class="item"
-              @click="clickMore(item.path)"
-              v-for="(item, index) in list_menu"
-              :key="index"
-			   v-if="$check_action(item.path,'get') || item.path == '/webview/urlview' || item.path == '/chat/index'"
-            >
-              {{ item.mod_name }}
-            </view>
-          </scroll-view>
-        </view>
-        <view class="right">
-          <view class="iconfont icon-liebiao" @click="isExpand = !isExpand"></view
-        ></view>
-      </view>
-
-      <!-- 轮播图模块(开始) -->
-      <view class="swiper" v-if="list_slide && list_slide.length > 0">
-        <Slide :list="list_slide" :show_title="true" />
-      </view>
-      <!-- 轮播图模块(结束) -->
-
+    <view class="tab-pane" v-show="tabIndex === 0" :style="{ paddingTop: vuex_custom_bar_height + 'px', paddingBottom: '120rpx' }">
+      <!-- 背景图片 -->
+      <image class="bg-image" src="/static/img/index/LoadingPage.png"></image>
       <!-- 游戏特色卡片(开始) -->
-      <view class="game-features" v-if="!list_slide || list_slide.length === 0">
+      <view class="game-features" style="position: relative; z-index: 10;">
         <view class="feature-card" @click="$navTo('/pages/track/rope')">
-          <view class="feature-icon">🎯</view>
-          <view class="feature-title">结绳计数</view>
-          <view class="feature-desc">体验古代计数智慧</view>
+          <view class="feature-image-wrapper">
+            <image class="feature-image" src="/static/img/index/ShengJieJiShu.png"></image>
+          </view>
         </view>
         <view class="feature-card" @click="$navTo('/pages/track/counting_rods')">
-          <view class="feature-icon">📊</view>
-          <view class="feature-title">筹算</view>
-          <view class="feature-desc">感受古代数学工具</view>
+          <view class="feature-image-wrapper">
+            <image class="feature-image" src="/static/img/index/ChouSuanYanSuan.png"></image>
+          </view>
         </view>
         <view class="feature-card" @click="$navTo('/pages/track/abacus')">
-          <view class="feature-icon">🧮</view>
-          <view class="feature-title">珠算</view>
-          <view class="feature-desc">学习传统计算方式</view>
+          <view class="feature-image-wrapper">
+            <image class="feature-image" src="/static/img/index/ZhuSuanQiMeng.png"></image>
+          </view>
         </view>
         <view class="feature-card" @click="$navTo('/pages/track/comprehensive')">
-          <view class="feature-icon">🏆</view>
-          <view class="feature-title">综合挑战</view>
-          <view class="feature-desc">挑战更高难度</view>
+          <view class="feature-image-wrapper">
+            <image class="feature-image" src="/static/img/index/ShuZiRenZhi.png"></image>
+          </view>
         </view>
       </view>
       <!-- 游戏特色卡片(结束) -->
@@ -80,17 +52,22 @@
               	  </view>
       <!-- 底部“游戏公告”和“更多”区域已移除 -->
     </view>
-
-              
-
-
-    <tn-tabbar
-      :value="tabbarIndex"
-      :list="tabbarList"
-      @change="switchTabbar"
-      :animation="true"
-      :safeAreaInsetBottom="true"
-    ></tn-tabbar>
+    <!-- 简单的底部导航栏 -->
+    <view class="custom-tabbar">
+      <view
+        v-for="(item, index) in tabbarList"
+        :key="index"
+        class="tabbar-item"
+        :class="{ active: tabbarIndex === index }"
+        @click="switchTabbar(index)"
+      >
+        <image
+          class="tabbar-icon"
+          :src="tabbarIndex === index ? item.activeIcon : item.inactiveIcon"
+        ></image>
+        <text class="tabbar-text">{{ item.title }}</text>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -146,6 +123,7 @@ export default {
     },
   },
   created() {
+    console.log('首页 created - tabbarList:', this.tabbarList);
   },
   methods: {
     getFullPath(path) {

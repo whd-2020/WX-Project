@@ -6,14 +6,14 @@ export default {
       tabbarList: [
         {
           title: '首页',
-          activeIcon: 'home',
-          inactiveIcon: 'home',
+          activeIcon: '/static/images/tabbar/index-active.png',
+          inactiveIcon: '/static/images/tabbar/index.png',
           pagePath: '/pages/index/index',
         },
         {
           title: '我的',
-          activeIcon: 'my',
-          inactiveIcon: 'my',
+          activeIcon: '/static/images/tabbar/user-active.png',
+          inactiveIcon: '/static/images/tabbar/user.png',
           pagePath: '/pages/user/index',
         },
       ],

@@ -1,6 +1,8 @@
 <template>
   <view id="page_user" class="page_user" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <tn-nav-bar :isBack="false" :bottomShadow="false">个人中心</tn-nav-bar>
+    <view class="nav-wrapper">
+      <tn-nav-bar :isBack="false" :bottomShadow="false">个人中心</tn-nav-bar>
+    </view>
     <!-- 用户栏模块(开始) -->
     <view class="user">
       <!-- 头像 -->
@@ -50,13 +52,23 @@
       <view v-else class="me-btn login-btn" @click="toLogin">立即登录</view>
     </view>
     <!-- 按钮模块(结束) -->
-    <tn-tabbar
-        :value="tabbarIndex"
-        :list="tabbarList"
-        @change="switchTabbar"
-        :animation="true"
-        :safeAreaInsetBottom="true"
-    ></tn-tabbar>
+    
+    <!-- 简单的底部导航栏 -->
+    <view class="custom-tabbar">
+      <view
+        v-for="(item, index) in tabbarList"
+        :key="index"
+        class="tabbar-item"
+        :class="{ active: tabbarIndex === index }"
+        @click="switchTabbar(index)"
+      >
+        <image
+          class="tabbar-icon"
+          :src="tabbarIndex === index ? item.activeIcon : item.inactiveIcon"
+        ></image>
+        <text class="tabbar-text">{{ item.title }}</text>
+      </view>
+    </view>
   </view>
 </template>
 
