@@ -1,5 +1,7 @@
 <template>
   <view class="splash-container">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <!-- 游戏首页背景图 -->
     <image 
       class="splash-bg" 
@@ -30,7 +32,10 @@
 </template>
 
 <script>
+import mixin from '@/libs/mixins/page.js';
+
 export default {
+  mixins: [mixin],
   data() {
     return {
       splashImage: '/static/images/games/game_home.png',

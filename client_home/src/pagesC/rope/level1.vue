@@ -1,5 +1,7 @@
 <template>
   <view class="rope-level-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>结绳计数 · 第一关</tn-nav-bar>
 
     <!-- 背景图片 -->
@@ -391,11 +393,16 @@ export default {
           // 从 correct_answer 解析目标数字（如果 question_content 里没有 targetNumber）
           if (target === 1 && q.correct_answer) {
             try {
-              const answer = JSON.parse(q.correct_answer);
+              const answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
               if (answer.answer) {
                 const answerNum = Number(answer.answer);
                 if (!Number.isNaN(answerNum) && answerNum > 0) {
                   target = answerNum;
+                }
+              } else if (answer.count) {
+                const countNum = Number(answer.count);
+                if (!Number.isNaN(countNum) && countNum > 0) {
+                  target = countNum;
                 }
               }
             } catch (e) {

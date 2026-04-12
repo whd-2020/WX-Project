@@ -1,5 +1,7 @@
 <template>
   <view id="account_login" class="user_account account_login">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <!-- 登录弹窗 -->
     <view class="login-modal" @click="goBack">
       <view class="modal-content" @click.stop>

@@ -71,9 +71,10 @@
 
 <script>
   import tabbar from '@/libs/mixins/tabbar.js';
+  import mixin from '@/libs/mixins/page.js';
 
   export default {
-    mixins: [tabbar],
+    mixins: [tabbar, mixin],
     data() {
       return {
         tabbarIndex: 0,

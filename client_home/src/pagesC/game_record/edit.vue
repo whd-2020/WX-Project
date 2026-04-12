@@ -1,5 +1,7 @@
 <template>
   <view class="page_diy_edit page_game_record_edit" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>游戏记录</tn-nav-bar>
     <view class="page-custom " id="page_diy_edit">
       <view class="custom-from">

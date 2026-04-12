@@ -1,5 +1,7 @@
 <template>
   <view class="page_search" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>搜索结果</tn-nav-bar>
     <view class="search-wrapper">
       <Search
@@ -35,7 +37,10 @@
 import Search from '@/components/businessCp/search.vue';
 import * as HomeApi from '@/api/home';
 import { debounce } from '@/utils';
+import mixin from '@/libs/mixins/page.js';
+
 export default {
+  mixins: [mixin],
   components: {
     Search,
   },

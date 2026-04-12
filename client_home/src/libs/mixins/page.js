@@ -1391,6 +1391,21 @@ export default {
       // }
     },
     /**
+     * 返回上一页
+     */
+    goBack() {
+      // 返回到上一页
+      uni.navigateBack({
+        delta: 1,
+        fail: () => {
+          // 如果没有上一页，则跳转到首页
+          uni.switchTab({
+            url: '/pages/index/index'
+          });
+        }
+      });
+    },
+    /**
      * 敏感词过滤
      * @param {String} content
      * @return Array

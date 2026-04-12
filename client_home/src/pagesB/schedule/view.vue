@@ -1,5 +1,7 @@
 <template>
   <view class="page_schedule" id="page_schedule" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>日程管理</tn-nav-bar>
     <view class="schedule">
       <view class="schedule-header">

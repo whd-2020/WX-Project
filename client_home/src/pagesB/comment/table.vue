@@ -1,5 +1,7 @@
 <template>
   <view class="comment_table" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>评论管理</tn-nav-bar>
     <view class="page_comment" id="comment_list">
       <view class="popup_overlay" :hidden="userFeedbackHidden" @click="hideDiv()"></view>

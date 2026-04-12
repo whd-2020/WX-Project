@@ -1,5 +1,7 @@
 <template>
   <view class="page_pay" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>支付</tn-nav-bar>
     <view class="pay_wrapper" id="page_pay">
       <view class="warp">

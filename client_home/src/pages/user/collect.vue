@@ -1,5 +1,7 @@
 <template>
   <view class="page_user_collect" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>我的收藏</tn-nav-bar>
     <view class="user_collect_wrapper" id="user_collect_wrapper">
       <!-- 筛选模块(开始) -->

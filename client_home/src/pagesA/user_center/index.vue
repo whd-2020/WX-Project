@@ -1,5 +1,7 @@
 <template>
   <view id="page_statistics" class="page_user_center" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>统计图</tn-nav-bar>
     <view class="warp">
       <view class="container">

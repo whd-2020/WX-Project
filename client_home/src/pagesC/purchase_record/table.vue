@@ -1,5 +1,7 @@
 <template>
   <view class="page_diy_table page_purchase_record_table" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>购买记录列表</tn-nav-bar>
     <view class="page-list" id="page_diy_table">
       <!-- 筛选模块(开始) -->

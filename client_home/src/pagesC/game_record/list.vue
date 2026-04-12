@@ -1,6 +1,8 @@
 <template>
   <view :style="{ paddingTop: vuex_custom_bar_height + 'px' }" class="page_diy_list page_game_record_list container">
 	<view class="content">
+	  <!-- 返回箭头 -->
+	  <view class="back-arrow" @click="goBack"></view>
 	  <tn-nav-bar>游戏记录列表</tn-nav-bar>
 	  <view class="page-list" id="page_diy_list">
 	        <!-- 筛选模块(开始) -->

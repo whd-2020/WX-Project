@@ -1,5 +1,7 @@
 <template>
   <view class="setup-profile-container">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <view class="header">
       <text class="title">完善个人信息</text>
       <text class="subtitle">请填写以下信息以完成注册</text>
@@ -67,8 +69,10 @@
 
 <script>
 import { updateProfileApi } from '@/api/login.js';
+import mixin from '@/libs/mixins/page.js';
 
 export default {
+  mixins: [mixin],
   data() {
     return {
       form: {

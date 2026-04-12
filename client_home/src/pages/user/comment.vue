@@ -1,5 +1,7 @@
 <template>
   <view id="page_user_comment" class="page_user_comment" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>我的评论</tn-nav-bar>
     <view class="comment_list">
       <view class="comment_item" v-for="(o, i) in list" :key="i">
@@ -29,7 +31,9 @@
 
 <script>
 import { getRouteBasePath } from '@/utils/index.js';
+import mixin from '@/libs/mixins/page.js';
 export default {
+  mixins: [mixin],
   data() {
     return {
       list: [],

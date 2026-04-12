@@ -1,5 +1,7 @@
 <template>
   <view class="page_media_music" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>音乐</tn-nav-bar>
     <view class="media_music" id="media_music">
       <!-- 音乐模块(开始) -->
@@ -21,7 +23,10 @@
 </template>
 
 <script>
+import mixin from '@/libs/mixins/page.js';
+
 export default {
+  mixins: [mixin],
   data() {
     return {
       current: {

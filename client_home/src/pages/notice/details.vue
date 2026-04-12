@@ -1,5 +1,7 @@
 <template>
   <view class="page_notice_details" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>网站公告</tn-nav-bar>
     <uni-card
       :title="obj.title"

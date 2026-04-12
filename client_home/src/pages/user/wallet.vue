@@ -1,5 +1,7 @@
 <template>
     <view class="page_user_coupon" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>钱包</tn-nav-bar>
   <view class="tn-flex" style="width: 100%">
     <view class="wallet-container tn-flex tn-flex-direction-column">

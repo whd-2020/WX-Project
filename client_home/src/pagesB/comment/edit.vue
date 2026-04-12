@@ -1,5 +1,7 @@
 <template>
   <view class="comment_edit" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>评论</tn-nav-bar>
     <view class="comment-wrapper" id="comment_edit">
       <!-- 评论区 -->

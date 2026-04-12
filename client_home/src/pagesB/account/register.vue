@@ -1,6 +1,8 @@
 <template>
   <view class="account_register" id="account_register">
 	<view class="container">
+		<!-- 返回箭头 -->
+		<view class="back-arrow" @click="goBack"></view>
 		<view class="custom-1"></view>
 		<view class="back-btn" @click="navBack"></view>
 		<view class="custom-3"></view>

@@ -1,6 +1,8 @@
 <template>
   <view id="account_forgot" class="user_account account_forgot">
 	<view class="container">
+		<!-- 返回箭头 -->
+		<view class="back-arrow" @click="goBack"></view>
 		<view class="custom-1"></view>
 		<view class="back-btn" @click="navBack"></view>
 		<view class="custom-3"></view>
@@ -76,7 +78,9 @@
 </template>
 
 <script>
+import mixin from '@/libs/mixins/page.js';
 export default {
+  mixins: [mixin],
   data() {
     return {
       form: {

@@ -1,5 +1,7 @@
 <template>
   <view id="page_score_edit" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>评分</tn-nav-bar>
     <view class="page_score_edit">
       <view class="score_title">{{ scoreReadOnly ? "我的评分" : "评分"}}</view>
@@ -19,7 +21,10 @@
 </template>
 
 <script>
+import mixin from '@/libs/mixins/page.js';
+
 export default {
+  mixins: [mixin],
   data() {
     return {
       score_num: 0,

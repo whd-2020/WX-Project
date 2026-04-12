@@ -1,5 +1,7 @@
 <template>
   <view class="page_diy_view page_achievements_view" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>玩家成就详情</tn-nav-bar>
     <view id="page_diy_view" class="page-from">
       <uni-forms :modelValue="form" v-if="is_view()" labelWidth="70px">

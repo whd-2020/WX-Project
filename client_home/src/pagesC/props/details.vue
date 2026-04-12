@@ -1,5 +1,7 @@
 <template>
   <view id="page_diy_details" class="page_diy_details page_props_details" :style="{ paddingTop: vuex_custom_bar_height + 'px', paddingBottom: vuex_safe_area_bottom + 'px',}">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>道具商店</tn-nav-bar>
     <view class="page_diy page_props" id="props_details">
           <view class="warp cover_wrapper" v-if="$check_field('get', 'props_picture')">

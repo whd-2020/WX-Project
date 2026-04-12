@@ -411,3 +411,36 @@
     margin-top: 10px;
   }
 }
+
+// 返回箭头样式
+.back-arrow {
+  position: fixed;
+  top: 20rpx;
+  left: 20rpx;
+  width: 60rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:active {
+    transform: scale(0.9);
+    background: rgba(255, 255, 255, 1);
+  }
+
+  &::before {
+    content: '';
+    width: 20rpx;
+    height: 20rpx;
+    border-left: 3rpx solid #333;
+    border-bottom: 3rpx solid #333;
+    transform: rotate(45deg);
+    margin-left: 6rpx;
+  }
+}

@@ -1,6 +1,8 @@
 <template>
   <view class="rope-level-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <tn-nav-bar>结绳计数 · 第五关</tn-nav-bar>
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
+    <tn-nav-bar>结绳计数 · 第四关</tn-nav-bar>
 
     <!-- 背景图片 -->
     <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />
@@ -386,8 +388,14 @@ export default {
           // 则和第一关一样，从 correct_answer 里解析目标数字
           if (target === 10 && q.correct_answer) {
             try {
-              const answer = JSON.parse(q.correct_answer);
-              if (answer.answer) {
+              const answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
+              // 支持两种格式：{"answer":"12"} 或 {"decoration":"YuGu","count":12}
+              if (answer.count) {
+                const countNum = Number(answer.count);
+                if (!Number.isNaN(countNum) && countNum > 0) {
+                  target = countNum;
+                }
+              } else if (answer.answer) {
                 const answerNum = Number(answer.answer);
                 if (!Number.isNaN(answerNum) && answerNum > 0) {
                   target = answerNum;

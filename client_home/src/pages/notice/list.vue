@@ -1,5 +1,7 @@
 <template>
   <view class="page_notice_list" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>网站公告列表</tn-nav-bar>
     <view class="page_notice" id="notice_list">
       <!-- 公告细节模块(开始) -->

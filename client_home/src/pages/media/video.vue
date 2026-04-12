@@ -1,5 +1,7 @@
 <template>
   <view class="page_media_video" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+    <!-- 返回箭头 -->
+    <view class="back-arrow" @click="goBack"></view>
     <tn-nav-bar>视频</tn-nav-bar>
     <view class="media_video" id="media_video">
       <!-- 视频模块(开始) -->
@@ -35,7 +37,10 @@
 </template>
 
 <script>
+import mixin from '@/libs/mixins/page.js';
+
 export default {
+  mixins: [mixin],
   data() {
     return {
       query: {
