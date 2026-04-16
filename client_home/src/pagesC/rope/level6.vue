@@ -60,7 +60,7 @@
           {{ question.questionTitle || '用不同的绳子记录不同的物品' }}
           <br />
           <text style="font-size: 24rpx; font-weight: 400;">
-            提示：点击绳子打结，<text style="font-weight: 700">点击绳结可以解开</text>
+            提示：点击绳子打小结表示1，<text style="font-weight: 700">长按打大结表示10</text>
           </text>
         </view>
         <view
@@ -70,18 +70,30 @@
         >
           <view class="rope-header">
             <text class="rope-label">{{ rope.decoration ? getDecorationName(rope.decoration) : '未选择装饰物' }}</text>
-            <text class="rope-count">{{ rope.knots.length }} 个</text>
+            <text class="rope-count">{{ rope.smallKnots.length + rope.bigKnots.length * 10 }} 个</text>
           </view>
-          <view class="rope-wrapper" :data-index="index" @click="handleRopeClick">
+          <view class="rope-wrapper" :data-index="index" @click="handleRopeClick" @longpress="handleRopeLongPress">
             <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
+            <!-- 小结（1） -->
             <view
-              v-for="knot in rope.knots"
+              v-for="knot in rope.smallKnots"
               :key="knot.id"
               class="rope-knot"
               :class="{ 'knot-animating': knot.animating }"
               :style="{ left: knot.x + '%' }"
             >
               <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+              <text class="knot-decoration">{{ getDecorationIcon(rope.decoration) }}</text>
+            </view>
+            <!-- 大结（10） -->
+            <view
+              v-for="big in rope.bigKnots"
+              :key="big.id"
+              class="rope-knot big-knot"
+              :class="{ 'knot-animating': big.animating }"
+              :style="{ left: big.x + '%' }"
+            >
+              <image class="knot-image big-knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
               <text class="knot-decoration">{{ getDecorationIcon(rope.decoration) }}</text>
             </view>
           </view>
@@ -93,13 +105,14 @@
           {{ question.questionTitle || '点击绳子打结' }}
           <br />
           <text style="font-size: 24rpx; font-weight: 400;">
-            提示：点击绳子打结，<text style="font-weight: 700">点击绳结可以解开</text>
+            提示：点击绳子打小结表示1，<text style="font-weight: 700">长按打大结表示10</text>
           </text>
         </view>
-        <view class="rope-wrapper" @click="handleSingleRopeClick">
+        <view class="rope-wrapper" @click="handleSingleRopeClick" @longpress="handleSingleRopeLongPress">
           <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
+          <!-- 小结（1） -->
           <view
-            v-for="knot in knots"
+            v-for="knot in smallKnots"
             :key="knot.id"
             class="rope-knot"
             :class="{ 'knot-animating': knot.animating }"
@@ -108,9 +121,21 @@
             <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
             <text class="knot-decoration">{{ selectedDecorationIcon }}</text>
           </view>
+          <!-- 大结（10） -->
+          <view
+            v-for="big in bigKnots"
+            :key="big.id"
+            class="rope-knot big-knot"
+            :class="{ 'knot-animating': big.animating }"
+            :style="{ left: big.x + '%' }"
+          >
+            <image class="knot-image big-knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+            <text class="knot-decoration">{{ selectedDecorationIcon }}</text>
+          </view>
         </view>
         <view class="rope-info">
-          <text>当前绳结数量：{{ knots.length }}</text>
+          <text>小结：{{ smallKnots.length }} 个，大结：{{ bigKnots.length }} 个</text>
+          <text>当前表示数字：{{ currentValue }}</text>
           <text class="time-text">用时：{{ formatTime(elapsedSeconds) }}</text>
         </view>
       </view>
@@ -192,8 +217,9 @@ export default {
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
       typingTimer: null,
-      // 单一题目的绳结
-      knots: [],
+      // 单一题目的绳结：小结（1）和大结（10）
+      smallKnots: [],
+      bigKnots: [],
       // 组合题目的多根绳子
       ropes: [],
       // 当前选中的装饰物类型
@@ -227,6 +253,8 @@ export default {
       // 小孩提示相关
       showChildTip: false,
       childTipTimer: null,
+      // 已尝试的题目ID列表，用于换一题功能
+      triedQuestionIds: [],
     };
   },
   onLoad(options) {
@@ -267,6 +295,10 @@ export default {
       if (!this.selectedDecoration) return '';
       const deco = this.currentDecorations.find(d => d.type === this.selectedDecoration);
       return deco ? deco.icon : '';
+    },
+    // 当前用小结+大结表示的数值
+    currentValue() {
+      return this.smallKnots.length + this.bigKnots.length * 10;
     },
   },
   methods: {
@@ -363,8 +395,20 @@ export default {
 
         if (json.result && json.result.questions && json.result.questions.length > 0) {
           const list = json.result.questions;
-          const availableList =
-            list.length > 1 ? list.filter(item => item.question_id !== this.currentQuestionId) : list;
+          // 过滤掉已经尝试过的题目
+          let availableList = list.filter(item => !this.triedQuestionIds.includes(item.question_id));
+          
+          // 如果所有题目都尝试过了，清空尝试列表
+          if (availableList.length === 0) {
+            this.triedQuestionIds = [];
+            availableList = list;
+          }
+          
+          // 如果只有一个题目，就直接使用
+          if (availableList.length === 0) {
+            availableList = list;
+          }
+          
           const q = availableList[Math.floor(Math.random() * availableList.length)];
 
           // 解析题目内容
@@ -405,6 +449,11 @@ export default {
             decorations: content.decorations || [],
           };
           this.currentQuestionId = q.question_id;
+          
+          // 将当前题目ID添加到已尝试列表
+          if (!this.triedQuestionIds.includes(q.question_id)) {
+            this.triedQuestionIds.push(q.question_id);
+          }
 
           this.currentDecorations = this.question.decorations;
 
@@ -414,7 +463,8 @@ export default {
             this.ropes = Array.isArray(answer.items)
               ? answer.items.map(item => ({
                   decoration: item.decoration,
-                  knots: [],
+                  smallKnots: [],
+                  bigKnots: [],
                 }))
               : [];
             // 默认选中第一个装饰物
@@ -469,7 +519,7 @@ export default {
         .exec();
     },
 
-    // 单一题目：点击绳子打结或解结
+    // 单一题目：点击绳子打小结（1）或解结
     handleSingleRopeClick(e) {
       if (!this.selectedDecoration) {
         uni.showToast({ title: '请先选择装饰物', icon: 'none' });
@@ -478,29 +528,72 @@ export default {
 
       this.computeClickPercent(e, (percent) => {
         const threshold = 5;
-        // 先看附近有没有绳结，有就解结
-        const idx = this.knots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        // 先看附近有没有小结，有就解小结
+        const idx = this.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
         if (idx !== -1) {
-          this.knots.splice(idx, 1);
+          this.smallKnots.splice(idx, 1);
           return;
         }
-        // 否则新增一个绳结
+        // 再看附近有没有大结，有就解大结
+        const bigIdx = this.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (bigIdx !== -1) {
+          this.bigKnots.splice(bigIdx, 1);
+          return;
+        }
+        // 否则新增一个小结
         const newKnot = {
-          id: Date.now() + '_' + this.knots.length,
+          id: Date.now() + '_' + this.smallKnots.length,
           x: percent,
           animating: true,
         };
-        this.knots.push(newKnot);
+        this.smallKnots.push(newKnot);
         setTimeout(() => {
-          const idx2 = this.knots.findIndex((k) => k.id === newKnot.id);
+          const idx2 = this.smallKnots.findIndex((k) => k.id === newKnot.id);
           if (idx2 !== -1) {
-            this.$set(this.knots[idx2], 'animating', false);
+            this.$set(this.smallKnots[idx2], 'animating', false);
           }
         }, 300);
       });
     },
 
-    // 组合题目：点击某根绳子打结或解结
+    // 单一题目：长按绳子打大结（10）或解结
+    handleSingleRopeLongPress(e) {
+      if (!this.selectedDecoration) {
+        uni.showToast({ title: '请先选择装饰物', icon: 'none' });
+        return;
+      }
+
+      this.computeClickPercent(e, (percent) => {
+        const threshold = 5;
+        // 先看附近有没有大结，有就解大结
+        const bigIdx = this.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (bigIdx !== -1) {
+          this.bigKnots.splice(bigIdx, 1);
+          return;
+        }
+        // 再看附近有没有小结，有就解小结
+        const idx = this.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (idx !== -1) {
+          this.smallKnots.splice(idx, 1);
+          return;
+        }
+        // 否则新增一个大结
+        const newBig = {
+          id: Date.now() + '_big_' + this.bigKnots.length,
+          x: percent,
+          animating: true,
+        };
+        this.bigKnots.push(newBig);
+        setTimeout(() => {
+          const idx2 = this.bigKnots.findIndex((k) => k.id === newBig.id);
+          if (idx2 !== -1) {
+            this.$set(this.bigKnots[idx2], 'animating', false);
+          }
+        }, 300);
+      });
+    },
+
+    // 组合题目：点击某根绳子打小结（1）或解结
     handleRopeClick(e) {
       // 从事件中获取绳子索引
       const ropeIndex = e.currentTarget.dataset.index;
@@ -514,23 +607,71 @@ export default {
 
       this.computeClickPercent(e, (percent) => {
         const threshold = 5;
-        // 先看附近有没有绳结，有就解结
-        const idx = rope.knots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        // 先看附近有没有小结，有就解小结
+        const idx = rope.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
         if (idx !== -1) {
-          rope.knots.splice(idx, 1);
+          rope.smallKnots.splice(idx, 1);
           return;
         }
-        // 否则新增一个绳结
+        // 再看附近有没有大结，有就解大结
+        const bigIdx = rope.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (bigIdx !== -1) {
+          rope.bigKnots.splice(bigIdx, 1);
+          return;
+        }
+        // 否则新增一个小结
         const newKnot = {
-          id: Date.now() + '_' + rope.knots.length,
+          id: Date.now() + '_' + rope.smallKnots.length,
           x: percent,
           animating: true,
         };
-        rope.knots.push(newKnot);
+        rope.smallKnots.push(newKnot);
         setTimeout(() => {
-          const idx2 = rope.knots.findIndex((k) => k.id === newKnot.id);
+          const idx2 = rope.smallKnots.findIndex((k) => k.id === newKnot.id);
           if (idx2 !== -1) {
-            this.$set(rope.knots[idx2], 'animating', false);
+            this.$set(rope.smallKnots, idx2, { ...rope.smallKnots[idx2], animating: false });
+          }
+        }, 300);
+      });
+    },
+
+    // 组合题目：长按某根绳子打大结（10）或解结
+    handleRopeLongPress(e) {
+      // 从事件中获取绳子索引
+      const ropeIndex = e.currentTarget.dataset.index;
+      if (ropeIndex === undefined) return;
+
+      const rope = this.ropes[ropeIndex];
+      if (!rope.decoration) {
+        uni.showToast({ title: '绳子装饰物未设置', icon: 'none' });
+        return;
+      }
+
+      this.computeClickPercent(e, (percent) => {
+        const threshold = 5;
+        // 先看附近有没有大结，有就解大结
+        const bigIdx = rope.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (bigIdx !== -1) {
+          rope.bigKnots.splice(bigIdx, 1);
+          return;
+        }
+        // 再看附近有没有小结，有就解小结
+        const idx = rope.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (idx !== -1) {
+          rope.smallKnots.splice(idx, 1);
+          return;
+        }
+        // 否则新增一个大结
+        const newBig = {
+          id: Date.now() + '_big_' + rope.bigKnots.length,
+          x: percent,
+          animating: true,
+        };
+        rope.bigKnots.push(newBig);
+        setTimeout(() => {
+          const idx2 = rope.bigKnots.findIndex((k) => k.id === newBig.id);
+          if (idx2 !== -1) {
+            this.$set(rope.bigKnots, idx2, { ...rope.bigKnots[idx2], animating: false });
           }
         }, 300);
       });
@@ -545,13 +686,13 @@ export default {
         userAnswer = {
           items: this.ropes.map(rope => ({
             decoration: rope.decoration,
-            count: rope.knots.length,
+            count: rope.smallKnots.length + rope.bigKnots.length * 10,
           })),
         };
       } else {
         userAnswer = {
           decoration: this.selectedDecoration,
-          count: this.knots.length,
+          count: this.currentValue,
         };
       }
 
@@ -610,10 +751,12 @@ export default {
       // 清空绳结
       if (this.isComboQuestion) {
         this.ropes.forEach(rope => {
-          rope.knots = [];
+          rope.smallKnots = [];
+          rope.bigKnots = [];
         });
       } else {
-        this.knots = [];
+        this.smallKnots = [];
+        this.bigKnots = [];
       }
       // 重置计时器
       this.resetTimer();
@@ -625,7 +768,8 @@ export default {
       // 先关闭游戏弹窗，再加载新题目
       this.showGamePopup = false;
       // 清空当前题目数据
-      this.knots = [];
+      this.smallKnots = [];
+      this.bigKnots = [];
       this.ropes = [];
       this.selectedDecoration = null;
       this.currentDecorations = [];
@@ -638,8 +782,121 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
-      // 重新获取题目
-      this.fetchQuestion();
+      // 调用新的接口获取下一题
+      this.fetchNextQuestion();
+    },
+
+    // 从后端获取下一题（用于换一题功能）
+    fetchNextQuestion() {
+      const gamerId = Number(this.gamerId);
+      const levelId = Number(this.levelId);
+      const trackId = Number(this.trackId);
+
+      if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
+        const local = {
+          question_id: 0,
+          question_type: 'rope_decoration',
+          title: '今日族长笑着对你说：今天打到了1头鹿，用绳结+鹿皮标记记录下来吧',
+          correct_answer: { decoration: 'LuPi', count: 1 },
+          decorations: [{ type: 'LuPi', name: '鹿皮', icon: '🦌' }],
+        };
+        this.question = local;
+        this.currentQuestionId = local.question_id;
+        this.currentDecorations = local.decorations;
+        this.selectedDecoration = local.decorations[0].type;
+        this.playTyping(local.title);
+        return;
+      }
+
+      const params = { gamerId, levelId, trackId };
+      this.$get('/question_bank/get_next_question', params, (json) => {
+        const allThreeStars = json.result && (json.result.all_three_stars || json.result.allThreeStars);
+        if (allThreeStars) {
+          setTimeout(() => {
+            this.showAllCompleteModal = true;
+            setTimeout(() => {
+              this.goToNextLevel();
+            }, 3000);
+          }, 1000);
+          return;
+        }
+
+        if (json.result && json.result.questions && json.result.questions.length > 0) {
+          const list = json.result.questions;
+          const q = list[0];
+
+          // 解析题目内容
+          let content = {};
+          let answer = {};
+          let elderSpeech = '';
+          let questionTitle = '';
+          try {
+            content = typeof q.question_content === 'string' ? JSON.parse(q.question_content) : q.question_content;
+            answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
+
+            // 拼接：question_title + options[0]
+            if (content.options && content.options[0]) {
+              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              // 保存 options[0] 用于弹窗标题
+              questionTitle = content.options[0];
+            }
+          } catch (e) {
+            console.error('解析题目JSON失败', e);
+          }
+
+          // 如果拼接后为空，使用默认文案
+          if (!elderSpeech || elderSpeech.trim() === '') {
+            elderSpeech = '请完成题目';
+          }
+
+          // 如果 questionTitle 为空，使用默认标题
+          if (!questionTitle || questionTitle.trim() === '') {
+            questionTitle = '请完成题目';
+          }
+
+          this.question = {
+            question_id: q.question_id,
+            question_type: q.question_type,
+            title: elderSpeech,
+            questionTitle: questionTitle,
+            correct_answer: answer,
+            decorations: content.decorations || [],
+          };
+          this.currentQuestionId = q.question_id;
+          
+          // 将当前题目ID添加到已尝试列表
+          if (!this.triedQuestionIds.includes(q.question_id)) {
+            this.triedQuestionIds.push(q.question_id);
+          }
+
+          this.currentDecorations = this.question.decorations;
+
+          // 初始化绳子
+          if (this.question.question_type === 'rope_decoration_combo') {
+            // 组合题目：根据答案初始化多根绳子，每根绳子预设对应的装饰物类型
+            this.ropes = Array.isArray(answer.items)
+              ? answer.items.map(item => ({
+                  decoration: item.decoration,
+                  smallKnots: [],
+                  bigKnots: [],
+                }))
+              : [];
+            // 默认选中第一个装饰物
+            if (this.currentDecorations.length > 0) {
+              this.selectedDecoration = this.currentDecorations[0].type;
+            }
+          } else {
+            // 单一题目：默认选中唯一的装饰物
+            this.smallKnots = [];
+            this.bigKnots = [];
+            if (this.currentDecorations.length > 0) {
+              this.selectedDecoration = this.currentDecorations[0].type;
+            }
+          }
+
+          this.playTyping(this.question.title);
+        }
+      });
     },
 
     // 计算星级
@@ -682,10 +939,13 @@ export default {
 
     // 切到下一题
     startNextQuestion() {
-      this.knots = [];
+      this.smallKnots = [];
+      this.bigKnots = [];
       this.ropes = [];
       this.selectedDecoration = null;
       this.currentDecorations = [];
+      // 清空已尝试题目列表
+      this.triedQuestionIds = [];
       this.resetTimer();
       this.showFullSpeech = false;
       this.showGamePopup = false;
@@ -1097,6 +1357,18 @@ export default {
   font-size: 32rpx;
   pointer-events: none;
   filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.2));
+}
+
+/* 大结样式（10） */
+.big-knot {
+  width: 18%;
+  min-width: 90rpx;
+  max-width: 120rpx;
+  height: 110rpx;
+}
+
+.big-knot-image {
+  transform: rotate(90deg) scale(1.2);
 }
 
 .rope-info {

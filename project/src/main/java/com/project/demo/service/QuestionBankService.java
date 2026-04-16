@@ -784,4 +784,71 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         wrapper.eq("level_id", levelId);
         return levelStarRecordMapper.selectOne(wrapper);
     }
+
+    /**
+     * 获取下一题（忽略当前未完成的题目，用于换一题功能）
+     *
+     * 规则说明：
+     * 1. 忽略玩家最近一次的作答记录，直接从未满3星的题目中随机抽取一题
+     * 2. 排除掉所有已经拿到3星的题目，保证“满星题目不再出现”
+     *
+     * @param gamerId 玩家ID
+     * @param levelId 关卡ID
+     * @param trackId 赛道ID
+     * @return 题目列表（当前只会返回0或1道题）
+     */
+    public List<QuestionBank> getNextQuestion(Integer gamerId, Integer levelId, Integer trackId) {
+        // 校验必填字段
+        ValidationResult validation = validateRequiredFields(gamerId, levelId, trackId);
+        if (!validation.isValid()) {
+            throw new IllegalArgumentException(validation.getErrorMessage());
+        }
+
+        // 1. 抽取新的题目：优先按 game_levels_id 查题库；如果查不到，再按当前关卡在赛道内的 level_order 兜底
+        Integer effectiveQuestionLevelId = resolveQuestionBankLevelId(levelId, trackId);
+        QueryWrapper<QuestionBank> questionWrapper = new QueryWrapper<>();
+        questionWrapper.eq("level_id", effectiveQuestionLevelId);
+        questionWrapper.eq("track_id", trackId);
+        questionWrapper.eq("is_enabled", 1);
+        questionWrapper.orderByAsc("sort_order");
+        List<QuestionBank> allQuestions = questionBankMapper.selectList(questionWrapper);
+
+        if (allQuestions.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 2. 找出已经拿到 3 星的题目（这些题目不再出现）
+        QueryWrapper<PlayerQuestionRecord> threeStarWrapper = new QueryWrapper<>();
+        threeStarWrapper.eq("gamer_id", gamerId);
+        threeStarWrapper.eq("level_id", levelId);
+        threeStarWrapper.eq("track_id", trackId);
+        threeStarWrapper.eq("is_correct", 1);
+        threeStarWrapper.le("answer_time", 60);
+        List<PlayerQuestionRecord> threeStarRecords = playerQuestionRecordMapper.selectList(threeStarWrapper);
+
+        Set<Integer> finishedQuestionIds = threeStarRecords.stream()
+                .map(PlayerQuestionRecord::getQuestion_id)
+                .collect(Collectors.toSet());
+        
+        log.info("已满3星的题目ID列表: {}", finishedQuestionIds);
+        log.info("本关卡总题目数: {}, 已满3星题目数: {}", allQuestions.size(), finishedQuestionIds.size());
+
+        // 3. 过滤掉已满星题目
+        List<QuestionBank> availableQuestions = allQuestions.stream()
+                .filter(q -> !finishedQuestionIds.contains(q.getQuestion_id()))
+                .collect(Collectors.toList());
+
+        if (availableQuestions.isEmpty()) {
+            // 所有题目都已经拿到 3 星，认为本关题目已刷完。
+            log.info("所有题目都已满3星，本关卡已完成");
+            // 返回空列表，但会在 Controller 层添加特殊标识
+            return Collections.emptyList();
+        }
+
+        // 4. 从剩余题目中随机抽取 1 道
+        Collections.shuffle(availableQuestions);
+        QuestionBank selectedQuestion = availableQuestions.get(0);
+        log.info("抽取新题: questionId={}, 剩余可选题目数: {}", selectedQuestion.getQuestion_id(), availableQuestions.size());
+        return Collections.singletonList(selectedQuestion);
+    }
 }

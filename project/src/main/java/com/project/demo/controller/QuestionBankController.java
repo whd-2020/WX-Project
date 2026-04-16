@@ -450,4 +450,73 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
             return error(500, "检查完成状态失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 获取下一题（忽略当前未完成的题目，用于换一题功能）
+     * GET /question_bank/get_next_question?gamerId=1&levelId=1&trackId=1
+     * 
+     * 必填参数：
+     * - gamerId: 玩家ID（必填，必须>0）
+     * - levelId: 关卡ID（必填，必须>0）
+     * - trackId: 赛道ID（必填，必须>0）
+     */
+    @GetMapping("/get_next_question")
+    public Map<String, Object> getNextQuestion(
+            @RequestParam(required = false) Integer gamerId,
+            @RequestParam(required = false) Integer levelId,
+            @RequestParam(required = false) Integer trackId) {
+        try {
+            // 统一收集所有校验错误
+            ValidationResult validation = new ValidationResult();
+            if (gamerId == null || gamerId <= 0) {
+                validation.addError("玩家ID不能为空且必须大于0");
+            }
+            if (levelId == null || levelId <= 0) {
+                validation.addError("关卡ID不能为空且必须大于0");
+            }
+            if (trackId == null || trackId <= 0) {
+                validation.addError("赛道ID不能为空且必须大于0");
+            }
+            
+            // 如果有校验错误，统一返回
+            if (!validation.isValid()) {
+                return error(400, validation.getErrorMessage());
+            }
+            
+            List<QuestionBank> questions = service.getNextQuestion(gamerId, levelId, trackId);
+            
+            // 检查是否所有题目都已答完
+            boolean isCompleted = service.isLevelCompleted(gamerId, levelId, trackId);
+            
+            // 检查题库中是否有题目（用于区分"题库无题目"和"所有题目都满3星"）
+            int totalQuestionCount = service.getLevelQuestionCount(levelId, trackId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("questions", questions);
+            result.put("isCompleted", isCompleted);
+            result.put("questionCount", questions.size());
+            result.put("totalQuestionCount", totalQuestionCount);
+
+            // 特殊标识：所有题目都满3星
+            // 判断逻辑：题库有题目（totalQuestionCount > 0），但返回的questions为空，说明所有题目都满3星
+            boolean allThreeStars = totalQuestionCount > 0 && questions.isEmpty();
+            result.put("allThreeStars", allThreeStars);
+
+            log.info("下一题查询结果: levelId={}, trackId={}, totalQuestionCount={}, returnedQuestions={}, allThreeStars={}",
+                    levelId, trackId, totalQuestionCount, questions.size(), allThreeStars);
+
+            if (allThreeStars) {
+                result.put("message", "小朋友你也太厉害了，前往下一关吧！");
+                log.info("关卡{}所有题目都已满3星，提示前往下一关", levelId);
+            }
+            
+            return success(result);
+        } catch (IllegalArgumentException e) {
+            log.warn("参数校验失败: {}", e.getMessage());
+            return error(400, e.getMessage());
+        } catch (Exception e) {
+            log.error("获取下一题失败: {}", e.getMessage(), e);
+            return error(500, "获取题目失败: " + e.getMessage());
+        }
+    }
 }
