@@ -1,8 +1,5 @@
 <template>
-  <view class="rope-level-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
-    <tn-nav-bar>结绳计数 · 第六关</tn-nav-bar>
+  <view class="rope-level-page">
 
     <!-- 背景图片 -->
     <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />

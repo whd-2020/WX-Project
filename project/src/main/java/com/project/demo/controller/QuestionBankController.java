@@ -321,7 +321,7 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
             int stars = service.calculateAndSaveStars(gamerId, levelId, trackId, totalTime, correctCount);
             
             // 获取星级记录
-            LevelStarRecord starRecord = service.getLevelStarRecord(gamerId, levelId);
+            LevelStarRecord starRecord = service.getLevelStarRecord(gamerId, levelId, trackId);
             
             Map<String, Object> result = new HashMap<>();
             result.put("stars", stars);
@@ -360,11 +360,13 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
      * 必填参数：
      * - gamerId: 玩家ID（必填，必须>0）
      * - levelId: 关卡ID（必填，必须>0）
+     * - trackId: 赛道ID（必填，必须>0）
      */
     @GetMapping("/get_star_record")
     public Map<String, Object> getStarRecord(
             @RequestParam(required = false) Integer gamerId,
-            @RequestParam(required = false) Integer levelId) {
+            @RequestParam(required = false) Integer levelId,
+            @RequestParam(required = false) Integer trackId) {
         try {
             // 统一收集所有校验错误
             ValidationResult validation = new ValidationResult();
@@ -374,13 +376,16 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
             if (levelId == null || levelId <= 0) {
                 validation.addError("关卡ID不能为空且必须大于0");
             }
+            if (trackId == null || trackId <= 0) {
+                validation.addError("赛道ID不能为空且必须大于0");
+            }
             
             // 如果有校验错误，统一返回
             if (!validation.isValid()) {
                 return error(400, validation.getErrorMessage());
             }
             
-            LevelStarRecord starRecord = service.getLevelStarRecord(gamerId, levelId);
+            LevelStarRecord starRecord = service.getLevelStarRecord(gamerId, levelId, trackId);
             
             if (starRecord == null) {
                 Map<String, Object> emptyResult = new HashMap<>();

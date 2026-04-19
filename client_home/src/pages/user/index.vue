@@ -1,5 +1,5 @@
 <template>
-  <view id="page_user" class="page_user" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
+  <view id="page_user" class="page_user">
     <!-- 用户栏模块(开始) -->
     <view class="user">
       <!-- 头像 -->

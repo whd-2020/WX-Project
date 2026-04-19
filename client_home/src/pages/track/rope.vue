@@ -1,7 +1,5 @@
 <template>
-  <view class="track-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
+  <view class="track-page">
     <view class="track-content">
       <image
         class="track-bg"
@@ -249,26 +247,23 @@ export default {
       console.log('关卡已解锁，准备跳转');
       // 结绳计数第一关到第六关：跳转到专属互动页面
       if (index === 0) {
-        this.$navTo(`/pagesC/rope/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+        this.$navTo(`/pagesC/ShenJieJiShu/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 1) {
-        this.$navTo(`/pagesC/rope/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+        this.$navTo(`/pagesC/ShenJieJiShu/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 2) {
-        this.$navTo(`/pagesC/rope/level3?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+        this.$navTo(`/pagesC/ShenJieJiShu/level3?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 3) {
-        this.$navTo(`/pagesC/rope/level4?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+        this.$navTo(`/pagesC/ShenJieJiShu/level4?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 4) {
-        this.$navTo(`/pagesC/rope/level5?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+        this.$navTo(`/pagesC/ShenJieJiShu/level5?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else if (index === 5) {
-        this.$navTo(`/pagesC/rope/level6?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+        this.$navTo(`/pagesC/ShenJieJiShu/level6?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
       } else {
         // 其他关卡暂时仍然跳到通用详情页
         this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
       }
     },
-    // 返回上一页
-    goBack() {
-      uni.navigateBack();
-    }
+
   }
 };
 
@@ -281,38 +276,7 @@ export default {
   background-color: #f5f5f5;
 }
 
-// 返回箭头样式
-.back-arrow {
-  position: fixed;
-  top: 20rpx;
-  left: 20rpx;
-  width: 60rpx;
-  height: 60rpx;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  cursor: pointer;
-  transition: all 0.3s ease;
 
-  &:active {
-    transform: scale(0.9);
-    background: rgba(255, 255, 255, 1);
-  }
-
-  &::before {
-    content: '';
-    width: 20rpx;
-    height: 20rpx;
-    border-left: 3rpx solid #333;
-    border-bottom: 3rpx solid #333;
-    transform: rotate(45deg);
-    margin-left: 6rpx;
-  }
-}
 
 .track-content {
   position: relative;

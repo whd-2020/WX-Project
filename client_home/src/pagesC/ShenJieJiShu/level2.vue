@@ -1,8 +1,5 @@
 <template>
-  <view class="rope-level-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
-    <tn-nav-bar>结绳计数 · 第一关</tn-nav-bar>
+  <view class="rope-level-page">
 
     <!-- 背景图片 -->
     <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />
@@ -115,7 +112,7 @@ export default {
     return {
       gamerId: null,
       trackId: 1, // 结绳计数赛道
-      levelId: 1, // 第一关
+      levelId: 2, // 第二关
       question: null,
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
@@ -394,15 +391,16 @@ export default {
           if (target === 1 && q.correct_answer) {
             try {
               const answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
-              if (answer.answer) {
-                const answerNum = Number(answer.answer);
-                if (!Number.isNaN(answerNum) && answerNum > 0) {
-                  target = answerNum;
-                }
-              } else if (answer.count) {
+              // 支持两种格式：{"answer":"12"} 或 {"decoration":"YuGu","count":12}
+              if (answer.count) {
                 const countNum = Number(answer.count);
                 if (!Number.isNaN(countNum) && countNum > 0) {
                   target = countNum;
+                }
+              } else if (answer.answer) {
+                const answerNum = Number(answer.answer);
+                if (!Number.isNaN(answerNum) && answerNum > 0) {
+                  target = answerNum;
                 }
               }
             } catch (e) {

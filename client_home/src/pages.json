@@ -17,6 +17,7 @@
       "path": "pages/index/index",
       "style": {
         "navigationBarTitleText": "首页",
+        "navigationStyle": "custom",
         "enablePullDownRefresh": false,
         "disableScroll": true
       },
@@ -226,39 +227,75 @@
           }
         },
         {
-          "path": "rope/level1",
+          "path": "ShenJieJiShu/level1",
           "style": {
             "navigationBarTitleText": "结绳计数 · 第一关"
           }
         },
         {
-          "path": "rope/level2",
+          "path": "ShenJieJiShu/level2",
           "style": {
             "navigationBarTitleText": "结绳计数 · 第二关"
           }
         },
         {
-          "path": "rope/level3",
+          "path": "ShenJieJiShu/level3",
           "style": {
             "navigationBarTitleText": "结绳计数 · 第三关"
           }
         },
         {
-          "path": "rope/level4",
+          "path": "ShenJieJiShu/level4",
           "style": {
             "navigationBarTitleText": "结绳计数 · 第四关"
           }
         },
         {
-          "path": "rope/level5",
+          "path": "ShenJieJiShu/level5",
           "style": {
             "navigationBarTitleText": "结绳计数 · 第五关"
           }
         },
         {
-          "path": "rope/level6",
+          "path": "ShenJieJiShu/level6",
           "style": {
             "navigationBarTitleText": "结绳计数 · 第六关"
+          }
+        },
+        {
+          "path": "ShuZiRenZi/level1",
+          "style": {
+            "navigationBarTitleText": "数字认知 · 第一关"
+          }
+        },
+        {
+          "path": "ShuZiRenZi/level2",
+          "style": {
+            "navigationBarTitleText": "数字认知 · 第二关"
+          }
+        },
+        {
+          "path": "ShuZiRenZi/level3",
+          "style": {
+            "navigationBarTitleText": "数字认知 · 第三关"
+          }
+        },
+        {
+          "path": "ShuZiRenZi/level4",
+          "style": {
+            "navigationBarTitleText": "数字认知 · 第四关"
+          }
+        },
+        {
+          "path": "ShuZiRenZi/level5",
+          "style": {
+            "navigationBarTitleText": "数字认知 · 第五关"
+          }
+        },
+        {
+          "path": "ShuZiRenZi/level6",
+          "style": {
+            "navigationBarTitleText": "数字认知 · 第六关"
           }
         },
 
@@ -386,7 +423,7 @@
     }
   ],
   "globalStyle": {
-    "navigationStyle": "custom",
+    "navigationStyle": "default",
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "uniapp-ma-template",
     "navigationBarBackgroundColor": "#fff",

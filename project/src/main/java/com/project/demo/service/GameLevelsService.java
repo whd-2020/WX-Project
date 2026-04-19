@@ -70,27 +70,17 @@ public class GameLevelsService extends BaseService<GameLevels> {
                 ));
 
         // 4. 查询玩家的关卡星星记录（用于显示累计星星数）
-        // 这里只按 gamer_id 查询：因为 level_id 对应的是 game_levels_id，全局唯一。
-        // 这样可以兼容历史遗留数据里 track_id 为空或写错的情况，避免前端列表查不到累计星数。
+        // 按 gamer_id + track_id 查询，确保只获取当前赛道的星星记录
         QueryWrapper<LevelStarRecord> starWrapper = new QueryWrapper<>();
         starWrapper.eq("gamer_id", gamerId);
+        starWrapper.eq("track_id", trackId);
         List<LevelStarRecord> starRecords = levelStarRecordMapper.selectList(starWrapper);
 
-        // 构建星星记录Map，key为level_id；如果出现重复，优先保留当前赛道的数据
+        // 构建星星记录Map，key为level_id（关卡顺序）
         Map<Integer, LevelStarRecord> starMap = new HashMap<>();
         for (LevelStarRecord record : starRecords) {
-            Integer levelId = record.getLevel_id();
-            if (levelId == null) {
-                continue;
-            }
-            LevelStarRecord existing = starMap.get(levelId);
-            if (existing == null) {
-                starMap.put(levelId, record);
-                continue;
-            }
-            boolean currentMatch = record.getTrack_id() != null && record.getTrack_id().equals(trackId);
-            boolean existingMatch = existing.getTrack_id() != null && existing.getTrack_id().equals(trackId);
-            if (currentMatch || !existingMatch) {
+            Integer levelId = record.getLevel_id(); // 关卡顺序
+            if (levelId != null) {
                 starMap.put(levelId, record);
             }
         }
@@ -101,7 +91,8 @@ public class GameLevelsService extends BaseService<GameLevels> {
         for (int i = 0; i < allLevels.size(); i++) {
             GameLevels level = allLevels.get(i);
             PlayerLevelUnlock unlockRecord = unlockMap.get(level.getGame_levels_id());
-            LevelStarRecord starRecord = starMap.get(level.getGame_levels_id());
+            // 使用level_order作为key，因为LevelStarRecord.level_id存储的是关卡顺序
+            LevelStarRecord starRecord = starMap.get(level.getLevel_order());
 
             boolean isUnlocked;
             boolean isCompleted = false;
@@ -128,9 +119,9 @@ public class GameLevelsService extends BaseService<GameLevels> {
                 }
             } else {
                 // 后续关卡：检查上一关的累计星星数是否>=20
-                // 注意：这里使用 level.getGame_levels_id() 作为 key，因为 LevelStarRecord.level_id 存储的就是 game_levels_id
+                // 注意：这里使用 level.getLevel_order() 作为 key，因为 LevelStarRecord.level_id 存储的是关卡顺序
                 GameLevels prevLevel = allLevels.get(i - 1);
-                LevelStarRecord prevStarRecord = starMap.get(prevLevel.getGame_levels_id());
+                LevelStarRecord prevStarRecord = starMap.get(prevLevel.getLevel_order());
                 int prevTotalStars = 0;
                 if (prevStarRecord != null && prevStarRecord.getTotal_stars() != null) {
                     prevTotalStars = prevStarRecord.getTotal_stars();
@@ -209,7 +200,8 @@ public class GameLevelsService extends BaseService<GameLevels> {
 
             // 构建返回数据
             Map<String, Object> levelInfo = new HashMap<>();
-            levelInfo.put("levelId", level.getGame_levels_id());
+            levelInfo.put("levelId", level.getLevel_order()); // 返回关卡顺序
+            levelInfo.put("gameLevelsId", level.getGame_levels_id()); // 保留game_levels_id
             levelInfo.put("levelName", level.getLevel_name());
             levelInfo.put("levelOrder", level.getLevel_order());
             levelInfo.put("isUnlocked", isUnlocked ? 1 : 0);

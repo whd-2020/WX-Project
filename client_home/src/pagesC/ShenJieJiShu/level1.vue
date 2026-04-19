@@ -1,8 +1,5 @@
 <template>
-  <view class="rope-level-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
-    <tn-nav-bar>结绳计数 · 第二关</tn-nav-bar>
+  <view class="rope-level-page">
 
     <!-- 背景图片 -->
     <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />
@@ -115,7 +112,8 @@ export default {
     return {
       gamerId: null,
       trackId: 1, // 结绳计数赛道
-      levelId: 2, // 第二关
+      levelId: 1, // 第一关（关卡顺序）
+      routeLevelId: 1, // 保存路由参数中的levelId
       question: null,
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
@@ -160,6 +158,7 @@ export default {
       const lid = Number(options.level_id);
       if (!Number.isNaN(lid) && lid > 0) {
         this.levelId = lid;
+        this.routeLevelId = lid; // 保存路由参数中的levelId
       }
     }
     if (options && options.track_id) {
@@ -254,7 +253,7 @@ export default {
     // 从后端获取本关的一道随机题（优先本地随机）
     fetchQuestion() {
       const gamerId = Number(this.gamerId);
-      const levelId = Number(this.levelId);
+      const levelId = Number(this.routeLevelId || this.levelId); // 使用保存的路由参数中的levelId
       const trackId = Number(this.trackId);
 
       // 前端兜底：如果参数不合法，就不用访问后端，直接给默认题
@@ -394,16 +393,15 @@ export default {
           if (target === 1 && q.correct_answer) {
             try {
               const answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
-              // 支持两种格式：{"answer":"12"} 或 {"decoration":"YuGu","count":12}
-              if (answer.count) {
-                const countNum = Number(answer.count);
-                if (!Number.isNaN(countNum) && countNum > 0) {
-                  target = countNum;
-                }
-              } else if (answer.answer) {
+              if (answer.answer) {
                 const answerNum = Number(answer.answer);
                 if (!Number.isNaN(answerNum) && answerNum > 0) {
                   target = answerNum;
+                }
+              } else if (answer.count) {
+                const countNum = Number(answer.count);
+                if (!Number.isNaN(countNum) && countNum > 0) {
+                  target = countNum;
                 }
               }
             } catch (e) {
@@ -525,7 +523,7 @@ export default {
       const body = {
         gamerId: this.gamerId,
         questionId: this.question.question_id,
-        levelId: this.levelId,
+        levelId: this.routeLevelId || this.levelId, // 使用保存的路由参数中的levelId
         trackId: this.trackId,
         userAnswer: JSON.stringify({ answer: String(count) }),
         answerTime: usedTime,

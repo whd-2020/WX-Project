@@ -1,7 +1,5 @@
 <template>
-  <view class="track-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
+  <view class="track-page">
     <view class="track-content">
       <image 
         class="track-bg" 
@@ -20,7 +18,7 @@
             :class="{ 'level-locked': level.isUnlocked === 0 }"
             v-for="(level, index) in levelList" 
             :key="level.levelId || index" 
-            @click="startLevel(level)"
+            @click="startLevel(index)"
           >
             <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
             <text 
@@ -28,7 +26,8 @@
               :class="{
                 'status-unlocked': level.isUnlocked === 1 && level.isCompleted === 0,
                 'status-completed': level.isCompleted === 1,
-                'status-locked': level.isUnlocked === 0
+                'status-locked': level.isUnlocked === 0,
+                'status-stars': level.status && level.status.includes('星')
               }"
             >
               {{ level.status }}
@@ -131,7 +130,54 @@ export default {
       try {
         const res = await getLevelProgressApi(this.gamerId, this.trackId);
         if (res.result && res.result.levels) {
-          this.levelList = res.result.levels;
+          // 第一次遍历：收集所有关卡的基础数据
+          const tempList = res.result.levels.map((level) => {
+            const isCompleted = Number(level.isCompleted ?? level.is_completed ?? 0) === 1;
+            const totalStarsRaw = level.totalStars ?? level.total_stars;
+            const totalStars = Number.isNaN(Number(totalStarsRaw)) ? 0 : Number(totalStarsRaw);
+
+            return {
+              ...level,
+              isCompleted: isCompleted ? 1 : 0,
+              totalStars,
+            };
+          });
+
+          // 第二次遍历：根据解锁规则设置每个关卡的解锁状态
+          this.levelList = tempList.map((level, index) => {
+            let shouldUnlock = false;
+
+            // 第一关：默认解锁
+            if (index === 0) {
+              shouldUnlock = true;
+            }
+            // 第二关：第一关得星数 >= 9 才解锁
+            else if (index === 1) {
+              const level1Stars = tempList[0].totalStars;
+              shouldUnlock = level1Stars >= 9;
+            }
+            // 第三关及以后：上一个关卡得星数 > 20 才解锁
+            else if (index > 1) {
+              const prevStars = tempList[index - 1].totalStars;
+              shouldUnlock = prevStars > 20;
+            }
+
+            let status = '';
+            if (shouldUnlock) {
+              status = `${level.totalStars}星`;
+            } else {
+              status = '未解锁';
+            }
+
+            return {
+              ...level,
+              isUnlocked: shouldUnlock ? 1 : 0,
+              status,
+            };
+          });
+
+          // 调试：打印关卡数据
+          console.log('关卡列表数据:', this.levelList);
         } else {
           uni.showToast({
             title: res.error?.message || '获取关卡进度失败',
@@ -148,7 +194,15 @@ export default {
         this.loading = false;
       }
     },
-    startLevel(level) {
+    startLevel(index) {
+      const level = this.levelList[index];
+      if (!level) {
+        uni.showToast({
+          title: '关卡信息加载失败',
+          icon: 'none'
+        });
+        return;
+      }
       if (level.isUnlocked === 0) {
         uni.showToast({
           title: '该关卡尚未解锁',
@@ -156,12 +210,38 @@ export default {
         });
         return;
       }
-      this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+      // 调试：打印关卡数据
+      console.log('=== 关卡点击 ===');
+      console.log('index:', index);
+      console.log('level:', level);
+      console.log('level.levelId:', level.levelId);
+      
+      const levelId = level.levelId || (index + 1);
+      const levelName = level.levelName || `关卡 ${levelId}`;
+      
+      console.log('传递的levelId:', levelId);
+      console.log('传递的trackId:', this.trackId);
+      console.log('传递的gamerId:', this.gamerId);
+      
+      // 数字认知关卡跳转到专门的页面
+      if (index === 0) {
+        this.$navTo(`/pagesC/ShuZiRenZi/level1?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 1) {
+        this.$navTo(`/pagesC/ShuZiRenZi/level2?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 2) {
+        this.$navTo(`/pagesC/ShuZiRenZi/level3?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 3) {
+        this.$navTo(`/pagesC/ShuZiRenZi/level4?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 4) {
+        this.$navTo(`/pagesC/ShuZiRenZi/level5?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 5) {
+        this.$navTo(`/pagesC/ShuZiRenZi/level6?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
+      } else {
+        // 其他关卡暂时跳到通用详情页
+        this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&game_levels_id=${levelId}&level_name=${encodeURIComponent(levelName)}`);
+      }
     },
-    // 返回上一页
-    goBack() {
-      uni.navigateBack();
-    }
+
   }
 };
 </script>
@@ -172,38 +252,7 @@ export default {
   background-color: #f5f5f5;
 }
 
-// 返回箭头样式
-.back-arrow {
-  position: fixed;
-  top: 20rpx;
-  left: 20rpx;
-  width: 60rpx;
-  height: 60rpx;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  cursor: pointer;
-  transition: all 0.3s ease;
 
-  &:active {
-    transform: scale(0.9);
-    background: rgba(255, 255, 255, 1);
-  }
-
-  &::before {
-    content: '';
-    width: 20rpx;
-    height: 20rpx;
-    border-left: 3rpx solid #333;
-    border-bottom: 3rpx solid #333;
-    transform: rotate(45deg);
-    margin-left: 6rpx;
-  }
-}
 
 .track-content {
   position: relative;
@@ -283,6 +332,11 @@ export default {
 .status-locked {
   color: #999;
   background-color: #e0e0e0;
+}
+
+.status-stars {
+  color: #ff9800;
+  font-weight: 600;
 }
 
 .level-locked {

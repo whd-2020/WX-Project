@@ -1,8 +1,5 @@
 <template>
-  <view class="rope-level-page" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
-    <tn-nav-bar>结绳计数 · 第四关</tn-nav-bar>
+  <view class="rope-level-page">
 
     <!-- 背景图片 -->
     <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />
@@ -61,6 +58,7 @@
             :style="{ left: knot.x + '%' }"
           >
             <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+            <text class="knot-decoration">{{ selectedDecorationIcon }}</text>
           </view>
 
           <!-- 大结（10） -->
@@ -72,6 +70,7 @@
             :style="{ left: big.x + '%' }"
           >
             <image class="knot-image big-knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+            <text class="knot-decoration big-knot-decoration">{{ selectedDecorationIcon }}</text>
           </view>
         </view>
         <view class="rope-info">
@@ -141,7 +140,7 @@ export default {
     return {
       gamerId: null,
       trackId: 1, // 结绳计数赛道
-      levelId: 4, // 第四关
+      levelId: 5, // 第六关
       question: null,
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
@@ -174,6 +173,9 @@ export default {
       // 小孩提示相关
       showChildTip: false,
       childTipTimer: null,
+      // 装饰物相关
+      currentDecorations: [],
+      selectedDecoration: null,
     };
   },
   onLoad(options) {
@@ -218,7 +220,14 @@ export default {
       }
       const target = Number(this.question.targetNumber);
       const current = this.currentValue;
-      return current === target;
+      // 确保数值比较时都是数字类型
+      return Number(current) === Number(target);
+    },
+    // 选中装饰物的图标
+    selectedDecorationIcon() {
+      if (!this.selectedDecoration) return '';
+      const deco = this.currentDecorations.find(d => d.type === this.selectedDecoration);
+      return deco ? deco.icon : '';
     },
   },
   methods: {
@@ -295,8 +304,11 @@ export default {
           question_id: 0,
           targetNumber: 10,
           title: '今日族长笑着对你说：用大结表示10，小结表示1，你会怎么用绳结表示数字 10 呢？',
+          decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
         };
         this.question = local;
+        this.currentDecorations = local.decorations || [];
+        this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
         this.playTyping(local.title);
         return;
       }
@@ -340,8 +352,11 @@ export default {
             question_id: 0,
             targetNumber: 10,
             title: '今日族长笑着对你说：用大结表示10，小结表示1，你会怎么用绳结表示数字 10 呢？',
+            decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
           };
           this.question = local;
+          this.currentDecorations = local.decorations || [];
+          this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
           this.showDefaultQuestionTip = true;
 
           if (this.defaultQuestionTipTimer) {
@@ -370,6 +385,7 @@ export default {
         let target = 10;
         let elderSpeech = '';
         let questionTitle = '';
+        let decorations = [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }];
 
         try {
           if (q.question_content) {
@@ -381,6 +397,10 @@ export default {
             }
             if (content.targetNumber) {
               target = Number(content.targetNumber);
+            }
+            // 解析装饰物数据
+            if (content.decorations && Array.isArray(content.decorations)) {
+              decorations = content.decorations;
             }
           }
 
@@ -423,7 +443,10 @@ export default {
           targetNumber: target,
           title: elderSpeech,
           questionTitle: questionTitle,
+          decorations: decorations,
         };
+        this.currentDecorations = decorations;
+        this.selectedDecoration = decorations.length > 0 ? decorations[0].type : null;
         this.playTyping(this.question.title);
       });
     },
@@ -549,12 +572,25 @@ export default {
         return;
       }
 
+      // 构建用户答案：如果有选中的装饰物，使用装饰物格式，否则使用简单格式
+      let userAnswerObj;
+      if (this.selectedDecoration) {
+        userAnswerObj = {
+          decoration: this.selectedDecoration,
+          count: value
+        };
+      } else {
+        userAnswerObj = {
+          answer: String(value)
+        };
+      }
+
       const body = {
         gamerId: this.gamerId,
         questionId: this.question.question_id,
         levelId: this.levelId,
         trackId: this.trackId,
-        userAnswer: JSON.stringify({ answer: String(value) }),
+        userAnswer: JSON.stringify(userAnswerObj),
         answerTime: usedTime,
       };
 
@@ -987,6 +1023,23 @@ export default {
   height: 100%;
   transform: rotate(90deg);
   object-fit: contain;
+}
+
+/* 绳结装饰物样式 */
+.knot-decoration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32rpx;
+  z-index: 10;
+  pointer-events: none;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.2));
+}
+
+/* 大结装饰物样式 */
+.big-knot-decoration {
+  font-size: 48rpx;
 }
 
 /* 绳结出现动画：从小到大的打结过程（.knot-image 的 transform 独立于 .rope-knot） */
