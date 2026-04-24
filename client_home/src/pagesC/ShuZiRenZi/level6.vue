@@ -145,23 +145,23 @@
           >
             <view 
               class="item-card bubble-item"
-              @click="toggleItem(chickenIcon, 'left')"
+              @click="toggleItem(currentIcon, 'left')"
             >
               <div class="bubble triangle-bubble">
                 <div class="triangle-row">
-                  <span class="bubble-icon">{{ chickenIcon }}</span>
+                  <span class="bubble-icon">{{ currentIcon }}</span>
                 </div>
                 <div class="triangle-row">
-                  <span class="bubble-icon">{{ chickenIcon }}</span>
-                  <span class="bubble-icon">{{ chickenIcon }}</span>
+                  <span class="bubble-icon">{{ currentIcon }}</span>
+                  <span class="bubble-icon">{{ currentIcon }}</span>
                 </div>
               </div>
             </view>
             <view 
               class="item-card single-item"
-              @click="toggleItem(chickenIcon, 'right')"
+              @click="toggleItem(currentIcon, 'right')"
             >
-              {{ chickenIcon }}
+              {{ currentIcon }}
             </view>
           </view>
         </view>
@@ -255,13 +255,13 @@ export default {
       elapsedSeconds: 0,
       elapsedTimer: null,
       numbers: [],
-      chickenIcon: '🐥',
       itemsPool: [
         { type: 'XiaoJi', name: '小鸡', icon: '🐥' },
         { type: 'YuGu', name: '鱼', icon: '🐟' },
         { type: 'GuoShi', name: '果实', icon: '🍎' }
       ],
-      isAddMode: true
+      isAddMode: true,
+      hasAnswered: false
     };
   },
   computed: {
@@ -276,8 +276,11 @@ export default {
         return userAnswer === correctAnswer.answer;
       } else if (this.question.question_type === 'drag_item') {
         const correctAnswer = this.question.correct_answer || {};
-        return this.droppedItems.left.length === correctAnswer.left_count &&
-               this.droppedItems.right.length === correctAnswer.right_count;
+        const userTotal = this.droppedItems.left.length * 10 + this.droppedItems.right.length;
+        const correctTotal = parseInt(correctAnswer.answer || '0');
+        
+        
+        return userTotal === correctTotal;
       }
       return false;
     },
@@ -295,14 +298,20 @@ export default {
       const correctAnswer = this.currentQuestion.correct_answer || {};
       const currentLeft = this.droppedItems.left.length;
       const currentRight = this.droppedItems.right.length;
-      const correctLeft = correctAnswer.left_count || 0;
-      const correctRight = correctAnswer.right_count || 0;
+      const userTotal = currentLeft * 10 + currentRight;
+      const correctTotal = parseInt(correctAnswer.answer || '0');
 
       if (this.isAddMode) {
-        return currentLeft > correctLeft || currentRight > correctRight;
+        return userTotal > correctTotal;
       } else {
-        return currentLeft < correctLeft || currentRight < correctRight;
+        return userTotal < correctTotal;
       }
+    },
+    currentIcon() {
+      if (this.question && this.question.question_content && this.question.question_content.decorations && this.question.question_content.decorations[0]) {
+        return this.question.question_content.decorations[0].icon;
+      }
+      return '🐥'; // 默认图标，以防数据缺失
     }
   },
   onLoad(options) {
@@ -344,6 +353,7 @@ export default {
         this.droppedItems = { left: [], right: [] };
         this.droppedItems.right = [num];
         this.selectedNumber = num;
+        this.hasAnswered = true;
       }
     },
     playTyping(text) {
@@ -434,6 +444,8 @@ export default {
       this.showChildSpeech = false;
       this.showChildTip = false;
       this.childSpeechText = '';
+      this.selectedNumber = null;
+      this.hasAnswered = false;
       if (this.childTipTimer) {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
@@ -450,19 +462,10 @@ export default {
         totalTime: totalTime,
         correctCount: 10
       }, (res) => {
-        console.log('=== 完成关卡 ===');
-        console.log('res:', res);
         if (res && res.result) {
           const result = res.result;
-          console.log('stars:', result.stars);
-          console.log('totalStars:', result.totalStars);
-          console.log('bestTime:', result.bestTime);
-          console.log('bestStars:', result.bestStars);
-          console.log('completeCount:', result.completeCount);
-          console.log('feedback:', result.feedback);
         }
       }, (err) => {
-        console.error('完成关卡失败:', err);
       });
     },
 
@@ -473,13 +476,7 @@ export default {
         const usedTime = (Date.now() - this.startTime) / 1000.0;
         const stars = this.calculateStars(true, usedTime);
 
-        console.log('=== 提交答案 ===');
-        console.log('trackId:', this.trackId);
-        console.log('levelId:', this.levelId);
-        console.log('gamerId:', this.gamerId);
-        console.log('questionId:', this.question.question_id);
-        console.log('usedTime:', usedTime);
-        console.log('stars:', stars);
+
 
         if (!this.gamerId || !this.question.question_id) {
           this.showSuccess('太棒了！', stars, usedTime);
@@ -580,19 +577,14 @@ export default {
       this.droppedItems = { left: [], right: [] };
     },
     calculateStars(isCorrect, usedTime) {
-      console.log('calculateStars 调用: isCorrect=', isCorrect, 'usedTime=', usedTime);
       if (!isCorrect) {
-        console.log('答错了，返回0颗星');
         return 0;
       }
       if (usedTime <= 60) {
-        console.log('用时≤60秒，返回3颗星');
         return 3;
       } else if (usedTime <= 120) {
-        console.log('用时≤120秒，返回2颗星');
         return 2;
       }
-      console.log('用时>120秒，返回1颗星');
       return 1;
     },
 
@@ -616,10 +608,7 @@ export default {
       const levelId = Number(this.routeLevelId || this.levelId);
       const trackId = Number(this.trackId);
 
-      console.log('=== 获取题目 ===');
-      console.log('trackId:', trackId);
-      console.log('levelId:', levelId);
-      console.log('gamerId:', gamerId);
+
 
       if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
         const local = this.generateLocalQuestion();
@@ -655,10 +644,8 @@ export default {
             uni.redirectTo({
               url: '/pages/track/comprehensive',
               success: () => {
-                console.log('跳转成功');
               },
               fail: (err) => {
-                console.error('跳转失败:', err);
               }
             });
           }, 3000);
@@ -696,7 +683,6 @@ export default {
             q.correct_answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
           }
         } catch (e) {
-          console.error('解析题目失败:', e);
         }
 
         this.question = q;
@@ -910,21 +896,21 @@ export default {
       const correctAnswer = this.currentQuestion.correct_answer || {};
       const currentLeft = this.droppedItems.left.length;
       const currentRight = this.droppedItems.right.length;
-      const correctLeft = correctAnswer.left_count || 0;
-      const correctRight = correctAnswer.right_count || 0;
-
+      const userTotal = currentLeft * 10 + currentRight;
+      const correctTotal = parseInt(correctAnswer.answer || '0');
+      
       if (this.isAddMode) {
-        if (currentLeft < correctLeft || currentRight < correctRight) {
+        if (userTotal < correctTotal) {
           return '请添加物品';
-        } else if (currentLeft > correctLeft || currentRight > correctRight) {
+        } else if (userTotal > correctTotal) {
           return '物品数量超过了，点击切换到移除模式试试';
         } else {
           return '数量正确，点击提交试试，也可以继续添加哦';
         }
       } else {
-        if (currentLeft < correctLeft || currentRight < correctRight) {
+        if (userTotal < correctTotal) {
           return '物品数量不够，点击切换到添加模式';
-        } else if (currentLeft > correctLeft || currentRight > correctRight) {
+        } else if (userTotal > correctTotal) {
           return '请移除多余的物品';
         } else {
           return '数量正确，点击提交试试';
@@ -951,6 +937,11 @@ export default {
       }
     },
     isNumberNeedScale(num) {
+      // 只有在玩家已经进行了第一次作答后，才给出样式变化
+      if (!this.hasAnswered) {
+        return false;
+      }
+      
       const correctAnswer = this.currentQuestion.correct_answer || {};
       const correctNum = parseInt(correctAnswer.answer || '0');
       const userNum = parseInt(this.selectedNumber || '0');

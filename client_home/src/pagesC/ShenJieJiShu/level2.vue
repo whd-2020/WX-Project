@@ -46,6 +46,7 @@
             :style="{ left: knot.x + '%' }"
           >
             <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+            <text class="knot-decoration">{{ selectedDecorationIcon }}</text>
           </view>
         </view>
         <view class="rope-info">
@@ -143,6 +144,11 @@ export default {
       // 小孩提示相关
       showChildTip: false,
       childTipTimer: null,
+      // 防重复提交
+      isSubmitting: false,
+      // 装饰物相关
+      currentDecorations: [],
+      selectedDecoration: null,
     };
   },
   onLoad(options) {
@@ -184,6 +190,12 @@ export default {
       const target = Number(this.question.targetNumber);
       const current = this.knots.length;
       return current === target;
+    },
+    // 选中装饰物的图标
+    selectedDecorationIcon() {
+      if (!this.selectedDecoration) return '';
+      const deco = this.currentDecorations.find(d => d.type === this.selectedDecoration);
+      return deco ? deco.icon : '';
     },
   },
   methods: {
@@ -261,8 +273,11 @@ export default {
           question_id: 0,
           targetNumber: 1,
           title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
+          decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
         };
         this.question = local;
+        this.currentDecorations = local.decorations || [];
+        this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
         this.playTyping(local.title);
         return;
       }
@@ -339,8 +354,11 @@ export default {
             question_id: 0,
             targetNumber: 1,
             title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
+            decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
           };
           this.question = local;
+          this.currentDecorations = local.decorations || [];
+          this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
           this.showDefaultQuestionTip = true; // 显示默认题目提示
           
           // 清除之前的定时器（如果存在）
@@ -370,6 +388,7 @@ export default {
         let target = 1;
         let elderSpeech = '';
         let questionTitle = '';
+        let decorations = [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }];
 
         try {
           // 解析 question_content，取出 options[0] 与 question_title 拼接
@@ -384,6 +403,10 @@ export default {
             // 如果 question_content 里有 targetNumber，优先用它
             if (content.targetNumber) {
               target = Number(content.targetNumber);
+            }
+            // 解析装饰物数据
+            if (content.decorations && Array.isArray(content.decorations)) {
+              decorations = content.decorations;
             }
           }
 
@@ -426,7 +449,10 @@ export default {
           targetNumber: target,
           title: elderSpeech,
           questionTitle: questionTitle,
+          decorations: decorations,
         };
+        this.currentDecorations = decorations;
+        this.selectedDecoration = decorations.length > 0 ? decorations[0].type : null;
         this.playTyping(this.question.title);
       });
     },
@@ -533,6 +559,18 @@ export default {
         console.log('=== 提交答案返回结果 ===');
         console.log('完整 res:', JSON.stringify(res, null, 2));
         console.log('res.result:', res.result);
+        console.log('res.error:', res.error);
+        
+        // 处理后端错误
+        if (res && res.error) {
+          console.error('后端返回错误:', res.error);
+          uni.showToast({
+            title: res.error.message || '提交答案失败',
+            icon: 'none',
+          });
+          return;
+        }
+        
         console.log('res.result?.isCorrect:', res.result?.isCorrect);
         console.log('res.result?.isCorrect 类型:', typeof res.result?.isCorrect);
         
@@ -1022,6 +1060,18 @@ export default {
     transform: rotate(90deg) scale(1);
     opacity: 1;
   }
+}
+
+/* 绳结装饰物样式 */
+.knot-decoration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32rpx;
+  z-index: 10;
+  pointer-events: none;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.2));
 }
 
 .rope-info {

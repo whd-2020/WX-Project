@@ -1,12 +1,10 @@
 <template>
   <view id="account_login" class="user_account account_login">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
     <!-- 登录弹窗 -->
-    <view class="login-modal" @click="goBack">
+    <view class="login-modal">
       <view class="modal-content" @click.stop>
         <!-- 关闭按钮 -->
-        <view class="close-btn" @click="goBack">
+        <view class="close-btn">
           <text class="close-icon">×</text>
         </view>
 
@@ -53,18 +51,6 @@
       console.log(this.$u.route);
     },
     methods: {
-      goBack() {
-        // 返回到上一页
-        uni.navigateBack({
-          delta: 1,
-          fail: () => {
-            // 如果没有上一页，则跳转到首页
-            uni.switchTab({
-              url: '/pages/index/index'
-            });
-          }
-        });
-      },
       /**
        * 微信登录
        */
@@ -179,11 +165,7 @@
         });
       },
     },
-    onBackPress() {
-      // 阻止默认的返回行为，使用自定义的 goBack 方法
-      this.goBack();
-      return true;
-    },
+
   };
 </script>
 
