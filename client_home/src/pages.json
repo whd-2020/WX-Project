@@ -263,6 +263,42 @@
           }
         },
         {
+          "path": "ZhuSuanQiMeng/level1",
+          "style": {
+            "navigationBarTitleText": "珠算 · 第一关"
+          }
+        },
+        {
+          "path": "ZhuSuanQiMeng/level2",
+          "style": {
+            "navigationBarTitleText": "珠算 · 第二关"
+          }
+        },
+        {
+          "path": "ZhuSuanQiMeng/level3",
+          "style": {
+            "navigationBarTitleText": "珠算 · 第三关"
+          }
+        },
+        {
+          "path": "ZhuSuanQiMeng/level4",
+          "style": {
+            "navigationBarTitleText": "珠算 · 第四关"
+          }
+        },
+        {
+          "path": "ZhuSuanQiMeng/level5",
+          "style": {
+            "navigationBarTitleText": "珠算 · 第五关"
+          }
+        },
+        {
+          "path": "ZhuSuanQiMeng/level6",
+          "style": {
+            "navigationBarTitleText": "珠算 · 第六关"
+          }
+        },
+        {
           "path": "ShuZiRenZi/level1",
           "style": {
             "navigationBarTitleText": "数字认知 · 第一关"
@@ -296,6 +332,42 @@
           "path": "ShuZiRenZi/level6",
           "style": {
             "navigationBarTitleText": "数字认知 · 第六关"
+          }
+        },
+        {
+          "path": "ChouSuanYanSuan/level1",
+          "style": {
+            "navigationBarTitleText": "筹算 · 第一关"
+          }
+        },
+        {
+          "path": "ChouSuanYanSuan/level2",
+          "style": {
+            "navigationBarTitleText": "筹算 · 第二关"
+          }
+        },
+        {
+          "path": "ChouSuanYanSuan/level3",
+          "style": {
+            "navigationBarTitleText": "筹算 · 第三关"
+          }
+        },
+        {
+          "path": "ChouSuanYanSuan/level4",
+          "style": {
+            "navigationBarTitleText": "筹算 · 第四关"
+          }
+        },
+        {
+          "path": "ChouSuanYanSuan/level5",
+          "style": {
+            "navigationBarTitleText": "筹算 · 第五关"
+          }
+        },
+        {
+          "path": "ChouSuanYanSuan/level6",
+          "style": {
+            "navigationBarTitleText": "筹算 · 第六关"
           }
         },
 

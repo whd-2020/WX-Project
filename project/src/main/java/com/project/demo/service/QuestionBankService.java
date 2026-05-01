@@ -228,13 +228,17 @@ public class QuestionBankService extends BaseService<QuestionBank> {
 
     /**
      * 更新关卡星星记录，累计星星数，并在累计星星数>20时解锁下一关
+     * 
+     * 星星数计算规则：每道题只记录最高星星数，total_stars是所有题目的最高星星数之和
+     * 
      * @param gamerId 玩家ID
      * @param levelId 关卡ID
      * @param trackId 赛道ID
      * @param stars 本次获得的星星数
      * @param answerTime 答题耗时（秒）
+     * @param questionId 题目ID
      */
-    private void updateLevelStarRecord(Integer gamerId, Integer levelId, Integer trackId, int stars, Double answerTime) {
+    private void updateLevelStarRecord(Integer gamerId, Integer levelId, Integer trackId, int stars, Double answerTime, Integer questionId) {
         if (stars <= 0) {
             return; // 没有获得星星，不更新
         }
@@ -248,13 +252,16 @@ public class QuestionBankService extends BaseService<QuestionBank> {
 
         java.sql.Timestamp now = new java.sql.Timestamp(System.currentTimeMillis());
 
+        // 重新计算所有题目的最高星星数之和
+        int totalStars = calculateTotalStarsForLevel(gamerId, levelId, trackId);
+
         if (starRecord == null) {
             // 创建新记录
             starRecord = new LevelStarRecord();
             starRecord.setGamer_id(gamerId);
             starRecord.setLevel_id(levelId);
             starRecord.setTrack_id(trackId);
-            starRecord.setTotal_stars(stars);
+            starRecord.setTotal_stars(totalStars);
             starRecord.setBest_time(answerTime);
             starRecord.setBest_stars(stars);
             starRecord.setComplete_count(1);
@@ -264,7 +271,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             try {
                 levelStarRecordMapper.insert(starRecord);
                 log.info("创建关卡星星记录: gamerId={}, levelId={}, trackId={}, stars={}, totalStars={}",
-                        gamerId, levelId, trackId, stars, stars);
+                        gamerId, levelId, trackId, stars, totalStars);
             } catch (Exception e) {
                 // 如果插入失败（可能是唯一索引冲突），尝试更新现有记录
                 log.warn("插入关卡星星记录失败，尝试更新: {}", e.getMessage());
@@ -274,55 +281,89 @@ public class QuestionBankService extends BaseService<QuestionBank> {
                 conflictWrapper.eq("track_id", trackId);
                 LevelStarRecord existingRecord = levelStarRecordMapper.selectOne(conflictWrapper);
                 if (existingRecord != null) {
-                    // 更新记录，确保track_id正确
-                    int newTotalStars = (existingRecord.getTotal_stars() != null ? existingRecord.getTotal_stars() : 0) + stars;
-                    existingRecord.setTrack_id(trackId);
-                    existingRecord.setTotal_stars(newTotalStars);
-                    if (answerTime != null && (existingRecord.getBest_time() == null || answerTime < existingRecord.getBest_time())) {
-                        existingRecord.setBest_time(answerTime);
-                    }
-                    if (stars > (existingRecord.getBest_stars() != null ? existingRecord.getBest_stars() : 0)) {
-                        existingRecord.setBest_stars(stars);
-                    }
-                    existingRecord.setComplete_count((existingRecord.getComplete_count() != null ? existingRecord.getComplete_count() : 0) + 1);
-                    existingRecord.setLast_complete_time(now);
-                    existingRecord.setUpdate_time(now);
-                    levelStarRecordMapper.updateById(existingRecord);
-                    log.info("更新关卡星星记录: gamerId={}, levelId={}, trackId={}, 本次获得={}, 累计总数={}",
-                            gamerId, levelId, trackId, stars, newTotalStars);
+                    updateStarRecord(existingRecord, trackId, totalStars, answerTime, stars, now);
+                    log.info("更新关卡星星记录: gamerId={}, levelId={}, trackId={}, 累计总数={}",
+                            gamerId, levelId, trackId, totalStars);
                     starRecord = existingRecord;
                 }
             }
         } else {
-            // 更新记录：累计星星数
-            int newTotalStars = (starRecord.getTotal_stars() != null ? starRecord.getTotal_stars() : 0) + stars;
-            starRecord.setTrack_id(trackId);
-            starRecord.setTotal_stars(newTotalStars);
-
-            // 更新最佳时间
-            if (answerTime != null && (starRecord.getBest_time() == null || answerTime < starRecord.getBest_time())) {
-                starRecord.setBest_time(answerTime);
-            }
-
-            // 更新最佳星星数
-            if (stars > (starRecord.getBest_stars() != null ? starRecord.getBest_stars() : 0)) {
-                starRecord.setBest_stars(stars);
-            }
-
-            // 更新完成次数
-            starRecord.setComplete_count((starRecord.getComplete_count() != null ? starRecord.getComplete_count() : 0) + 1);
-            starRecord.setLast_complete_time(now);
-            starRecord.setUpdate_time(now);
+            // 更新记录
+            updateStarRecord(starRecord, trackId, totalStars, answerTime, stars, now);
             levelStarRecordMapper.updateById(starRecord);
-            log.info("更新关卡星星记录: gamerId={}, levelId={}, trackId={}, 本次获得={}, 累计总数={}",
-                    gamerId, levelId, trackId, stars, newTotalStars);
+            log.info("更新关卡星星记录: gamerId={}, levelId={}, trackId={}, 累计总数={}",
+                    gamerId, levelId, trackId, totalStars);
         }
 
         // 检查累计星星数是否>=20，如果是则解锁下一关
-        int totalStars = starRecord.getTotal_stars() != null ? starRecord.getTotal_stars() : 0;
         if (totalStars >= 20) {
             unlockNextLevel(gamerId, levelId, trackId);
         }
+    }
+
+    /**
+     * 更新星星记录的辅助方法
+     */
+    private void updateStarRecord(LevelStarRecord record, Integer trackId, int totalStars, 
+                                   Double answerTime, int stars, java.sql.Timestamp now) {
+        record.setTrack_id(trackId);
+        record.setTotal_stars(totalStars);
+
+        // 更新最佳时间
+        if (answerTime != null && (record.getBest_time() == null || answerTime < record.getBest_time())) {
+            record.setBest_time(answerTime);
+        }
+
+        // 更新最佳星星数
+        if (stars > (record.getBest_stars() != null ? record.getBest_stars() : 0)) {
+            record.setBest_stars(stars);
+        }
+
+        // 更新完成次数
+        record.setComplete_count((record.getComplete_count() != null ? record.getComplete_count() : 0) + 1);
+        record.setLast_complete_time(now);
+        record.setUpdate_time(now);
+    }
+
+    /**
+     * 计算某关卡所有题目的最高星星数之和
+     * 
+     * @param gamerId 玩家ID
+     * @param levelId 关卡ID
+     * @param trackId 赛道ID
+     * @return 所有题目的最高星星数之和
+     */
+    private int calculateTotalStarsForLevel(Integer gamerId, Integer levelId, Integer trackId) {
+        // 查询该玩家在该关卡所有答对的题目记录
+        QueryWrapper<PlayerQuestionRecord> recordWrapper = new QueryWrapper<>();
+        recordWrapper.eq("gamer_id", gamerId);
+        recordWrapper.eq("level_id", levelId);
+        recordWrapper.eq("track_id", trackId);
+        recordWrapper.eq("is_correct", 1);
+        List<PlayerQuestionRecord> records = playerQuestionRecordMapper.selectList(recordWrapper);
+
+        if (records.isEmpty()) {
+            return 0;
+        }
+
+        // 按题目ID分组，每组取最高星星数
+        Map<Integer, Integer> questionMaxStars = new HashMap<>();
+        for (PlayerQuestionRecord record : records) {
+            Integer questionId = record.getQuestion_id();
+            int stars = calculateStarsForSingleQuestion(record);
+            
+            // 只保留最高星星数
+            if (!questionMaxStars.containsKey(questionId) || stars > questionMaxStars.get(questionId)) {
+                questionMaxStars.put(questionId, stars);
+            }
+        }
+
+        // 求和所有题目的最高星星数
+        int total = questionMaxStars.values().stream().mapToInt(Integer::intValue).sum();
+        log.info("计算关卡星星数: gamerId={}, levelId={}, trackId={}, 题目数={}, 总星星数={}", 
+                gamerId, levelId, trackId, questionMaxStars.size(), total);
+        
+        return total;
     }
 
     /**
@@ -334,7 +375,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
      * 3. 如果新建关卡插入到当前关卡之后，不会影响当前关卡的解锁逻辑
      * 
      * @param gamerId 玩家ID
-     * @param levelId 当前关卡ID（game_levels_id）
+     * @param levelId 当前关卡顺序（1-6）
      * @param trackId 赛道ID（确保只解锁同一赛道内的关卡）
      */
     private void unlockNextLevel(Integer gamerId, Integer levelId, Integer trackId) {
@@ -344,10 +385,10 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         levelWrapper.orderByAsc("level_order");
         List<GameLevels> allLevels = gameLevelsMapper.selectList(levelWrapper);
 
-        // 找到当前关卡在列表中的位置
+        // 找到当前关卡在列表中的位置（使用 level_order 查找）
         int currentIndex = -1;
         for (int i = 0; i < allLevels.size(); i++) {
-            if (allLevels.get(i).getGame_levels_id().equals(levelId)) {
+            if (allLevels.get(i).getLevel_order().equals(levelId)) {
                 currentIndex = i;
                 break;
             }
@@ -356,12 +397,12 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         // 如果找到当前关卡，且不是最后一关，则解锁下一关
         if (currentIndex >= 0 && currentIndex < allLevels.size() - 1) {
             GameLevels nextLevel = allLevels.get(currentIndex + 1);
-            Integer nextLevelId = nextLevel.getGame_levels_id();
+            Integer nextLevelOrder = nextLevel.getLevel_order();
 
             // 查询下一关的解锁记录
             QueryWrapper<PlayerLevelUnlock> nextWrapper = new QueryWrapper<>();
             nextWrapper.eq("gamer_id", gamerId);
-            nextWrapper.eq("game_levels_id", nextLevelId);
+            nextWrapper.eq("levels_order", nextLevelOrder);
             nextWrapper.eq("track_id", trackId);
             PlayerLevelUnlock nextUnlock = playerLevelUnlockMapper.selectOne(nextWrapper);
 
@@ -369,20 +410,20 @@ public class QuestionBankService extends BaseService<QuestionBank> {
                 // 创建下一关解锁记录
                 nextUnlock = new PlayerLevelUnlock();
                 nextUnlock.setGamer_id(gamerId);
-                nextUnlock.setGame_levels_id(nextLevelId);
+                nextUnlock.setLevels_order(nextLevelOrder);
                 nextUnlock.setTrack_id(trackId);
                 nextUnlock.setIs_unlocked(1);
                 nextUnlock.setIs_completed(0);
                 nextUnlock.setComplete_times(0);
                 playerLevelUnlockMapper.insert(nextUnlock);
-                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelId={}, nextLevelId={}, trackId={}", 
-                        gamerId, levelId, nextLevelId, trackId);
+                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelOrder={}, nextLevelOrder={}, trackId={}", 
+                        gamerId, levelId, nextLevelOrder, trackId);
             } else if (nextUnlock.getIs_unlocked() == null || nextUnlock.getIs_unlocked() == 0) {
                 // 如果下一关未解锁，则解锁它
                 nextUnlock.setIs_unlocked(1);
                 playerLevelUnlockMapper.updateById(nextUnlock);
-                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelId={}, nextLevelId={}, trackId={}", 
-                        gamerId, levelId, nextLevelId, trackId);
+                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelOrder={}, nextLevelOrder={}, trackId={}", 
+                        gamerId, levelId, nextLevelOrder, trackId);
             }
         }
     }
@@ -512,7 +553,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         // 4. 如果答对了，计算星星数并累计到关卡星星记录
         if (isCorrect) {
             int stars = calculateStarsForSingleQuestion(record);
-            updateLevelStarRecord(gamerId, levelId, trackId, stars, answerTime);
+            updateLevelStarRecord(gamerId, levelId, trackId, stars, answerTime, questionId);
         }
 
         return isCorrect;
@@ -714,7 +755,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
     /**
      * 更新关卡解锁状态：标记当前关已完成，并解锁下一关
      * @param gamerId 玩家ID
-     * @param levelId 当前关卡ID（game_levels_id）
+     * @param levelId 当前关卡顺序（1-6）
      * @param trackId 赛道ID
      * @param isCompleted 是否完成（拿到至少1颗星）
      */
@@ -727,7 +768,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         // 1. 更新当前关卡的解锁状态为已完成
         QueryWrapper<PlayerLevelUnlock> currentWrapper = new QueryWrapper<>();
         currentWrapper.eq("gamer_id", gamerId);
-        currentWrapper.eq("game_levels_id", levelId);
+        currentWrapper.eq("levels_order", levelId);
         currentWrapper.eq("track_id", trackId);
         PlayerLevelUnlock currentUnlock = playerLevelUnlockMapper.selectOne(currentWrapper);
 
@@ -737,7 +778,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
             // 创建当前关卡解锁记录
             currentUnlock = new PlayerLevelUnlock();
             currentUnlock.setGamer_id(gamerId);
-            currentUnlock.setGame_levels_id(levelId);
+            currentUnlock.setLevels_order(levelId);
             currentUnlock.setTrack_id(trackId);
             currentUnlock.setIs_unlocked(1);
             currentUnlock.setIs_completed(1);
@@ -768,10 +809,10 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         levelWrapper.orderByAsc("level_order");
         List<GameLevels> allLevels = gameLevelsMapper.selectList(levelWrapper);
 
-        // 找到当前关卡在列表中的位置
+        // 找到当前关卡在列表中的位置（使用 level_order 查找）
         int currentIndex = -1;
         for (int i = 0; i < allLevels.size(); i++) {
-            if (allLevels.get(i).getGame_levels_id().equals(levelId)) {
+            if (allLevels.get(i).getLevel_order().equals(levelId)) {
                 currentIndex = i;
                 break;
             }
@@ -780,12 +821,12 @@ public class QuestionBankService extends BaseService<QuestionBank> {
         // 如果找到当前关卡，且不是最后一关，则解锁下一关
         if (currentIndex >= 0 && currentIndex < allLevels.size() - 1) {
             GameLevels nextLevel = allLevels.get(currentIndex + 1);
-            Integer nextLevelId = nextLevel.getGame_levels_id();
+            Integer nextLevelOrder = nextLevel.getLevel_order();
 
             // 查询下一关的解锁记录
             QueryWrapper<PlayerLevelUnlock> nextWrapper = new QueryWrapper<>();
             nextWrapper.eq("gamer_id", gamerId);
-            nextWrapper.eq("game_levels_id", nextLevelId);
+            nextWrapper.eq("levels_order", nextLevelOrder);
             nextWrapper.eq("track_id", trackId);
             PlayerLevelUnlock nextUnlock = playerLevelUnlockMapper.selectOne(nextWrapper);
 
@@ -793,18 +834,18 @@ public class QuestionBankService extends BaseService<QuestionBank> {
                 // 创建下一关解锁记录
                 nextUnlock = new PlayerLevelUnlock();
                 nextUnlock.setGamer_id(gamerId);
-                nextUnlock.setGame_levels_id(nextLevelId);
+                nextUnlock.setLevels_order(nextLevelOrder);
                 nextUnlock.setTrack_id(trackId);
                 nextUnlock.setIs_unlocked(1);
                 nextUnlock.setIs_completed(0);
                 nextUnlock.setComplete_times(0);
                 playerLevelUnlockMapper.insert(nextUnlock);
-                log.info("解锁下一关: gamerId={}, levelId={}, trackId={}", gamerId, nextLevelId, trackId);
+                log.info("解锁下一关: gamerId={}, levelOrder={}, trackId={}", gamerId, nextLevelOrder, trackId);
             } else if (nextUnlock.getIs_unlocked() == null || nextUnlock.getIs_unlocked() == 0) {
                 // 如果下一关未解锁，则解锁它
                 nextUnlock.setIs_unlocked(1);
                 playerLevelUnlockMapper.updateById(nextUnlock);
-                log.info("解锁下一关: gamerId={}, levelId={}, trackId={}", gamerId, nextLevelId, trackId);
+                log.info("解锁下一关: gamerId={}, levelOrder={}, trackId={}", gamerId, nextLevelOrder, trackId);
             }
         }
     }

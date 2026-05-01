@@ -525,7 +525,7 @@ export default {
           this.successStarCount = starCount;
           this.successTime = Math.round(actualTime);
           this.showSuccessModal = true;
-          this.completeLevel();
+          // this.completeLevel();
           this.$forceUpdate();
         } else {
           uni.showToast({
@@ -537,9 +537,19 @@ export default {
     },
 
     calculateStars(isCorrect, usedTime) {
-      if (!isCorrect) return 0;
-      if (usedTime <= 60) return 3;
-      else if (usedTime <= 120) return 2;
+      console.log('calculateStars 调用: isCorrect=', isCorrect, 'usedTime=', usedTime);
+      if (!isCorrect) {
+        console.log('答错了，返回0颗星');
+        return 0;
+      }
+      if (usedTime <= 60) {
+        console.log('用时≤60秒，返回3颗星');
+        return 3;
+      } else if (usedTime <= 120) {
+        console.log('用时≤120秒，返回2颗星');
+        return 2;
+      }
+      console.log('用时>120秒，返回1颗星');
       return 1;
     },
 
@@ -557,6 +567,11 @@ export default {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.routeLevelId || this.levelId);
       const trackId = Number(this.trackId);
+
+      console.log('=== 获取题目 ===');
+      console.log('trackId:', trackId);
+      console.log('levelId:', levelId);
+      console.log('gamerId:', gamerId);
 
       if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
         const local = {

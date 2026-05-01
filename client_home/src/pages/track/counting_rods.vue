@@ -18,7 +18,7 @@
             :class="{ 'level-locked': level.isUnlocked === 0 }"
             v-for="(level, index) in levelList" 
             :key="level.levelId || index" 
-            @click="startLevel(level)"
+            @click="startLevel(index)"
           >
             <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
             <text 
@@ -26,7 +26,8 @@
               :class="{
                 'status-unlocked': level.isUnlocked === 1 && level.isCompleted === 0,
                 'status-completed': level.isCompleted === 1,
-                'status-locked': level.isUnlocked === 0
+                'status-locked': level.isUnlocked === 0,
+                'status-stars': level.status && level.status.includes('星')
               }"
             >
               {{ level.status }}
@@ -130,7 +131,54 @@ export default {
       try {
         const res = await getLevelProgressApi(this.gamerId, this.trackId);
         if (res.result && res.result.levels) {
-          this.levelList = res.result.levels;
+          // 第一次遍历：收集所有关卡的基础数据
+          const tempList = res.result.levels.map((level) => {
+            const isCompleted = Number(level.isCompleted ?? level.is_completed ?? 0) === 1;
+            const totalStarsRaw = level.totalStars ?? level.total_stars;
+            const totalStars = Number.isNaN(Number(totalStarsRaw)) ? 0 : Number(totalStarsRaw);
+
+            return {
+              ...level,
+              isCompleted: isCompleted ? 1 : 0,
+              totalStars,
+            };
+          });
+
+          // 第二次遍历：根据解锁规则设置每个关卡的解锁状态
+          this.levelList = tempList.map((level, index) => {
+            let shouldUnlock = false;
+
+            // 第一关：默认解锁
+            if (index === 0) {
+              shouldUnlock = true;
+            }
+            // 第二关：第一关得星数 >= 9 才解锁
+            else if (index === 1) {
+              const level1Stars = tempList[0].totalStars;
+              shouldUnlock = level1Stars >= 9;
+            }
+            // 第三关及以后：上一个关卡得星数 > 20 才解锁
+            else if (index > 1) {
+              const prevStars = tempList[index - 1].totalStars;
+              shouldUnlock = prevStars > 20;
+            }
+
+            let status = '';
+            if (shouldUnlock) {
+              status = `${level.totalStars}星`;
+            } else {
+              status = '未解锁';
+            }
+
+            return {
+              ...level,
+              isUnlocked: shouldUnlock ? 1 : 0,
+              status,
+            };
+          });
+
+          // 调试：打印关卡数据
+          console.log('关卡列表数据:', this.levelList);
         } else {
           uni.showToast({
             title: res.error?.message || '获取关卡进度失败',
@@ -147,15 +195,36 @@ export default {
         this.loading = false;
       }
     },
-    startLevel(level) {
-      if (level.isUnlocked === 0) {
-        uni.showToast({
-          title: '该关卡尚未解锁',
-          icon: 'none'
+    startLevel(index) {
+      const level = this.levelList[index];
+      if (!level) {
+        console.error('关卡数据不存在', index, this.levelList);
+        return;
+      }
+      if (level.status && level.status.includes('未解锁')) {
+        uni.showModal({
+          title: '提示',
+          content: '小朋友，你还没有解锁这一关哦~',
+          showCancel: false,
+          confirmText: '知道了'
         });
         return;
       }
-      this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+      if (index === 0) {
+        this.$navTo(`/pagesC/ChouSuanYanSuan/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 1) {
+        this.$navTo(`/pagesC/ChouSuanYanSuan/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 2) {
+        this.$navTo(`/pagesC/ChouSuanYanSuan/level3?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 3) {
+        this.$navTo(`/pagesC/ChouSuanYanSuan/level4?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 4) {
+        this.$navTo(`/pagesC/ChouSuanYanSuan/level5?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 5) {
+        this.$navTo(`/pagesC/ChouSuanYanSuan/level6?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else {
+        this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+      }
     },
 
   }
@@ -248,6 +317,11 @@ export default {
 .status-locked {
   color: #999;
   background-color: #e0e0e0;
+}
+
+.status-stars {
+  color: #ff9800;
+  font-weight: 600;
 }
 
 .level-locked {

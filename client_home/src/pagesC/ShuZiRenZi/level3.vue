@@ -525,7 +525,7 @@ export default {
           this.successStarCount = starCount;
           this.successTime = Math.round(actualTime);
           this.showSuccessModal = true;
-          this.completeLevel();
+          // this.completeLevel();
           this.$forceUpdate();
         } else {
           uni.showToast({

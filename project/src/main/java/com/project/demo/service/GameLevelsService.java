@@ -41,8 +41,8 @@ public class GameLevelsService extends BaseService<GameLevels> {
      * 4. 新建关卡：如果新建关卡插入到中间，只要上一关满足解锁条件，新建关卡也会自动解锁
      *
      * 字段对应关系：
-     * - LevelStarRecord.level_id 存储的是 GameLevels.game_levels_id
-     * - PlayerLevelUnlock.game_levels_id 对应 GameLevels.game_levels_id
+     * - LevelStarRecord.level_id 存储的是关卡顺序（1-6）
+     * - PlayerLevelUnlock.levels_order 对应关卡顺序（1-6）
      *
      * @param gamerId 玩家ID
      * @param trackId 赛道ID（不同赛道之间完全隔离）
@@ -61,10 +61,10 @@ public class GameLevelsService extends BaseService<GameLevels> {
         unlockWrapper.eq("track_id", trackId);
         List<PlayerLevelUnlock> unlockRecords = playerLevelUnlockMapper.selectList(unlockWrapper);
 
-        // 3. 构建解锁记录Map，key为game_levels_id
+        // 3. 构建解锁记录Map，key为levels_order（关卡顺序1-6）
         Map<Integer, PlayerLevelUnlock> unlockMap = unlockRecords.stream()
                 .collect(Collectors.toMap(
-                        PlayerLevelUnlock::getGame_levels_id,
+                        PlayerLevelUnlock::getLevels_order,
                         record -> record,
                         (existing, replacement) -> existing
                 ));
@@ -90,9 +90,9 @@ public class GameLevelsService extends BaseService<GameLevels> {
 
         for (int i = 0; i < allLevels.size(); i++) {
             GameLevels level = allLevels.get(i);
-            PlayerLevelUnlock unlockRecord = unlockMap.get(level.getGame_levels_id());
-            // 使用level_order作为key，因为LevelStarRecord.level_id存储的是关卡顺序
-            LevelStarRecord starRecord = starMap.get(level.getLevel_order());
+            Integer levelOrder = level.getLevel_order(); // 关卡顺序（1-6）
+            PlayerLevelUnlock unlockRecord = unlockMap.get(levelOrder);
+            LevelStarRecord starRecord = starMap.get(levelOrder);
 
             boolean isUnlocked;
             boolean isCompleted = false;
@@ -110,8 +110,8 @@ public class GameLevelsService extends BaseService<GameLevels> {
                 if (unlockRecord == null) {
                     unlockRecord = new PlayerLevelUnlock();
                     unlockRecord.setGamer_id(gamerId);
-                    unlockRecord.setGame_levels_id(level.getGame_levels_id());
                     unlockRecord.setTrack_id(trackId);
+                    unlockRecord.setLevels_order(levelOrder);
                     unlockRecord.setIs_unlocked(1);
                     unlockRecord.setIs_completed(0);
                     unlockRecord.setComplete_times(0);
@@ -119,16 +119,16 @@ public class GameLevelsService extends BaseService<GameLevels> {
                 }
             } else {
                 // 后续关卡：检查上一关的累计星星数是否>=20
-                // 注意：这里使用 level.getLevel_order() 作为 key，因为 LevelStarRecord.level_id 存储的是关卡顺序
                 GameLevels prevLevel = allLevels.get(i - 1);
-                LevelStarRecord prevStarRecord = starMap.get(prevLevel.getLevel_order());
+                Integer prevLevelOrder = prevLevel.getLevel_order();
+                LevelStarRecord prevStarRecord = starMap.get(prevLevelOrder);
                 int prevTotalStars = 0;
                 if (prevStarRecord != null && prevStarRecord.getTotal_stars() != null) {
                     prevTotalStars = prevStarRecord.getTotal_stars();
                 }
 
-                // 检查上一关的解锁状态（兼容新建关卡的情况）
-                PlayerLevelUnlock prevUnlockRecord = unlockMap.get(prevLevel.getGame_levels_id());
+                // 检查上一关的解锁状态
+                PlayerLevelUnlock prevUnlockRecord = unlockMap.get(prevLevelOrder);
                 boolean prevUnlocked = false;
                 if (prevUnlockRecord != null && prevUnlockRecord.getIs_unlocked() != null && prevUnlockRecord.getIs_unlocked() == 1) {
                     prevUnlocked = true;
@@ -138,31 +138,29 @@ public class GameLevelsService extends BaseService<GameLevels> {
                 }
 
                 // 解锁条件：上一关已解锁 且 上一关累计星星数>=20
-                // 这样可以兼容新建关卡的情况：如果新建关卡插入到中间，只要上一关满足条件就能解锁
                 if (prevUnlocked && prevTotalStars >= 20) {
                     isUnlocked = true;
                     // 如果数据库中没有解锁记录，创建一条
                     if (unlockRecord == null) {
                         unlockRecord = new PlayerLevelUnlock();
                         unlockRecord.setGamer_id(gamerId);
-                        unlockRecord.setGame_levels_id(level.getGame_levels_id());
                         unlockRecord.setTrack_id(trackId);
+                        unlockRecord.setLevels_order(levelOrder);
                         unlockRecord.setIs_unlocked(1);
                         unlockRecord.setIs_completed(0);
                         unlockRecord.setComplete_times(0);
                         playerLevelUnlockMapper.insert(unlockRecord);
-                        log.info("根据累计星星数自动解锁关卡: gamerId={}, trackId={}, levelId={}, prevLevelId={}, prevTotalStars={}",
-                                gamerId, trackId, level.getGame_levels_id(), prevLevel.getGame_levels_id(), prevTotalStars);
+                        log.info("根据累计星星数自动解锁关卡: gamerId={}, trackId={}, levelOrder={}, prevLevelOrder={}, prevTotalStars={}",
+                                gamerId, trackId, levelOrder, prevLevelOrder, prevTotalStars);
                     } else if (unlockRecord.getIs_unlocked() == null || unlockRecord.getIs_unlocked() == 0) {
                         // 如果记录存在但未解锁，更新为已解锁
                         unlockRecord.setIs_unlocked(1);
                         playerLevelUnlockMapper.updateById(unlockRecord);
-                        log.info("根据累计星星数更新解锁状态: gamerId={}, trackId={}, levelId={}, prevLevelId={}, prevTotalStars={}",
-                                gamerId, trackId, level.getGame_levels_id(), prevLevel.getGame_levels_id(), prevTotalStars);
+                        log.info("根据累计星星数更新解锁状态: gamerId={}, trackId={}, levelOrder={}, prevLevelOrder={}, prevTotalStars={}",
+                                gamerId, trackId, levelOrder, prevLevelOrder, prevTotalStars);
                     }
                 } else {
                     // 上一关未解锁或累计星星数<20，根据PlayerLevelUnlock表中的is_unlocked字段判断
-                    // 这样可以兼容已经手动解锁或通过其他方式解锁的情况
                     if (unlockRecord != null && unlockRecord.getIs_unlocked() != null && unlockRecord.getIs_unlocked() == 1) {
                         isUnlocked = true;
                     } else {
@@ -200,10 +198,10 @@ public class GameLevelsService extends BaseService<GameLevels> {
 
             // 构建返回数据
             Map<String, Object> levelInfo = new HashMap<>();
-            levelInfo.put("levelId", level.getLevel_order()); // 返回关卡顺序
+            levelInfo.put("levelId", levelOrder); // 返回关卡顺序
             levelInfo.put("gameLevelsId", level.getGame_levels_id()); // 保留game_levels_id
             levelInfo.put("levelName", level.getLevel_name());
-            levelInfo.put("levelOrder", level.getLevel_order());
+            levelInfo.put("levelOrder", levelOrder);
             levelInfo.put("isUnlocked", isUnlocked ? 1 : 0);
             levelInfo.put("isCompleted", isCompleted ? 1 : 0);
             levelInfo.put("totalStars", totalStars); // 添加累计星星数

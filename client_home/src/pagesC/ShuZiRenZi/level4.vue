@@ -539,7 +539,7 @@ export default {
 
           if (isCorrect) {
             this.showSuccess('太棒了！', stars, usedTime);
-            this.completeLevel();
+            // this.completeLevel();
           } else {
             uni.showToast({
               title: '再拖一次试试～',

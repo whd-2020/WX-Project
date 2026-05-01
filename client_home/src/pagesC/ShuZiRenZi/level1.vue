@@ -590,6 +590,9 @@ export default {
           this.successTime = Math.round(actualTime);
           this.showSuccessModal = true;
           
+          // // 调用完成关卡方法
+          // this.completeLevel();
+          
           // 强制更新视图
           this.$forceUpdate();
         } else {

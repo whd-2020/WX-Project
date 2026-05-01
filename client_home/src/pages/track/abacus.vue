@@ -1,9 +1,9 @@
 <template>
   <view class="track-page">
     <view class="track-content">
-      <image 
-        class="track-bg" 
-        src="/static/images/games/number_introduction.png" 
+      <image
+        class="track-bg"
+        src="/static/img/index/ZhuSuanQiMeng.png"
         mode="aspectFill"
       />
       <view class="track-info">
@@ -12,21 +12,22 @@
         <view class="track-levels" v-if="loading">
           <view class="loading-text">加载中...</view>
         </view>
-        <view class="track-levels" v-else>
-          <view 
-            class="level-item" 
+        <view class="track-leve ls" v-else>
+          <view
+            class="level-item"
             :class="{ 'level-locked': level.isUnlocked === 0 }"
-            v-for="(level, index) in levelList" 
-            :key="level.levelId || index" 
-            @click="startLevel(level)"
+            v-for="(level, index) in levelList"
+            :key="level.levelId || index"
+            @click="startLevel(index)"
           >
             <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
-            <text 
-              class="level-status" 
+            <text
+              class="level-status"
               :class="{
                 'status-unlocked': level.isUnlocked === 1 && level.isCompleted === 0,
                 'status-completed': level.isCompleted === 1,
-                'status-locked': level.isUnlocked === 0
+                'status-locked': level.isUnlocked === 0,
+                'status-stars': level.status && level.status.includes('星')
               }"
             >
               {{ level.status }}
@@ -89,15 +90,12 @@ export default {
         }, 1500);
         return;
       }
-      // 先根据 user_id 查询 gamer 记录
       this.$get('/gamer/get_obj', { user_id: userId }, (json) => {
         const gamerObj = json.result ? (json.result.obj || json.result) : null;
         if (gamerObj && gamerObj.gamer_id) {
           this.gamerId = gamerObj.gamer_id;
           this.loadLevelProgress();
         } else {
-          // 没有玩家记录时，自动创建一条
-          // 统一使用 username 作为玩家展示名
           const screenName = userInfo.username || ('玩家' + userId);
           const data = {
             player_screen_name: screenName,
@@ -124,12 +122,54 @@ export default {
       });
     },
     async loadLevelProgress() {
-      if (!this.gamerId) return;
+      if (!this.gamerId) {
+        return;
+      }
+
       this.loading = true;
       try {
         const res = await getLevelProgressApi(this.gamerId, this.trackId);
         if (res.result && res.result.levels) {
-          this.levelList = res.result.levels;
+          const tempList = res.result.levels.map((level) => {
+            const isCompleted = Number(level.isCompleted ?? level.is_completed ?? 0) === 1;
+            const totalStarsRaw = level.totalStars ?? level.total_stars;
+            const totalStars = Number.isNaN(Number(totalStarsRaw)) ? 0 : Number(totalStarsRaw);
+
+            return {
+              ...level,
+              isCompleted: isCompleted ? 1 : 0,
+              totalStars,
+            };
+          });
+
+          this.levelList = tempList.map((level, index) => {
+            let shouldUnlock = false;
+
+            if (index === 0) {
+              shouldUnlock = true;
+            } else if (index === 1) {
+              const level1Stars = tempList[0].totalStars;
+              shouldUnlock = level1Stars >= 9;
+            } else if (index > 1) {
+              const prevStars = tempList[index - 1].totalStars;
+              shouldUnlock = prevStars > 20;
+            }
+
+            let status = '';
+            if (shouldUnlock) {
+              status = `${level.totalStars}星`;
+            } else {
+              status = '未解锁';
+            }
+
+            return {
+              ...level,
+              isUnlocked: shouldUnlock ? 1 : 0,
+              status,
+            };
+          });
+
+          console.log('关卡列表数据:', this.levelList);
         } else {
           uni.showToast({
             title: res.error?.message || '获取关卡进度失败',
@@ -146,15 +186,42 @@ export default {
         this.loading = false;
       }
     },
-    startLevel(level) {
-      if (level.isUnlocked === 0) {
-        uni.showToast({
-          title: '该关卡尚未解锁',
-          icon: 'none'
+    startLevel(index) {
+      const level = this.levelList[index];
+      if (!level) {
+        console.error('关卡数据不存在', index, this.levelList);
+        return;
+      }
+
+      console.log('点击关卡:', index, 'level数据:', level);
+
+      if (level.status && level.status.includes('未解锁')) {
+        console.log('关卡未解锁，阻止跳转');
+        uni.showModal({
+          title: '提示',
+          content: '小朋友，你还没有解锁这一关哦~',
+          showCancel: false,
+          confirmText: '知道了'
         });
         return;
       }
-      this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+
+      console.log('关卡已解锁，准备跳转');
+      if (index === 0) {
+        this.$navTo(`/pagesC/ZhuSuanQiMeng/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 1) {
+        this.$navTo(`/pagesC/ZhuSuanQiMeng/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 2) {
+        this.$navTo(`/pagesC/ZhuSuanQiMeng/level3?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 3) {
+        this.$navTo(`/pagesC/ZhuSuanQiMeng/level4?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 4) {
+        this.$navTo(`/pagesC/ZhuSuanQiMeng/level5?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else if (index === 5) {
+        this.$navTo(`/pagesC/ZhuSuanQiMeng/level6?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+      } else {
+        this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+      }
     },
 
   }
@@ -214,7 +281,7 @@ export default {
   background-color: #f8f8f8;
   border-radius: 12rpx;
   transition: all 0.3s;
-  
+
   &:active {
     background-color: #eeeeee;
     transform: scale(0.98);
@@ -247,6 +314,11 @@ export default {
 .status-locked {
   color: #999;
   background-color: #e0e0e0;
+}
+
+.status-stars {
+  color: #ff9800;
+  font-weight: 600;
 }
 
 .level-locked {

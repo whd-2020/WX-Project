@@ -26,19 +26,19 @@ public class PlayerLevelUnlock implements Serializable {
     @TableField(value = "`gamer_id`")
     private Integer gamer_id;
 
-    // 关卡ID
-    @TableField(value = "`game_levels_id`")
-    private Integer game_levels_id;
-
     // 赛道ID
     @TableField(value = "`track_id`")
     private Integer track_id;
 
-    // 是否已解锁
+    // 关卡顺序（1-6）
+    @TableField(value = "`levels_order`")
+    private Integer levels_order;
+
+    // 是否已解锁（0-未解锁，1-已解锁）
     @TableField(value = "`is_unlocked`")
     private Integer is_unlocked;
 
-    // 是否已完成
+    // 是否已完成（0-未完成，1-已完成）
     @TableField(value = "`is_completed`")
     private Integer is_completed;
 
