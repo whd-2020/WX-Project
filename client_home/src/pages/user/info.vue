@@ -1,8 +1,5 @@
 <template>
   <view class="page_user_info" id="page_user_info" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
-    <view class="back-arrow" @click="goBack"></view>
-    <!-- 导航栏 -->
     <view class="page-content">
       <view class="user-info-container">
         <!-- 头像区域 -->
@@ -84,17 +81,6 @@ export default {
     this.loadUserInfo();
   },
   methods: {
-    goBack() {
-      const pages = getCurrentPages();
-      if (pages.length > 1) {
-        uni.navigateBack();
-      } else {
-        // 如果是第一个页面，跳转到首页
-        uni.reLaunch({
-          url: '/pages/index/index'
-        });
-      }
-    },
     loadUserInfo() {
       console.log('加载用户信息:', this.userInfo);
       if (this.userInfo) {
@@ -178,10 +164,13 @@ export default {
           console.log('保存成功:', res);
 
           // 更新 store
-          this.$store.commit('app/setUserInfo', {
-            ...this.userInfo,
-            nickname: this.nickname.trim(),
-            avatar: this.uploadedAvatar || this.userInfo.avatar
+          this.$store.commit('app/setUniVuex', {
+            name: 'userInfo',
+            value: {
+              ...this.userInfo,
+              nickname: this.nickname.trim(),
+              avatar: this.uploadedAvatar || this.userInfo.avatar,
+            },
           });
 
           // 重置状态

@@ -4,7 +4,7 @@
     <view class="login-modal">
       <view class="modal-content" @click.stop>
         <!-- 关闭按钮 -->
-        <view class="close-btn">
+        <view class="close-btn" @click="closeModal">
           <text class="close-icon">×</text>
         </view>
 
@@ -20,12 +20,20 @@
           <text class="modal-subtitle">请使用微信授权登录</text>
 
           <!-- 微信登录按钮 -->
-          <button class="wechat-login-btn" @click="wechatLogin" :disabled="logining">
+          <button class="wechat-login-btn" @click="handleWechatLogin" :disabled="logining">
             <text v-if="!logining">微信一键登录</text>
             <text v-else>登录中...</text>
           </button>
 
-          <text class="privacy-tip">登录即表示同意用户协议和隐私政策</text>
+          <!-- 隐私协议勾选框 -->
+          <view class="privacy-check" :class="{ error: showPrivacyError }" @click="toggleAgree">
+            <view class="checkbox" :class="{ checked: agreePrivacy, error: showPrivacyError }">
+              <text v-if="agreePrivacy" class="check-icon">✓</text>
+            </view>
+            <view class="privacy-content">
+              <text class="privacy-tip" :class="{ error: showPrivacyError }">登录即表示同意用户协议和隐私政策</text>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -41,6 +49,14 @@
     data() {
       return {
         logining: false,
+        adminLogining: false,
+        agreePrivacy: false,
+        showPrivacyError: false,
+        showAdminLogin: false,
+        adminForm: {
+          username: '',
+          password: ''
+        },
 		allow_user: [
 			'管理员',
 			'游戏玩家'
@@ -51,6 +67,34 @@
       console.log(this.$u.route);
     },
     methods: {
+      /**
+       * 关闭弹窗
+       */
+      closeModal() {
+        uni.switchTab({
+          url: '/pages/index/index'
+        });
+      },
+
+      /**
+       * 切换隐私协议同意状态
+       */
+      toggleAgree() {
+        this.agreePrivacy = !this.agreePrivacy;
+        this.showPrivacyError = false;
+      },
+
+      /**
+       * 处理微信登录点击
+       */
+      handleWechatLogin() {
+        if (!this.agreePrivacy) {
+          this.showPrivacyError = true;
+          return;
+        }
+        this.wechatLogin();
+      },
+
       /**
        * 微信登录
        */
@@ -163,6 +207,48 @@
             }
           }
         });
+      },
+
+      /**
+       * 管理员账号密码登录
+       */
+      adminLogin() {
+        const { username, password } = this.adminForm;
+        if (!username || !password) {
+          this.$toast('请输入账号和密码', 'error');
+          return;
+        }
+
+        this.adminLogining = true;
+        
+        // 模拟管理员登录
+        if (username === 'admin' && password === '123456') {
+          // 模拟成功登录
+          setTimeout(() => {
+            this.adminLogining = false;
+            const user = {
+              token: 'admin_token',
+              username: '管理员',
+              nickName: '管理员',
+              user_group: '管理员',
+              isNewUser: false
+            };
+            this.$u.vuex('token', user.token);
+            this.$u.vuex('userInfo', user);
+            this.$u.vuex('userGroup', user.user_group);
+            this.$toast('登录成功', 'success');
+            setTimeout(() => {
+              uni.switchTab({
+                url: '/pages/index/index'
+              });
+            }, 800);
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            this.adminLogining = false;
+            this.$toast('账号或密码错误', 'error');
+          }, 1000);
+        }
       },
     },
 
@@ -333,11 +419,187 @@
     }
   }
 
-  .privacy-tip {
-    font-size: 11px;
-    color: #bbb;
+  .privacy-check {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
     margin-top: 24px;
-    line-height: 1.6;
+    padding: 16rpx;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 12rpx;
+    background: #f8f8f8;
+    transition: all 0.3s;
+
+    &.error {
+      background: #fff5f5;
+      border: 2rpx solid #ffccc7;
+    }
+
+    .checkbox {
+      width: 28rpx;
+      height: 28rpx;
+      border: 2rpx solid #ddd;
+      border-radius: 6rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16rpx;
+      margin-top: 4rpx;
+      flex-shrink: 0;
+      transition: all 0.2s;
+
+      &.checked {
+        background: linear-gradient(135deg, #09bb07 0%, #07c160 100%);
+        border-color: #07c160;
+      }
+
+      &.error {
+        border-color: #ff4d4f;
+      }
+
+      .check-icon {
+        font-size: 20rpx;
+        color: white;
+        font-weight: bold;
+      }
+    }
+
+    .privacy-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+
+      .privacy-tip {
+        font-size: 24rpx;
+        color: #999;
+        line-height: 1.5;
+        text-align: left;
+        transition: color 0.3s;
+
+        &.error {
+          color: #ff4d4f;
+        }
+      }
+
+      .error-tip {
+        font-size: 22rpx;
+        color: #ff4d4f;
+        margin-top: 8rpx;
+        text-align: left;
+        animation: shake 0.3s ease;
+      }
+    }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4rpx); }
+    75% { transform: translateX(4rpx); }
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-top: 30px;
+    margin-bottom: 20px;
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: #e8e8e8;
+    }
+
+    .divider-text {
+      padding: 0 20rpx;
+      font-size: 24rpx;
+      color: #999;
+    }
+  }
+
+  .admin-login-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: transparent;
+    color: #666;
+    border: 2rpx solid #d9d9d9;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+
+    &:active {
+      background: #f5f5f5;
+      border-color: #bfbfbf;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+
+  .admin-login-form {
+    width: 100%;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #f0f0f0;
+
+    .form-item {
+      margin-bottom: 20px;
+
+      .form-input {
+        width: 100%;
+        height: 80rpx;
+        padding: 0 24rpx;
+        background: #f8f8f8;
+        border: 2rpx solid #e8e8e8;
+        border-radius: 40rpx;
+        font-size: 28rpx;
+        box-sizing: border-box;
+        transition: all 0.3s;
+
+        &:focus {
+          border-color: #07c160;
+          background: #fff;
+        }
+      }
+
+      .placeholder {
+        color: #bbb;
+      }
+    }
+
+    .submit-admin-btn {
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(24, 144, 255, 0.3);
+      transition: all 0.3s;
+      letter-spacing: 1px;
+
+      &:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+      }
+
+      &:disabled {
+        opacity: 0.7;
+        transform: none;
+      }
+    }
   }
 }
 </style>

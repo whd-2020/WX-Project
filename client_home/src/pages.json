@@ -135,6 +135,12 @@
       "style": {
         "navigationBarTitleText": "基本信息"
       }
+    },
+    {
+      "path": "pages/user/sound",
+      "style": {
+        "navigationBarTitleText": "系统音效"
+      }
     }
   ],
   "subPackages": [

@@ -65,15 +65,8 @@
           {{ getTipMessage() }}
         </view>
         
-        <!-- 添加/移除切换按钮和清空按钮 -->
+        <!-- 清空按钮 -->
         <view class="toggle-btn-container">
-          <view 
-            class="toggle-btn" 
-            :class="{ 'toggle-btn-large': needToggleMode }" 
-            @click="toggleMode"
-          >
-            {{ isAddMode ? '添加' : '移除' }}
-          </view>
           <view class="clear-btn" @click="resetAnswer">
             清空
           </view>
@@ -172,7 +165,6 @@ export default {
       typingTimer: null,
       hasHorizontalStick: false,
       verticalSticks: [],
-      isAddMode: true,
       startTime: 0,
       elapsedSeconds: 0,
       elapsedTimer: null,
@@ -555,38 +547,21 @@ export default {
       this.verticalSticks = [];
     },
     
-    // 切换添加/移除模式
-    toggleMode() {
-      this.isAddMode = !this.isAddMode;
-    },
-    
     // 处理横棍点击
     handleHorizontalStickClick() {
-      if (this.isAddMode) {
-        if (!this.hasHorizontalStick) {
-          this.hasHorizontalStick = true;
-        }
-      } else {
-        if (this.hasHorizontalStick) {
-          this.hasHorizontalStick = false;
-        }
+      if (!this.hasHorizontalStick) {
+        this.hasHorizontalStick = true;
       }
     },
     
     // 处理竖棍点击
     handleVerticalStickClick() {
       const maxVertical = this.hasHorizontalStick ? 4 : 5;
-      if (this.isAddMode) {
-        if (this.verticalSticks.length < maxVertical) {
-          const newStick = {
-            id: Date.now() + '_' + this.verticalSticks.length
-          };
-          this.verticalSticks.push(newStick);
-        }
-      } else {
-        if (this.verticalSticks.length > 0) {
-          this.verticalSticks.pop();
-        }
+      if (this.verticalSticks.length < maxVertical) {
+        const newStick = {
+          id: Date.now() + '_' + this.verticalSticks.length
+        };
+        this.verticalSticks.push(newStick);
       }
     },
     
@@ -595,35 +570,15 @@ export default {
       const target = Number(this.question?.targetNumber || 0);
       const current = this.currentNumber;
       
-      if (this.isAddMode) {
-        if (current < target) {
-          return '请添加木棍';
-        } else if (current > target) {
-          return '木棍数量超过了，点击切换到移除模式';
-        } else {
-          return '数量正确，点击提交试试';
-        }
-      } else {
-        if (current < target) {
-          return '木棍数量不够，点击切换到添加模式';
-        } else if (current > target) {
-          return '请移除多余的木棍';
-        } else {
-          return '数量正确，点击提交试试';
-        }
+      if (current === 0) {
+        return '小朋友试一下怎么摆放，加油~';
       }
-    },
-    
-    // 是否需要切换模式
-    get needToggleMode() {
-      const target = Number(this.question?.targetNumber || 0);
-      const current = this.currentNumber;
-      
-      if (this.isAddMode) {
-        return current > target;
-      } else {
-        return current < target;
+      if (current < target) {
+        return '还差一点点～去下面拿木棍放上来吧';
+      } else if (current > target) {
+        return '哎呀放多啦～点一下木棍就能拿走哦';
       }
+      return '刚刚好！点“提交答案”看看吧～';
     },
 
     // 提交答案：前端先根据木棍数量判断，再调用后端记录

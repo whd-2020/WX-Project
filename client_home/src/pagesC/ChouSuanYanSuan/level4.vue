@@ -96,15 +96,8 @@
           {{ getTipMessage() }}
         </view>
 
-        <!-- 添加/移除切换按钮和清空按钮 -->
+        <!-- 清空按钮 -->
         <view class="toggle-btn-container">
-          <view
-            class="toggle-btn"
-            :class="{ 'toggle-btn-large': needToggleMode }"
-            @click="toggleMode"
-          >
-            {{ isAddMode ? '添加' : '移除' }}
-          </view>
           <view class="clear-btn" @click="resetAnswer">
             清空
           </view>
@@ -201,7 +194,6 @@ export default {
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
       typingTimer: null,
-      isAddMode: true,
       startTime: 0,
       elapsedSeconds: 0,
       elapsedTimer: null,
@@ -281,16 +273,6 @@ export default {
       }
       const target = Number(this.question.targetNumber);
       return this.currentNumber === target && this.currentNumber > 0;
-    },
-    needToggleMode() {
-      const target = Number(this.question?.targetNumber || 0);
-      const current = this.currentNumber;
-
-      if (this.isAddMode) {
-        return current > target;
-      } else {
-        return current < target;
-      }
     },
   },
   methods: {
@@ -576,30 +558,14 @@ export default {
       this.onesVerticalSticks = [];
     },
 
-    toggleMode() {
-      this.isAddMode = !this.isAddMode;
-    },
-
     handleHorizontalStickClick() {
       if (this.selectedArea === 'tens') {
-        if (this.isAddMode) {
-          if (!this.tensHasHorizontalStick) {
-            this.tensHasHorizontalStick = true;
-          }
-        } else {
-          if (this.tensHasHorizontalStick) {
-            this.tensHasHorizontalStick = false;
-          }
+        if (!this.tensHasHorizontalStick) {
+          this.tensHasHorizontalStick = true;
         }
       } else {
-        if (this.isAddMode) {
-          if (!this.onesHasHorizontalStick) {
-            this.onesHasHorizontalStick = true;
-          }
-        } else {
-          if (this.onesHasHorizontalStick) {
-            this.onesHasHorizontalStick = false;
-          }
+        if (!this.onesHasHorizontalStick) {
+          this.onesHasHorizontalStick = true;
         }
       }
     },
@@ -607,31 +573,19 @@ export default {
     handleVerticalStickClick() {
       if (this.selectedArea === 'tens') {
         const maxVertical = this.tensHasHorizontalStick ? 4 : 5;
-        if (this.isAddMode) {
-          if (this.tensVerticalSticks.length < maxVertical) {
-            const newStick = {
-              id: Date.now() + '_tens_' + this.tensVerticalSticks.length
-            };
-            this.tensVerticalSticks.push(newStick);
-          }
-        } else {
-          if (this.tensVerticalSticks.length > 0) {
-            this.tensVerticalSticks.pop();
-          }
+        if (this.tensVerticalSticks.length < maxVertical) {
+          const newStick = {
+            id: Date.now() + '_tens_' + this.tensVerticalSticks.length
+          };
+          this.tensVerticalSticks.push(newStick);
         }
       } else {
         const maxVertical = this.onesHasHorizontalStick ? 4 : 5;
-        if (this.isAddMode) {
-          if (this.onesVerticalSticks.length < maxVertical) {
-            const newStick = {
-              id: Date.now() + '_ones_' + this.onesVerticalSticks.length
-            };
-            this.onesVerticalSticks.push(newStick);
-          }
-        } else {
-          if (this.onesVerticalSticks.length > 0) {
-            this.onesVerticalSticks.pop();
-          }
+        if (this.onesVerticalSticks.length < maxVertical) {
+          const newStick = {
+            id: Date.now() + '_ones_' + this.onesVerticalSticks.length
+          };
+          this.onesVerticalSticks.push(newStick);
         }
       }
     },
@@ -640,23 +594,15 @@ export default {
       const target = Number(this.question?.targetNumber || 0);
       const current = this.currentNumber;
 
-      if (this.isAddMode) {
-        if (current < target) {
-          return '请添加木棍';
-        } else if (current > target) {
-          return '木棍数量超过了，点击切换到移除模式';
-        } else {
-          return '数量正确，点击提交试试';
-        }
-      } else {
-        if (current < target) {
-          return '木棍数量不够，点击切换到添加模式';
-        } else if (current > target) {
-          return '请移除多余的木棍';
-        } else {
-          return '数量正确，点击提交试试';
-        }
+      if (current === 0) {
+        return '小朋友试一下怎么摆放，加油~';
       }
+      if (current < target) {
+        return '还差一点点～去下面拿木棍放上来吧';
+      } else if (current > target) {
+        return '哎呀放多啦～点一下木棍就能拿走哦';
+      }
+      return '刚刚好！点“提交答案”看看吧～';
     },
 
     submitAnswer() {
