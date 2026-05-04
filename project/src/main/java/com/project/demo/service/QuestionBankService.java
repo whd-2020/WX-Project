@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 @Service
 public class QuestionBankService extends BaseService<QuestionBank> {
 
+    private static final int NEXT_LEVEL_UNLOCK_STARS = 9;
+
     @Autowired
     private QuestionBankMapper questionBankMapper;
 
@@ -227,7 +229,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
     }
 
     /**
-     * 更新关卡星星记录，累计星星数，并在累计星星数>20时解锁下一关
+     * 更新关卡星星记录，累计星星数，并在累计星星数>=9时解锁下一关
      * 
      * 星星数计算规则：每道题只记录最高星星数，total_stars是所有题目的最高星星数之和
      * 
@@ -295,8 +297,8 @@ public class QuestionBankService extends BaseService<QuestionBank> {
                     gamerId, levelId, trackId, totalStars);
         }
 
-        // 检查累计星星数是否>=20，如果是则解锁下一关
-        if (totalStars >= 20) {
+        // 检查累计星星数是否>=9，如果是则解锁下一关
+        if (totalStars >= NEXT_LEVEL_UNLOCK_STARS) {
             unlockNextLevel(gamerId, levelId, trackId);
         }
     }
@@ -367,7 +369,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
     }
 
     /**
-     * 解锁下一关（当累计星星数>=20时调用）
+     * 解锁下一关（当累计星星数>=9时调用）
      * 
      * 注意：
      * 1. 只解锁同一赛道（track_id）内的下一关，不同赛道之间完全隔离
@@ -416,13 +418,13 @@ public class QuestionBankService extends BaseService<QuestionBank> {
                 nextUnlock.setIs_completed(0);
                 nextUnlock.setComplete_times(0);
                 playerLevelUnlockMapper.insert(nextUnlock);
-                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelOrder={}, nextLevelOrder={}, trackId={}", 
+                log.info("累计星星数>=9，解锁下一关: gamerId={}, currentLevelOrder={}, nextLevelOrder={}, trackId={}", 
                         gamerId, levelId, nextLevelOrder, trackId);
             } else if (nextUnlock.getIs_unlocked() == null || nextUnlock.getIs_unlocked() == 0) {
                 // 如果下一关未解锁，则解锁它
                 nextUnlock.setIs_unlocked(1);
                 playerLevelUnlockMapper.updateById(nextUnlock);
-                log.info("累计星星数>20，解锁下一关: gamerId={}, currentLevelOrder={}, nextLevelOrder={}, trackId={}", 
+                log.info("累计星星数>=9，解锁下一关: gamerId={}, currentLevelOrder={}, nextLevelOrder={}, trackId={}", 
                         gamerId, levelId, nextLevelOrder, trackId);
             }
         }

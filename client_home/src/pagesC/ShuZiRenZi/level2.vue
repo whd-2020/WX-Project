@@ -36,7 +36,7 @@
       <!-- 顶部题目区 -->
       <view class="rope-area">
           <view class="question-content">
-            {{ currentQuestion.question_content && currentQuestion.question_content.options && currentQuestion.question_content.options[0] || '' }}
+            <text class="question-content-text" :class="{ 'question-content-text--wrap': wrapTitleByComma }">{{ displayQuestionText }}</text>
             <div v-if="currentQuestion.question_content && currentQuestion.question_content.decorations" class="question-image">
               <span 
                 v-for="(decoration, index) in (currentQuestion.question_type === 'drag_item' ? [currentQuestion.question_content.decorations[0]] : Array(displayIconCount).fill(currentQuestion.question_content.decorations[0]))" 
@@ -48,6 +48,7 @@
               </span>
             </div>
           </view>
+          <text class="question-content-measure">{{ rawQuestionText }}</text>
 
         <!-- 中间答题区 -->
         <view class="answer-area">
@@ -211,7 +212,8 @@ export default {
       isDragging: false,
       availableNumbers: [],
       numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
-      isAddMode: true
+      isAddMode: true,
+      wrapTitleByComma: false,
     }
   },
   onLoad(options) {
@@ -292,7 +294,14 @@ export default {
       } else {
         return currentCount < maxCount;
       }
-    }
+    },
+    rawQuestionText() {
+      return String(this.currentQuestion && this.currentQuestion.question_content && this.currentQuestion.question_content.options && this.currentQuestion.question_content.options[0] || '');
+    },
+    displayQuestionText() {
+      if (!this.wrapTitleByComma) return this.rawQuestionText;
+      return String(this.rawQuestionText).replace(/([，,])\s*/g, '$1\n');
+    },
   },
   methods: {
     playTyping(text) {
@@ -372,6 +381,9 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
     },
 
     closeGamePopup() {
@@ -589,6 +601,7 @@ export default {
           correct_answer: { answer: '1' }
         };
         this.question = local;
+        this.wrapTitleByComma = false;
         this.playTyping(this.question.question_content.options[0]);
         return;
       }
@@ -638,6 +651,7 @@ export default {
             correct_answer: { answer: '1' }
           };
           this.question = local;
+          this.wrapTitleByComma = false;
           this.showDefaultQuestionTip = true;
 
           if (this.defaultQuestionTipTimer) {
@@ -672,7 +686,35 @@ export default {
         }
 
         this.question = q;
+        this.wrapTitleByComma = false;
         this.playTyping(this.question.question_content.options[0]);
+        if (this.showGamePopup) {
+          this.$nextTick(() => {
+            this.updateTitleWrap();
+          });
+        }
+      });
+    },
+
+    updateTitleWrap() {
+      if (!this.showGamePopup) return;
+      const title = String(this.rawQuestionText || '');
+      if (!/[，,]/.test(title)) {
+        this.wrapTitleByComma = false;
+        return;
+      }
+      const sys = uni.getSystemInfoSync ? uni.getSystemInfoSync() : null;
+      const windowWidth = sys && sys.windowWidth ? sys.windowWidth : 375;
+      const paddingPx = (40 * 2 * windowWidth) / 750;
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.question-content').boundingClientRect();
+      query.select('.question-content-measure').boundingClientRect();
+      query.exec((res) => {
+        const titleRect = res && res[0] ? res[0] : null;
+        const measureRect = res && res[1] ? res[1] : null;
+        if (!titleRect || !measureRect) return;
+        const available = Math.max(0, (titleRect.width || 0) - paddingPx);
+        this.wrapTitleByComma = (measureRect.width || 0) > available;
       });
     },
 
@@ -964,7 +1006,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 24rpx;
   color: #333;
-  max-width: 300rpx;
+  max-width: 420rpx;
   position: relative;
   z-index: 3;
   animation: fadeInUp 0.3s ease;
@@ -998,7 +1040,7 @@ export default {
   border-radius: 20rpx;
   box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.4);
   z-index: 4;
-  animation: bounce 1s ease infinite;
+  animation: hintBounce 1.2s ease-in-out infinite;
 }
 
 .child-tip .tip-text {
@@ -1025,6 +1067,15 @@ export default {
   }
   50% {
     transform: translateY(-10rpx);
+  }
+}
+
+@keyframes hintBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8rpx);
   }
 }
 
@@ -1061,6 +1112,25 @@ export default {
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+.question-content-text {
+  display: block;
+}
+
+.question-content-text--wrap {
+  white-space: pre-line;
+}
+
+.question-content-measure {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  font-size: 28rpx;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .question-image {

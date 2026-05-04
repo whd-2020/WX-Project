@@ -20,9 +20,14 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.*;
 
@@ -39,6 +44,53 @@ public class UserController extends BaseController<User, UserService> {
     @Autowired
     public UserController(UserService service) {
         setService(service);
+    }
+
+    @PostMapping("/upload_avatar")
+    public Map<String, Object> uploadAvatar(@RequestParam("file") MultipartFile file, @RequestParam("user_id") Integer userId) {
+        if (file == null || file.isEmpty()) {
+            return error(30000, "没有选择文件");
+        }
+        if (userId == null || userId <= 0) {
+            return error(30000, "user_id不能为空");
+        }
+        try {
+            String originalName = file.getOriginalFilename();
+            String suffix = ".jpg";
+            if (originalName != null) {
+                int idx = originalName.lastIndexOf('.');
+                if (idx >= 0 && idx < originalName.length() - 1) {
+                    suffix = originalName.substring(idx);
+                }
+            }
+
+            String userDir = System.getProperty("user.dir");
+            Path avatarDir = Paths.get(userDir, "upload", "avatar");
+            Files.createDirectories(avatarDir);
+
+            String prefix = "user_" + userId + ".";
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(avatarDir)) {
+                for (Path p : stream) {
+                    String name = p.getFileName().toString();
+                    if (name.startsWith(prefix)) {
+                        try {
+                            Files.deleteIfExists(p);
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+
+            String fileName = "user_" + userId + suffix;
+            Path dest = avatarDir.resolve(fileName).normalize().toAbsolutePath();
+            file.transferTo(dest.toFile());
+
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("url", "/api/upload/avatar/" + fileName);
+            return success(jsonObject);
+        } catch (Exception e) {
+            return error(30000, "上传失败");
+        }
     }
 
     @Autowired

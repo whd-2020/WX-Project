@@ -24,6 +24,8 @@ import java.util.Map;
 @RequestMapping("/question_bank")
 public class QuestionBankController extends BaseController<QuestionBank, QuestionBankService> {
 
+    private static final int NEXT_LEVEL_UNLOCK_STARS = 9;
+
     @Autowired
     public QuestionBankController(QuestionBankService service) {
         setService(service);
@@ -66,17 +68,21 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
             // 检查是否所有题目都已答完
             boolean isCompleted = service.isLevelCompleted(gamerId, levelId, trackId);
             
-            // 检查题库中是否有题目（用于区分"题库无题目"和"所有题目都满3星"）
+            // 检查题库中是否有题目（用于区分"题库无题目"和"达到解锁条件"）
             int totalQuestionCount = service.getLevelQuestionCount(levelId, trackId);
+            LevelStarRecord starRecord = service.getLevelStarRecord(gamerId, levelId, trackId);
+            int totalStars = 0;
+            if (starRecord != null && starRecord.getTotal_stars() != null) {
+                totalStars = starRecord.getTotal_stars();
+            }
 
             Map<String, Object> result = new HashMap<>();
             result.put("questions", questions);
             result.put("isCompleted", isCompleted);
             result.put("questionCount", questions.size());
             result.put("totalQuestionCount", totalQuestionCount);
+            result.put("totalStars", totalStars);
 
-            // 特殊标识：所有题目都满3星
-            // 判断逻辑：题库有题目（totalQuestionCount > 0），但返回的questions为空，说明所有题目都满3星
             boolean allThreeStars = totalQuestionCount > 0 && questions.isEmpty();
             result.put("allThreeStars", allThreeStars);
 
@@ -85,7 +91,7 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
 
             if (allThreeStars) {
                 result.put("message", "小朋友你也太厉害了，前往下一关吧！");
-                log.info("关卡{}所有题目都已满3星，提示前往下一关", levelId);
+                log.info("关卡{}累计星星数已达{}，提示前往下一关", levelId, NEXT_LEVEL_UNLOCK_STARS);
             }
             
             return success(result);
@@ -493,17 +499,21 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
             // 检查是否所有题目都已答完
             boolean isCompleted = service.isLevelCompleted(gamerId, levelId, trackId);
             
-            // 检查题库中是否有题目（用于区分"题库无题目"和"所有题目都满3星"）
+            // 检查题库中是否有题目（用于区分"题库无题目"和"达到解锁条件"）
             int totalQuestionCount = service.getLevelQuestionCount(levelId, trackId);
+            LevelStarRecord starRecord = service.getLevelStarRecord(gamerId, levelId, trackId);
+            int totalStars = 0;
+            if (starRecord != null && starRecord.getTotal_stars() != null) {
+                totalStars = starRecord.getTotal_stars();
+            }
 
             Map<String, Object> result = new HashMap<>();
             result.put("questions", questions);
             result.put("isCompleted", isCompleted);
             result.put("questionCount", questions.size());
             result.put("totalQuestionCount", totalQuestionCount);
+            result.put("totalStars", totalStars);
 
-            // 特殊标识：所有题目都满3星
-            // 判断逻辑：题库有题目（totalQuestionCount > 0），但返回的questions为空，说明所有题目都满3星
             boolean allThreeStars = totalQuestionCount > 0 && questions.isEmpty();
             result.put("allThreeStars", allThreeStars);
 
@@ -512,7 +522,7 @@ public class QuestionBankController extends BaseController<QuestionBank, Questio
 
             if (allThreeStars) {
                 result.put("message", "小朋友你也太厉害了，前往下一关吧！");
-                log.info("关卡{}所有题目都已满3星，提示前往下一关", levelId);
+                log.info("关卡{}累计星星数已达{}，提示前往下一关", levelId, NEXT_LEVEL_UNLOCK_STARS);
             }
             
             return success(result);

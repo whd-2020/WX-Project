@@ -17,6 +17,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +50,60 @@ public class BaseController<E, S extends BaseService<E>> {
     @PostMapping("/set")
 	@Transactional
     public Map<String, Object> set(HttpServletRequest request) throws IOException {
-        service.update(service.readQuery(request), service.readConfig(request), service.readBody(request.getReader()));
+        Map<String, String> query = service.readQuery(request);
+        Map<String, String> config = service.readConfig(request);
+        Map<String, Object> body = service.readBody(request.getReader());
+
+        String newAvatar = null;
+        if (body != null && body.get("avatar") instanceof String) {
+            newAvatar = (String) body.get("avatar");
+        }
+
+        String oldAvatar = null;
+        if (newAvatar != null && newAvatar.length() > 0) {
+            try {
+                E oldEntity = service.findOne(query);
+                if (oldEntity != null) {
+                    Map oldMap = JSONObject.parseObject(JSONObject.toJSONString(oldEntity), Map.class);
+                    Object v = oldMap.get("avatar");
+                    if (v instanceof String) {
+                        oldAvatar = (String) v;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        service.update(query, config, body);
+
+        if (oldAvatar != null && oldAvatar.length() > 0 && newAvatar != null && newAvatar.length() > 0) {
+            if (!oldAvatar.equals(newAvatar) && oldAvatar.startsWith("/api/upload/")) {
+                String fileName = oldAvatar.substring(oldAvatar.lastIndexOf('/') + 1);
+                if (!fileName.startsWith("admin_avatar")) {
+                    deleteUploadFileQuietly(fileName);
+                }
+            }
+        }
         return success(1);
+    }
+
+    private void deleteUploadFileQuietly(String fileName) {
+        if (fileName == null || fileName.length() == 0) {
+            return;
+        }
+        String userDir = System.getProperty("user.dir");
+        Path[] candidates = new Path[]{
+                Paths.get(userDir, "upload", fileName),
+                Paths.get(userDir, "src", "main", "resources", "static", "upload", fileName),
+                Paths.get(userDir, "..", "upload", fileName),
+                Paths.get(userDir, "..", "src", "main", "resources", "static", "upload", fileName),
+        };
+        for (Path p : candidates) {
+            try {
+                Files.deleteIfExists(p.normalize().toAbsolutePath());
+            } catch (Exception ignored) {
+            }
+        }
     }
 
 
@@ -117,10 +173,7 @@ public class BaseController<E, S extends BaseService<E>> {
             return error(30000, "没有选择文件");
         }
         try {
-            //判断有没路径，没有则创建
-            // application.yml: static-path-pattern=/upload/**，context-path=/api
-            // 因此应落盘到 static/upload/ 下，才能通过 /api/upload/{fileName} 访问
-            String filePath = System.getProperty("user.dir") + "/src/main/resources/static/upload/";
+            String filePath = System.getProperty("user.dir") + "/upload/";
             File targetDir = new File(filePath);
             if (!targetDir.exists() && !targetDir.isDirectory()) {
                 if (targetDir.mkdirs()) {
@@ -129,9 +182,15 @@ public class BaseController<E, S extends BaseService<E>> {
                     log.error("创建目录失败");
                 }
             }
-//            String path = ResourceUtils.getURL("classpath:").getPath() + "static/upload/";
-//            String filePath = path.replace('/', '\\').substring(1, path.length());
-            String fileName = file.getOriginalFilename();
+            String originalName = file.getOriginalFilename();
+            String suffix = "";
+            if (originalName != null) {
+                int idx = originalName.lastIndexOf('.');
+                if (idx >= 0 && idx < originalName.length() - 1) {
+                    suffix = originalName.substring(idx);
+                }
+            }
+            String fileName = UUID.randomUUID().toString().replace("-", "") + suffix;
             File dest = new File(filePath + fileName);
             log.info("文件路径:{}", dest.getPath());
             log.info("文件名:{}", dest.getName());

@@ -30,7 +30,7 @@
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <view class="game-area">
         <view class="question-content">
-          {{ currentQuestion.question_content && currentQuestion.question_content.options && currentQuestion.question_content.options[0] || '' }}
+          <text class="question-content-text" :class="{ 'question-content-text--wrap': wrapTitleByComma }">{{ displayQuestionText }}</text>
           <div v-if="currentQuestion.question_content && currentQuestion.question_content.decorations" class="question-image">
             <span 
               v-for="(decoration, index) in (currentQuestion.question_type === 'drag_item' ? [currentQuestion.question_content.decorations[0]] : Array(displayIconCount).fill(currentQuestion.question_content.decorations[0]))" 
@@ -42,6 +42,7 @@
             </span>
           </div>
         </view>
+        <text class="question-content-measure">{{ rawQuestionText }}</text>
 
         <view class="answer-area">
           <view class="answer-boxes">
@@ -261,6 +262,7 @@ export default {
         { type: 'GuoShi', name: '果实', icon: '🍎' }
       ],
       isAddMode: true,
+      wrapTitleByComma: false,
       hasAnswered: false
     };
   },
@@ -271,9 +273,11 @@ export default {
     isAnswerCorrect() {
       if (!this.question) return false;
       if (this.question.question_type === 'drag_number') {
-        const userAnswer = this.droppedItems.right[0] || '';
         const correctAnswer = this.question.correct_answer || {};
-        return userAnswer === correctAnswer.answer;
+        const userAnswer = this.droppedItems.right[0];
+        const userNum = Number(userAnswer);
+        const correctNum = Number(correctAnswer.answer);
+        return Number.isFinite(userNum) && Number.isFinite(correctNum) && userNum === correctNum;
       } else if (this.question.question_type === 'drag_item') {
         const correctAnswer = this.question.correct_answer || {};
         const userTotal = this.droppedItems.left.length * 10 + this.droppedItems.right.length;
@@ -312,7 +316,14 @@ export default {
         return this.question.question_content.decorations[0].icon;
       }
       return '🐥'; // 默认图标，以防数据缺失
-    }
+    },
+    rawQuestionText() {
+      return String(this.currentQuestion && this.currentQuestion.question_content && this.currentQuestion.question_content.options && this.currentQuestion.question_content.options[0] || '');
+    },
+    displayQuestionText() {
+      if (!this.wrapTitleByComma) return this.rawQuestionText;
+      return String(this.rawQuestionText).replace(/([，,])\s*/g, '$1\n');
+    },
   },
   onLoad(options) {
     if (options && options.gamer_id) {
@@ -428,6 +439,9 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
     },
     closeGamePopup() {
       this.showGamePopup = false;
@@ -613,6 +627,7 @@ export default {
       if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
         const local = this.generateLocalQuestion();
         this.question = local;
+        this.wrapTitleByComma = false;
         this.playTyping(local.question_content.options[0]);
         return;
       }
@@ -655,6 +670,7 @@ export default {
         if (!json.result || !json.result.questions || json.result.questions.length === 0) {
           const local = this.generateLocalQuestion();
           this.question = local;
+          this.wrapTitleByComma = false;
           this.showDefaultQuestionTip = true;
           if (this.defaultQuestionTipTimer) {
             clearTimeout(this.defaultQuestionTipTimer);
@@ -686,7 +702,31 @@ export default {
         }
 
         this.question = q;
+        this.wrapTitleByComma = false;
         this.playTyping(q.question_content.options[0]);
+        if (this.showGamePopup) {
+          this.$nextTick(() => {
+            this.updateTitleWrap();
+          });
+        }
+      });
+    },
+
+    updateTitleWrap() {
+      if (!this.showGamePopup) return;
+      const title = String(this.rawQuestionText || '');
+      if (!/[，,]/.test(title)) {
+        this.wrapTitleByComma = false;
+        return;
+      }
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.question-content').boundingClientRect();
+      query.select('.question-content-measure').boundingClientRect();
+      query.exec((res) => {
+        const titleRect = res && res[0] ? res[0] : null;
+        const measureRect = res && res[1] ? res[1] : null;
+        if (!titleRect || !measureRect) return;
+        this.wrapTitleByComma = (measureRect.width || 0) > (titleRect.width || 0);
       });
     },
     generateLocalQuestion() {
@@ -1130,7 +1170,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 24rpx;
   color: #333;
-  max-width: 300rpx;
+  max-width: 420rpx;
   position: relative;
   z-index: 3;
   animation: fadeInUp 0.3s ease;
@@ -1164,7 +1204,7 @@ export default {
   border-radius: 20rpx;
   box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.4);
   z-index: 4;
-  animation: bounce 1s ease infinite;
+  animation: hintBounce 1.2s ease-in-out infinite;
 }
 
 .child-tip .tip-text {
@@ -1194,6 +1234,15 @@ export default {
   }
 }
 
+@keyframes hintBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8rpx);
+  }
+}
+
 .rope-title {
   font-size: 30rpx;
   color: #2c2c2c;
@@ -1213,6 +1262,25 @@ export default {
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+.question-content-text {
+  display: block;
+}
+
+.question-content-text--wrap {
+  white-space: pre-line;
+}
+
+.question-content-measure {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  font-size: 28rpx;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .question-image {
@@ -1406,19 +1474,19 @@ export default {
 }
 
 .number-card-smaller {
-  animation: scaleAnimation 1s ease-in-out infinite;
-  transform: scale(0.9);
+  animation: scaleAnimation 1.2s ease-in-out infinite;
+  transform: scale(0.92);
 }
 
 @keyframes scaleAnimation {
   0% {
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
   50% {
-    transform: scale(0.8);
+    transform: scale(0.84);
   }
   100% {
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
 }
 

@@ -226,7 +226,7 @@ export default {
     this.get_slides();
     this.get_menu();
     this.get_notice();
-                },
+  },
 };
 </script>
 <style lang="scss" scoped>

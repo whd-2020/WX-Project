@@ -33,28 +33,19 @@
     <!-- 游戏弹窗 -->
     <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
-      <!-- 装饰物选择区域（仅单一题目显示） -->
-      <view class="decoration-selector" v-if="!isComboQuestion && currentDecorations.length > 0">
-        <view class="decoration-title">选择装饰物类型：</view>
-        <view class="decoration-list">
-          <view
-            v-for="deco in currentDecorations"
-            :key="deco.type"
-            class="decoration-item"
-            :class="{ active: selectedDecoration === deco.type }"
-            @click="selectDecoration(deco.type)"
-          >
-            <text class="decoration-icon">{{ deco.icon }}</text>
-            <text class="decoration-name">{{ deco.name }}</text>
-          </view>
-        </view>
+      <view class="icon-display-area icon-display-area--left" v-if="cornerIcons[0]">
+        <text class="question-icon-unicode">{{ cornerIcons[0] }}</text>
+      </view>
+      <view class="icon-display-area icon-display-area--right" v-if="isComboQuestion && cornerIcons[1]">
+        <text class="question-icon-unicode">{{ cornerIcons[1] }}</text>
       </view>
 
       <!-- 绳结互动区域 -->
       <view class="rope-area" v-if="isComboQuestion">
         <!-- 组合题目：显示多根绳子 -->
         <view class="rope-title">
-          {{ question.questionTitle || '用不同的绳子记录不同的物品' }}
+          <text class="rope-title-main" :class="{ 'rope-title--wrap': titleUsePreLine }">{{ displayQuestionTitle }}</text>
+          <text class="rope-title-measure">{{ rawQuestionTitle }}</text>
           <br />
           <text style="font-size: 24rpx; font-weight: 400;">
             提示：点击绳子打小结表示1，<text style="font-weight: 700">长按打大结表示10</text>
@@ -99,7 +90,8 @@
       <view class="rope-area" v-else>
         <!-- 单一题目：显示一根绳子 -->
         <view class="rope-title">
-          {{ question.questionTitle || '点击绳子打结' }}
+          <text class="rope-title-main" :class="{ 'rope-title--wrap': titleUsePreLine }">{{ displayQuestionTitle }}</text>
+          <text class="rope-title-measure">{{ rawQuestionTitle }}</text>
           <br />
           <text style="font-size: 24rpx; font-weight: 400;">
             提示：点击绳子打小结表示1，<text style="font-weight: 700">长按打大结表示10</text>
@@ -131,9 +123,14 @@
           </view>
         </view>
         <view class="rope-info">
-          <text>小结：{{ smallKnots.length }} 个，大结：{{ bigKnots.length }} 个</text>
-          <text>当前表示数字：{{ currentValue }}</text>
-          <text class="time-text">用时：{{ formatTime(elapsedSeconds) }}</text>
+          <view class="rope-info-col rope-info-left">
+            <text>小结：{{ smallKnots.length }} 个</text>
+            <text>大结：{{ bigKnots.length }} 个</text>
+          </view>
+          <view class="rope-info-col rope-info-right">
+            <text>当前表示数字：{{ currentValue }}</text>
+            <text class="time-text">用时：{{ formatTime(elapsedSeconds) }}</text>
+          </view>
         </view>
       </view>
 
@@ -223,6 +220,7 @@ export default {
       selectedDecoration: null,
       // 当前题目的装饰物列表
       currentDecorations: [],
+      wrapTitleByComma: false,
       startTime: 0,
       elapsedSeconds: 0,
       elapsedTimer: null,
@@ -293,9 +291,52 @@ export default {
       const deco = this.currentDecorations.find(d => d.type === this.selectedDecoration);
       return deco ? deco.icon : '';
     },
+    cornerIcons() {
+      let icons = [];
+      if (this.isComboQuestion) {
+        let types = [];
+        if (Array.isArray(this.ropes) && this.ropes.length > 0) {
+          types = this.ropes.map(r => r.decoration).filter(Boolean);
+        } else if (this.question && this.question.correct_answer && Array.isArray(this.question.correct_answer.items)) {
+          types = this.question.correct_answer.items.map(i => i.decoration).filter(Boolean);
+        }
+        icons = types.map(t => this.getDecorationIcon(t)).filter(Boolean);
+        if (icons.length === 0 && Array.isArray(this.currentDecorations)) {
+          icons = this.currentDecorations.map(d => d.icon).filter(Boolean);
+        }
+        return icons.slice(0, 2);
+      }
+
+      if (Array.isArray(this.currentDecorations) && this.currentDecorations.length >= 2) {
+        icons = this.currentDecorations.slice(0, 2).map(d => d.icon).filter(Boolean);
+        return icons;
+      }
+
+      const single = this.selectedDecorationIcon || (this.currentDecorations && this.currentDecorations[0] ? this.currentDecorations[0].icon : '');
+      return single ? [single] : [];
+    },
     // 当前用小结+大结表示的数值
     currentValue() {
       return this.smallKnots.length + this.bigKnots.length * 10;
+    },
+    rawQuestionTitle() {
+      const fallback = this.isComboQuestion ? '用不同的绳子记录不同的物品' : '点击绳子打结';
+      return (this.question && this.question.questionTitle ? this.question.questionTitle : fallback) || '';
+    },
+    titleUsePreLine() {
+      return this.wrapTitleByComma || /[；;]/.test(String(this.rawQuestionTitle || ''));
+    },
+    displayQuestionTitle() {
+      const raw = String(this.rawQuestionTitle || '');
+      if (this.isComboQuestion && /[；;]/.test(raw)) {
+        return raw
+          .split(/[；;]/)
+          .map(s => s.trim())
+          .filter(Boolean)
+          .join('\n');
+      }
+      if (!this.wrapTitleByComma) return raw;
+      return raw.replace(/([，,])\s*/g, '$1\n');
     },
   },
   methods: {
@@ -373,6 +414,7 @@ export default {
         this.currentQuestionId = local.question_id;
         this.currentDecorations = local.decorations;
         this.selectedDecoration = local.decorations[0].type;
+        this.wrapTitleByComma = false;
         this.playTyping(local.title);
         return;
       }
@@ -476,8 +518,33 @@ export default {
             }
           }
 
+          this.wrapTitleByComma = false;
           this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
+      });
+    },
+
+    updateTitleWrap() {
+      if (!this.showGamePopup) return;
+      const title = String(this.rawQuestionTitle || '');
+      if (/[；;]/.test(title) || !/[，,]/.test(title)) {
+        this.wrapTitleByComma = false;
+        return;
+      }
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.rope-title').boundingClientRect();
+      query.select('.rope-title-measure').boundingClientRect();
+      query.exec((res) => {
+        const titleRect = res && res[0] ? res[0] : null;
+        const measureRect = res && res[1] ? res[1] : null;
+        if (!titleRect || !measureRect) return;
+        const available = Math.max(0, titleRect.width || 0);
+        this.wrapTitleByComma = (measureRect.width || 0) > available;
       });
     },
 
@@ -801,6 +868,7 @@ export default {
         this.currentQuestionId = local.question_id;
         this.currentDecorations = local.decorations;
         this.selectedDecoration = local.decorations[0].type;
+        this.wrapTitleByComma = false;
         this.playTyping(local.title);
         return;
       }
@@ -891,7 +959,13 @@ export default {
             }
           }
 
+          this.wrapTitleByComma = false;
           this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
       });
     },
@@ -969,6 +1043,9 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
     },
 
     // 关闭游戏弹窗
@@ -1141,12 +1218,12 @@ export default {
   margin-bottom: 20rpx;
   margin-right: 10rpx;
   padding: 20rpx 24rpx;
-  background: linear-gradient(135deg, #a8e6cf 0%, #7fcdbb 100%);
+  background: linear-gradient(135deg, #fff59d 0%, #ffeb3b 50%, #ffc107 100%);
   border-radius: 24rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
   font-size: 24rpx;
   color: #333;
-  max-width: 300rpx;
+  max-width: 420rpx;
   position: relative;
   z-index: 3;
 }
@@ -1182,95 +1259,86 @@ export default {
 /* 弹窗样式 */
 .popup-mask {
   position: fixed;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 100;
+  top: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 998;
 }
 
 .game-popup {
   position: fixed;
-  top: 50%;
   left: 50%;
+  top: 50%;
   transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 700rpx;
-  max-height: 80vh;
-  background: #fff;
+  z-index: 999;
+  width: 640rpx;
   border-radius: 24rpx;
-  padding: 40rpx;
-  z-index: 101;
-  overflow-y: auto;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
-}
-
-/* 装饰物选择器 */
-.decoration-selector {
-  margin-bottom: 30rpx;
-}
-
-.decoration-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20rpx;
-}
-
-.decoration-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-}
-
-.decoration-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20rpx;
-  border: 2rpx solid #ddd;
-  border-radius: 16rpx;
-  background: #f9f9f9;
-  cursor: pointer;
-  transition: all 0.3s;
-  min-width: 120rpx;
-}
-
-.decoration-item.active {
-  border-color: #ffc107;
-  background: #fff9e6;
-  box-shadow: 0 4rpx 12rpx rgba(255, 193, 7, 0.3);
-}
-
-.decoration-icon {
-  font-size: 48rpx;
-  margin-bottom: 8rpx;
-}
-
-.decoration-name {
-  font-size: 24rpx;
-  color: #666;
+  padding: 46rpx 44rpx;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10rpx);
+  -webkit-backdrop-filter: blur(10rpx);
+  border: 1rpx solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
 }
 
 /* 绳结区域 */
 .rope-area {
-  margin-bottom: 30rpx;
+  margin: 0;
+  padding: 28rpx 0 16rpx;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  position: relative;
+  z-index: 1;
+  border: none;
 }
 
 .rope-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #333;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #2c2c2c;
   margin-bottom: 20rpx;
+  padding: 0 120rpx;
   text-align: center;
+  text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.9);
+  letter-spacing: 1rpx;
+  -webkit-font-smoothing: antialiased;
+}
+
+.rope-title-main {
+  display: block;
+  line-height: 1.4;
+}
+
+.rope-title--wrap {
+  white-space: pre-line;
+}
+
+.rope-title-measure {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  font-size: 30rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .rope-section {
-  margin-bottom: 30rpx;
-  padding: 20rpx;
-  background: #f5f5f5;
-  border-radius: 16rpx;
+  margin-bottom: 22rpx;
+  padding: 18rpx 0;
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.35);
+}
+
+.rope-section:last-child {
+  border-bottom: 0;
 }
 
 .rope-header {
@@ -1283,12 +1351,15 @@ export default {
 .rope-label {
   font-size: 26rpx;
   font-weight: 600;
-  color: #333;
+  color: #2c2c2c;
+  text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
 }
 
 .rope-count {
   font-size: 24rpx;
-  color: #666;
+  color: #2c2c2c;
+  font-weight: 600;
+  text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
 }
 
 .rope-wrapper {
@@ -1299,6 +1370,35 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.icon-display-area {
+  position: absolute;
+  top: 30rpx;
+  width: 80rpx;
+  height: 80rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+  z-index: 20;
+  pointer-events: none;
+  animation: bounce 1.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.icon-display-area--left {
+  left: 30rpx;
+}
+
+.icon-display-area--right {
+  right: 30rpx;
+}
+
+.question-icon-unicode {
+  font-size: 50rpx;
 }
 
 .rope-image {
@@ -1371,10 +1471,26 @@ export default {
 .rope-info {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-top: 20rpx;
-  font-size: 24rpx;
-  color: #666;
+  align-items: flex-start;
+  margin-top: 10rpx;
+  padding: 0 40rpx;
+  font-size: 26rpx;
+  color: #2c2c2c;
+  font-weight: 600;
+  text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
+  -webkit-font-smoothing: antialiased;
+  gap: 30rpx;
+}
+
+.rope-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.rope-info-right {
+  align-items: flex-end;
+  text-align: right;
 }
 
 .time-text {
@@ -1394,13 +1510,13 @@ export default {
   flex: 1;
   height: 80rpx;
   line-height: 80rpx;
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b35 50%, #ff5722 100%);
   color: #fff;
   border: none;
   border-radius: 40rpx;
   font-size: 28rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(255, 152, 0, 0.3);
+  box-shadow: 0 6rpx 20rpx rgba(255, 107, 53, 0.4);
 }
 
 .btn-disabled {
@@ -1413,104 +1529,165 @@ export default {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
   justify-content: center;
-  z-index: 200;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
 }
 
-.modal-content {
-  width: 80%;
-  max-width: 500rpx;
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 60rpx 40rpx 40rpx;
-  text-align: center;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-icon {
-  width: 100rpx;
-  height: 100rpx;
-  line-height: 100rpx;
-  margin: 0 auto 30rpx;
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  color: #fff;
-  font-size: 60rpx;
+  width: 140rpx;
+  height: 140rpx;
+  background: #fff;
   border-radius: 50%;
-  box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 100rpx;
+  color: #4caf50;
+  font-weight: bold;
+  margin-bottom: 40rpx;
+  box-shadow: 0 8rpx 24rpx rgba(76, 175, 80, 0.4);
+  line-height: 1;
 }
 
 .modal-title {
-  font-size: 32rpx;
+  font-size: 36rpx;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 30rpx;
+  color: #fff;
+  text-align: center;
+  line-height: 1.8;
+  margin-bottom: 50rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+  padding: 0 20rpx;
+  word-break: break-all;
 }
 
 .modal-stars {
   display: flex;
   justify-content: center;
-  gap: 10rpx;
-  margin-bottom: 20rpx;
+  gap: 30rpx;
+  margin-bottom: 40rpx;
+  align-items: center;
+  justify-content: center;
 }
 
 .star {
-  font-size: 48rpx;
-  opacity: 0.3;
-  transition: all 0.3s;
+  font-size: 60rpx;
+  opacity: 0.25;
+  transition: all 0.4s ease;
+  color: #ffd700;
+  filter: grayscale(0.8);
 }
 
 .star-active {
   opacity: 1;
-  animation: starShine 0.5s ease;
-}
-
-@keyframes starShine {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.2);
-  }
+  transform: scale(1.3);
+  color: #ffd700;
+  filter: drop-shadow(0 6rpx 12rpx rgba(255, 215, 0, 0.8)) grayscale(0);
+  animation: starPulse 0.6s ease;
 }
 
 .modal-time {
-  font-size: 24rpx;
-  color: #666;
-  margin-bottom: 30rpx;
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 50rpx;
+  font-weight: 500;
 }
 
 .modal-btn {
   width: 100%;
-  height: 80rpx;
-  line-height: 80rpx;
-  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-  color: #fff;
-  border: none;
-  border-radius: 40rpx;
-  font-size: 28rpx;
+  height: 88rpx;
+  background: #fff;
+  color: #667eea;
+  border-radius: 44rpx;
+  font-size: 32rpx;
   font-weight: 600;
-  box-shadow: 0 4rpx 12rpx rgba(255, 152, 0, 0.3);
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
+}
+
+.modal-content {
+  width: 640rpx;
+  max-width: 90%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 40rpx;
+  padding: 80rpx 50rpx 60rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes starPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1.3);
+  }
+}
+
+.all-complete-content {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 }
 
 .all-complete-content .modal-icon {
-  background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
-  font-size: 60rpx;
+  font-size: 120rpx;
+  color: #ffd700;
 }
 
-.modal-desc {
-  font-size: 26rpx;
-  color: #666;
-  margin-bottom: 20rpx;
+.all-complete-content .modal-desc {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 30rpx;
+  font-weight: 500;
 }
 
-.modal-tip {
+.all-complete-content .modal-tip {
   font-size: 24rpx;
-  color: #999;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  font-weight: 400;
 }
 
 /* 答错弹窗样式 */

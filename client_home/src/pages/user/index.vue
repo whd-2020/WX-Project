@@ -2,7 +2,7 @@
   <view id="page_user" class="page_user" :class="{ 'has-logout': token }">
     <view class="me-header" @click="handleHeaderClick">
       <view class="me-header-avatar">
-        <image class="me-avatar" :src="avatarUrl"></image>
+        <image class="me-avatar" :src="avatarUrl" mode="aspectFill"></image>
       </view>
       <view class="me-header-info">
         <view class="me-name">{{ token ? displayName : '点击登录' }}</view>
@@ -95,7 +95,7 @@
           },
           {
             key: 'track_counting_rods',
-            title: '筹算',
+            title: '筹算演算',
             img: '/static/images/games/basic_counting_rods.png',
             bg: '#BFE8C9',
             action: 'nav',
@@ -103,7 +103,7 @@
           },
           {
             key: 'track_abacus',
-            title: '珠算',
+            title: '珠算启蒙',
             img: '/static/img/index/ZhuSuanQiMeng.png',
             bg: '#D2F2F2',
             action: 'nav',

@@ -35,7 +35,8 @@
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <!-- 筹算木棍互动区域 -->
       <view class="chouSuan-area">
-        <view class="chouSuan-title">{{ question && question.questionTitle ? question.questionTitle : '点击放置木棍' }}</view>
+        <text class="chouSuan-title" :class="{ 'chouSuan-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
+        <text class="chouSuan-title-measure">{{ rawQuestionTitle }}</text>
         
         <!-- 答题展示区域 -->
         <view class="answer-area">
@@ -190,6 +191,7 @@ export default {
       // 小孩提示相关
       showChildTip: false,
       childTipTimer: null,
+      wrapTitleByComma: false,
     };
   },
   onLoad(options) {
@@ -240,6 +242,13 @@ export default {
       }
       const target = Number(this.question.targetNumber);
       return this.currentNumber === target && this.currentNumber > 0;
+    },
+    rawQuestionTitle() {
+      return (this.question && this.question.questionTitle ? this.question.questionTitle : '点击放置木棍') || '';
+    },
+    displayQuestionTitle() {
+      if (!this.wrapTitleByComma) return this.rawQuestionTitle;
+      return String(this.rawQuestionTitle).replace(/([，,])\s*/g, '$1\n');
     },
   },
   methods: {
@@ -319,6 +328,7 @@ export default {
           title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
         };
         this.question = local;
+        this.wrapTitleByComma = false;
         this.playTyping(local.title);
         return;
       }
@@ -397,6 +407,7 @@ export default {
             title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
           };
           this.question = local;
+          this.wrapTitleByComma = false;
           this.showDefaultQuestionTip = true; // 显示默认题目提示
           
           // 清除之前的定时器（如果存在）
@@ -482,7 +493,35 @@ export default {
           title: elderSpeech,
           questionTitle: questionTitle,
         };
+        this.wrapTitleByComma = false;
         this.playTyping(this.question.title);
+        if (this.showGamePopup) {
+          this.$nextTick(() => {
+            this.updateTitleWrap();
+          });
+        }
+      });
+    },
+
+    updateTitleWrap() {
+      if (!this.showGamePopup) return;
+      const title = String(this.rawQuestionTitle || '');
+      if (!/[，,]/.test(title)) {
+        this.wrapTitleByComma = false;
+        return;
+      }
+      const sys = uni.getSystemInfoSync ? uni.getSystemInfoSync() : null;
+      const windowWidth = sys && sys.windowWidth ? sys.windowWidth : 375;
+      const paddingPx = (40 * 2 * windowWidth) / 750;
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.chouSuan-title').boundingClientRect();
+      query.select('.chouSuan-title-measure').boundingClientRect();
+      query.exec((res) => {
+        const titleRect = res && res[0] ? res[0] : null;
+        const measureRect = res && res[1] ? res[1] : null;
+        if (!titleRect || !measureRect) return;
+        const available = Math.max(0, (titleRect.width || 0) - paddingPx);
+        this.wrapTitleByComma = (measureRect.width || 0) > available;
       });
     },
 
@@ -804,6 +843,9 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
     },
 
     // 关闭游戏弹窗
@@ -982,7 +1024,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 24rpx;
   color: #333;
-  max-width: 300rpx;
+  max-width: 420rpx;
   position: relative;
   z-index: 3;
   animation: fadeInUp 0.3s ease;
@@ -1068,6 +1110,24 @@ export default {
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.9);
   letter-spacing: 1rpx;
   -webkit-font-smoothing: antialiased;
+  display: block;
+  line-height: 1.4;
+}
+
+.chouSuan-title--wrap {
+  white-space: pre-line;
+}
+
+.chouSuan-title-measure {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  font-size: 36rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* 答题展示区域 */

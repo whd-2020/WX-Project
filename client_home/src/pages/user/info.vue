@@ -104,7 +104,7 @@ export default {
           const tempFilePaths = res.tempFilePaths;
           uni.showLoading({ title: '上传中...' });
           uni.uploadFile({
-            url: _self.$fullUrl('~/api/user/upload?'),
+            url: _self.$fullUrl('~/api/user/upload_avatar?user_id=' + _self.userInfo.user_id),
             filePath: tempFilePaths[0],
             name: 'file',
             header: {
@@ -118,7 +118,7 @@ export default {
 
               if (result.result && result.result.url) {
                 _self.uploadedAvatar = result.result.url;
-                _self.avatarUrl = _self.$fullImgUrl(result.result.url);
+                _self.avatarUrl = _self.$fullImgUrl(result.result.url) + '?t=' + Date.now();
                 _self.$toast('头像已选择，请点击保存');
               } else {
                 _self.$toast('上传失败');

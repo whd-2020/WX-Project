@@ -24,7 +24,11 @@
     <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <view class="abacus-area">
-        <view class="abacus-title">{{ question && question.questionTitle ? question.questionTitle : '点击算珠拨动' }}</view>
+        <text class="abacus-title" :class="{ 'abacus-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
+        <text class="abacus-title-measure">{{ rawQuestionTitle }}</text>
+        <view class="digit-labels-top">
+          <view v-for="label in ['万', '千', '百', '十', '个']" :key="label" class="digit-label">{{ label }}</view>
+        </view>
         <view class="abacus-container">
           <view class="abacus-frame-top"></view>
           <view class="abacus-frame-bottom"></view>
@@ -34,15 +38,14 @@
           <view class="abacus-columns">
             <view v-for="(col, index) in 5" :key="col" class="abacus-column">
               <view class="abacus-rod"></view>
-              <view class="upper-bead-wrapper" @click="toggleBead(index, 'upper')">
+              <view class="upper-bead-wrapper" :class="{ 'bead-hint': hintBeads[index] && hintBeads[index][0] }" @click="toggleBead(index, 'upper')">
                 <view class="bead upper-bead" :class="{ active: beads[index][0].active }"></view>
               </view>
               <view class="lower-beads">
-                <view v-for="(row, rIndex) in 4" :key="row" class="lower-bead-wrapper" @click="toggleBead(index, 'lower', rIndex)">
+                <view v-for="(row, rIndex) in 4" :key="row" class="lower-bead-wrapper" :class="{ 'lower-bead-wrapper--disabled': isLowerBeadDimmed(index, rIndex), 'bead-hint': hintBeads[index] && hintBeads[index][rIndex + 1] }" @click="toggleBead(index, 'lower', rIndex)">
                   <view class="bead lower-bead" :class="{ active: beads[index][rIndex + 1].active }"></view>
                 </view>
               </view>
-              <view class="digit-label">{{ ['万', '千', '百', '十', '个'][index] }}</view>
             </view>
           </view>
         </view>
@@ -50,8 +53,12 @@
           <text>当前数字：{{ currentValue }}</text>
           <text class="time-text">用时：{{ formatTime(elapsedSeconds) }}</text>
         </view>
+        <view class="abacus-hint">
+          <text class="abacus-hint-text">{{ hintText }}</text>
+        </view>
       </view>
       <view class="bottom-bar">
+        <button class="btn-clear" @click="clearAbacus">清空</button>
         <button class="btn-submit" :class="{ 'btn-disabled': !canSubmit }" type="primary" @click="submitAnswer" :disabled="!canSubmit">提交答案</button>
       </view>
     </view>
@@ -121,6 +128,18 @@ export default {
       childSpeechTimer: null,
       showChildTip: false,
       childTipTimer: null,
+      wrapTitleByComma: false,
+      hasInteracted: false,
+      hintText: '',
+      hintTimer: null,
+      hintClearTimer: null,
+      hintBeads: [
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+      ],
     };
   },
   onLoad(options) {
@@ -163,6 +182,13 @@ export default {
         total += colValue * weights[col];
       }
       return total;
+    },
+    rawQuestionTitle() {
+      return (this.question && this.question.questionTitle ? this.question.questionTitle : '点击算珠拨动') || '';
+    },
+    displayQuestionTitle() {
+      if (!this.wrapTitleByComma) return this.rawQuestionTitle;
+      return String(this.rawQuestionTitle).replace(/([，,])\s*/g, '$1\n');
     },
   },
   methods: {
@@ -214,6 +240,7 @@ export default {
           title: '今日族长笑着对你说：用算盘表示数字 1，你会怎么拨珠呢？',
         };
         this.question = local;
+        this.wrapTitleByComma = false;
         this.playTyping(local.title);
         return;
       }
@@ -239,6 +266,7 @@ export default {
             title: '今日族长笑着对你说：用算盘表示数字 1，你会怎么拨珠呢？',
           };
           this.question = local;
+          this.wrapTitleByComma = false;
           this.showDefaultQuestionTip = true;
           if (this.defaultQuestionTipTimer) clearTimeout(this.defaultQuestionTipTimer);
           this.defaultQuestionTipTimer = setTimeout(() => { this.showDefaultQuestionTip = false; }, 2000);
@@ -292,15 +320,228 @@ export default {
           title: elderSpeech.replace(/数字 \d+/, `数字 ${target}`),
           questionTitle: questionTitle,
         };
+        this.wrapTitleByComma = false;
         this.playTyping(this.question.title);
+        if (this.showGamePopup) {
+          this.$nextTick(() => {
+            this.updateTitleWrap();
+          });
+        }
+      });
+    },
+
+    updateTitleWrap() {
+      if (!this.showGamePopup) return;
+      const title = String(this.rawQuestionTitle || '');
+      if (!/[，,]/.test(title)) {
+        this.wrapTitleByComma = false;
+        return;
+      }
+      const sys = uni.getSystemInfoSync ? uni.getSystemInfoSync() : null;
+      const windowWidth = sys && sys.windowWidth ? sys.windowWidth : 375;
+      const paddingPx = (40 * 2 * windowWidth) / 750;
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.abacus-title').boundingClientRect();
+      query.select('.abacus-title-measure').boundingClientRect();
+      query.exec((res) => {
+        const titleRect = res && res[0] ? res[0] : null;
+        const measureRect = res && res[1] ? res[1] : null;
+        if (!titleRect || !measureRect) return;
+        const available = Math.max(0, (titleRect.width || 0) - paddingPx);
+        this.wrapTitleByComma = (measureRect.width || 0) > available;
       });
     },
     toggleBead(col, type, row = 0) {
+      if (!this.hasInteracted) {
+        this.hasInteracted = true;
+        this.startHintTimer();
+      }
       if (type === 'upper') {
         this.beads[col][0].active = !this.beads[col][0].active;
       } else {
-        this.beads[col][row + 1].active = !this.beads[col][row + 1].active;
+        const beadIndex = row + 1;
+        const isActive = this.beads[col][beadIndex].active;
+        if (!isActive) {
+          for (let i = 1; i < beadIndex; i++) {
+            if (!this.beads[col][i].active) return;
+          }
+          this.beads[col][beadIndex].active = true;
+          this.updateHintTextRealtime();
+          if (this.canSubmit) this.stopHintTimer();
+          return;
+        }
+        for (let i = beadIndex + 1; i <= 4; i++) {
+          if (this.beads[col][i].active) return;
+        }
+        this.beads[col][beadIndex].active = false;
       }
+      this.updateHintTextRealtime();
+      if (this.canSubmit) this.stopHintTimer();
+    },
+    isLowerBeadClickable(col, row) {
+      const beadIndex = row + 1;
+      const isActive = this.beads[col][beadIndex].active;
+      if (!isActive) {
+        for (let i = 1; i < beadIndex; i++) {
+          if (!this.beads[col][i].active) return false;
+        }
+        return true;
+      }
+      for (let i = beadIndex + 1; i <= 4; i++) {
+        if (this.beads[col][i].active) return false;
+      }
+      return true;
+    },
+    isLowerBeadDimmed(col, row) {
+      const beadIndex = row + 1;
+      if (this.beads[col][beadIndex].active) return false;
+      return !this.isLowerBeadClickable(col, row);
+    },
+    getExpectedBeads(targetNumber) {
+      const labels = ['万', '千', '百', '十', '个'];
+      const weights = [10000, 1000, 100, 10, 1];
+      const expected = [
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+      ];
+
+      const num = Number(targetNumber || 0);
+      for (let col = 0; col < 5; col++) {
+        const digit = Math.floor(num / weights[col]) % 10;
+        const expectedUpper = digit >= 5;
+        const expectedLowerCount = expectedUpper ? (digit - 5) : digit;
+        expected[col][0] = expectedUpper;
+        for (let i = 1; i <= expectedLowerCount; i++) expected[col][i] = true;
+      }
+      return { expected, labels };
+    },
+    clearHintBeads() {
+      this.hintBeads = [
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+      ];
+    },
+    updateHintOnce() {
+      if (!this.showGamePopup) return;
+      if (!this.hasInteracted) return;
+      if (this.canSubmit) return;
+      if (!this.question || !this.question.targetNumber) return;
+
+      const { expected, labels } = this.getExpectedBeads(this.question.targetNumber);
+      const missingHints = [
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+      ];
+      const extraHints = [
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+        [false, false, false, false, false],
+      ];
+
+      let missingCount = 0;
+      let extraCount = 0;
+
+      for (let col = 0; col < 5; col++) {
+        const label = labels[col];
+
+        const expectedUpperCount = expected[col][0] ? 1 : 0;
+        let expectedLowerCount = 0;
+        for (let i = 1; i <= 4; i++) if (expected[col][i]) expectedLowerCount += 1;
+
+        const upperActive = Boolean(this.beads[col][0].active);
+        const upperExpected = Boolean(expected[col][0]);
+        if (upperExpected && !upperActive) {
+          missingHints[col][0] = true;
+          missingCount += 1;
+        } else if (!upperExpected && upperActive) {
+          extraHints[col][0] = true;
+          extraCount += 1;
+        }
+
+        let lowerActiveCount = 0;
+        for (let i = 1; i <= 4; i++) {
+          if (this.beads[col][i].active) lowerActiveCount += 1;
+        }
+
+        if (expectedLowerCount > lowerActiveCount) {
+          const need = expectedLowerCount - lowerActiveCount;
+          for (let i = 1; i <= expectedLowerCount; i++) {
+            if (!this.beads[col][i].active) missingHints[col][i] = true;
+          }
+          missingCount += need;
+        } else if (lowerActiveCount > expectedLowerCount) {
+          const extra = lowerActiveCount - expectedLowerCount;
+          for (let i = expectedLowerCount + 1; i <= 4; i++) {
+            if (this.beads[col][i].active) extraHints[col][i] = true;
+          }
+          extraCount += extra;
+        }
+      }
+
+      const hasMissing = missingCount > 0;
+      const hasExtra = extraCount > 0;
+      if (!hasMissing && !hasExtra) return;
+
+      this.hintBeads = hasMissing ? missingHints : extraHints;
+
+      if (this.hintClearTimer) clearTimeout(this.hintClearTimer);
+      this.hintClearTimer = setTimeout(() => {
+        this.clearHintBeads();
+      }, 2200);
+    },
+    updateHintTextRealtime() {
+      if (!this.showGamePopup || !this.hasInteracted || this.canSubmit || !this.question || !this.question.targetNumber) {
+        this.hintText = '';
+        return;
+      }
+
+      const { expected, labels } = this.getExpectedBeads(this.question.targetNumber);
+      const lines = [];
+
+      for (let col = 0; col < 5; col++) {
+        const expectedUpperCount = expected[col][0] ? 1 : 0;
+        let expectedLowerCount = 0;
+        for (let i = 1; i <= 4; i++) if (expected[col][i]) expectedLowerCount += 1;
+
+        const currentUpperCount = this.beads[col][0].active ? 1 : 0;
+        let currentLowerCount = 0;
+        for (let i = 1; i <= 4; i++) if (this.beads[col][i].active) currentLowerCount += 1;
+
+        if (currentUpperCount === expectedUpperCount && currentLowerCount === expectedLowerCount) continue;
+        lines.push(`${labels[col]}位：梁上${expectedUpperCount}颗，梁下${expectedLowerCount}颗（当前上${currentUpperCount}下${currentLowerCount}）`);
+      }
+
+      this.hintText = lines.length > 0 ? `提示：\n${lines.join('\n')}` : '';
+    },
+    startHintTimer() {
+      if (this.hintTimer) return;
+      this.hintTimer = setInterval(() => {
+        this.updateHintOnce();
+      }, 3000);
+    },
+    stopHintTimer() {
+      if (this.hintTimer) {
+        clearInterval(this.hintTimer);
+        this.hintTimer = null;
+      }
+      if (this.hintClearTimer) {
+        clearTimeout(this.hintClearTimer);
+        this.hintClearTimer = null;
+      }
+      this.hintText = '';
+      this.clearHintBeads();
+      this.hasInteracted = false;
     },
     resetBeads() {
       for (let col = 0; col < 5; col++) {
@@ -308,6 +549,11 @@ export default {
           this.beads[col][bead].active = false;
         }
       }
+    },
+    clearAbacus() {
+      this.resetBeads();
+      this.clearHintBeads();
+      this.updateHintTextRealtime();
     },
     submitAnswer() {
       if (!this.question || !this.canSubmit) return;
@@ -404,6 +650,7 @@ export default {
     startNextQuestion() {
       this.resetBeads();
       this.resetTimer();
+      this.stopHintTimer();
       this.showFullSpeech = false;
       this.showGamePopup = false;
       this.showChildSpeech = false;
@@ -419,9 +666,14 @@ export default {
       this.showGamePopup = true;
       this.showChildTip = false;
       if (this.childTipTimer) { clearTimeout(this.childTipTimer); this.childTipTimer = null; }
+      this.stopHintTimer();
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
     },
     closeGamePopup() {
       this.showGamePopup = false;
+      this.stopHintTimer();
     },
   },
   onUnload() {
@@ -429,6 +681,8 @@ export default {
     if (this.elapsedTimer) { clearInterval(this.elapsedTimer); this.elapsedTimer = null; }
     if (this.defaultQuestionTipTimer) { clearTimeout(this.defaultQuestionTipTimer); this.defaultQuestionTipTimer = null; }
     if (this.childTipTimer) { clearTimeout(this.childTipTimer); this.childTipTimer = null; }
+    if (this.hintTimer) { clearInterval(this.hintTimer); this.hintTimer = null; }
+    if (this.hintClearTimer) { clearTimeout(this.hintClearTimer); this.hintClearTimer = null; }
   },
 };
 </script>
@@ -575,7 +829,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 24rpx;
   color: #333;
-  max-width: 300rpx;
+  max-width: 420rpx;
   position: relative;
   z-index: 3;
   animation: fadeInUp 0.3s ease;
@@ -650,17 +904,45 @@ export default {
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.9);
   letter-spacing: 1rpx;
   -webkit-font-smoothing: antialiased;
+  display: block;
+  line-height: 1.4;
+}
+
+.abacus-title--wrap {
+  white-space: pre-line;
+}
+
+.abacus-title-measure {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  font-size: 30rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .abacus-container {
   position: relative;
   width: 100%;
-  height: 650rpx;
-  margin: 10rpx 0;
+  height: 540rpx;
+  margin: 6rpx 0;
   background: linear-gradient(135deg, #f5e6d3 0%, #e8d5c3 100%);
   border-radius: 24rpx;
-  padding: 35rpx 40rpx 80rpx;
+  padding: 35rpx 40rpx 28rpx;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.2), inset 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.digit-labels-top {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 6rpx;
+  padding: 0 40rpx;
   box-sizing: border-box;
 }
 
@@ -677,7 +959,7 @@ export default {
 
 .abacus-frame-bottom {
   position: absolute;
-  bottom: 70rpx;
+  bottom: 0;
   left: 10rpx;
   right: 10rpx;
   height: 22rpx;
@@ -690,17 +972,17 @@ export default {
   position: absolute;
   left: 0;
   top: 5rpx;
-  bottom: 75rpx;
+  bottom: 0;
   width: 16rpx;
   background: linear-gradient(90deg, #a0522d, #8b4513, #654321);
-  border-radius: 10rpx 0 0 0;
+  border-radius: 10rpx 0 0 12rpx;
 }
 
 .abacus-frame-right {
   position: absolute;
   right: 0;
   top: 5rpx;
-  bottom: 75rpx;
+  bottom: 0;
   width: 16rpx;
   background: linear-gradient(90deg, #654321, #8b4513, #a0522d);
   border-radius: 0 10rpx 12rpx 0;
@@ -709,8 +991,8 @@ export default {
 .abacus-beam {
   position: absolute;
   top: 160rpx;
-  left: 25rpx;
-  right: 25rpx;
+  left: 16rpx;
+  right: 16rpx;
   height: 20rpx;
   background: linear-gradient(180deg, #654321, #8b4513, #a0522d);
   border-radius: 6rpx;
@@ -741,7 +1023,7 @@ export default {
   position: absolute;
   left: 50%;
   top: 0;
-  bottom: 30rpx;
+  bottom: 1rpx;
   width: 6rpx;
   transform: translateX(-50%);
   background: linear-gradient(90deg, #5d4037, #795548, #5d4037);
@@ -755,7 +1037,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  padding-bottom: 15rpx;
+  padding-bottom: 40rpx;
   cursor: pointer;
   z-index: 10;
 }
@@ -767,8 +1049,8 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 15rpx;
-  padding-top: 45rpx;
+  gap: 16rpx;
+  padding-top: 60rpx;
 }
 
 .lower-bead-wrapper {
@@ -781,11 +1063,27 @@ export default {
   z-index: 10;
 }
 
+.bead-hint {
+  animation: beadHintPulse 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0s 2;
+  transform-origin: center;
+  will-change: transform;
+}
+
+@keyframes beadHintPulse {
+  0% { transform: scale(1); }
+  55% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+.lower-bead-wrapper--disabled {
+  opacity: 0.45;
+}
+
 .bead {
   border-radius: 45%;
   background: linear-gradient(135deg, #fff9c4 0%, #ffd700 25%, #daa520 50%, #b8860b 100%);
   box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.35), inset 0 5rpx 10rpx rgba(255, 255, 255, 0.7), inset 0 -3rpx 6rpx rgba(0, 0, 0, 0.15);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
   cursor: pointer;
   position: relative;
   z-index: 10;
@@ -794,25 +1092,29 @@ export default {
 .upper-bead {
   width: 58rpx;
   height: 46rpx;
+  transform: translateY(-24rpx);
+  background: linear-gradient(135deg, #8f3d3d 0%, #b85757 45%, #5c2a2a 100%);
+  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.28), inset 0 5rpx 10rpx rgba(255, 255, 255, 0.33), inset 0 -3rpx 6rpx rgba(0, 0, 0, 0.2);
 }
 
 .upper-bead.active {
-  transform: translateY(8rpx) scale(1.05);
-  background: linear-gradient(135deg, #fffde7 0%, #ffe082 30%, #ffca28 60%, #ffb300 100%);
-  box-shadow: 0 10rpx 20rpx rgba(255, 193, 7, 0.5), inset 0 4rpx 8rpx rgba(255, 255, 255, 0.8), 0 0 20rpx rgba(255, 235, 59, 0.4);
+  transform: translateY(40rpx) scale(1.06);
+  background: linear-gradient(135deg, #b34343 0%, #d76464 45%, #6b2f2f 100%);
+  box-shadow: 0 10rpx 20rpx rgba(0, 0, 0, 0.24), inset 0 4rpx 8rpx rgba(255, 255, 255, 0.38), 0 0 16rpx rgba(215, 100, 100, 0.22);
 }
 
 .upper-bead:not(.active) {
-  opacity: 0.45;
+  opacity: 0.65;
 }
 
 .lower-bead {
   width: 56rpx;
   height: 44rpx;
+  transform: translateY(24rpx);
 }
 
 .lower-bead.active {
-  transform: translateY(-8rpx) scale(1.08);
+  transform: translateY(-48rpx) scale(1.08);
   background: linear-gradient(135deg, #fffde7 0%, #ffe082 30%, #ffca28 60%, #ffb300 100%);
   box-shadow: 0 12rpx 24rpx rgba(255, 193, 7, 0.5), inset 0 4rpx 8rpx rgba(255, 255, 255, 0.8), 0 0 20rpx rgba(255, 235, 59, 0.4);
 }
@@ -822,7 +1124,6 @@ export default {
 }
 
 .digit-label {
-  margin-top: 30rpx;
   font-size: 26rpx;
   color: #5d4037;
   font-weight: 800;
@@ -846,12 +1147,54 @@ export default {
   gap: 20rpx;
 }
 
+.abacus-hint {
+  margin-top: 12rpx;
+  padding: 0 30rpx;
+  min-height: 90rpx;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.abacus-hint-text {
+  font-size: 26rpx;
+  color: #6b2f2f;
+  font-weight: 700;
+  width: 100%;
+  white-space: pre-line;
+  line-height: 1.35;
+  text-align: left;
+  text-shadow: 0 1rpx 2rpx rgba(255, 255, 255, 0.9);
+}
+
 .bottom-bar {
   margin: 20rpx 0 0;
   display: flex;
   justify-content: space-between;
   position: relative;
   z-index: 1;
+  gap: 20rpx;
+}
+
+.btn-clear {
+  width: 220rpx;
+  height: 90rpx;
+  line-height: 90rpx;
+  border-radius: 45rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  border: 2rpx solid rgba(107, 47, 47, 0.25);
+  background: rgba(255, 255, 255, 0.65);
+  color: #6b2f2f;
+  box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.12);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  letter-spacing: 2rpx;
+}
+
+.btn-clear:active {
+  transform: scale(0.96);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
 }
 
 .btn-submit {

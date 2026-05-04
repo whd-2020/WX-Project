@@ -35,7 +35,8 @@
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <!-- 绳结互动区域 -->
       <view class="rope-area">
-        <view class="rope-title">{{ question && question.questionTitle ? question.questionTitle : '点击绳子打结' }}</view>
+        <text class="rope-title" :class="{ 'rope-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
+        <text class="rope-title-measure">{{ rawQuestionTitle }}</text>
         <view class="rope-wrapper" @click="handleRopeClick">
           <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
           <view
@@ -46,7 +47,7 @@
             :style="{ left: knot.x + '%' }"
           >
             <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
-            <text class="knot-decoration">{{ selectedDecorationIcon }}</text>
+            <text v-if="selectedDecorationIcon" class="knot-decoration">{{ selectedDecorationIcon }}</text>
           </view>
         </view>
         <view class="rope-info">
@@ -149,6 +150,7 @@ export default {
       // 装饰物相关
       currentDecorations: [],
       selectedDecoration: null,
+      wrapTitleByComma: false,
     };
   },
   onLoad(options) {
@@ -196,6 +198,13 @@ export default {
       if (!this.selectedDecoration) return '';
       const deco = this.currentDecorations.find(d => d.type === this.selectedDecoration);
       return deco ? deco.icon : '';
+    },
+    rawQuestionTitle() {
+      return (this.question && this.question.questionTitle ? this.question.questionTitle : '点击绳子打结') || '';
+    },
+    displayQuestionTitle() {
+      if (!this.wrapTitleByComma) return this.rawQuestionTitle;
+      return String(this.rawQuestionTitle).replace(/([，,])\s*/g, '$1\n');
     },
   },
   methods: {
@@ -273,11 +282,12 @@ export default {
           question_id: 0,
           targetNumber: 1,
           title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
-          decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
+          decorations: [],
         };
         this.question = local;
         this.currentDecorations = local.decorations || [];
         this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
+        this.wrapTitleByComma = false;
         this.playTyping(local.title);
         return;
       }
@@ -354,11 +364,12 @@ export default {
             question_id: 0,
             targetNumber: 1,
             title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
-            decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
+            decorations: [],
           };
           this.question = local;
           this.currentDecorations = local.decorations || [];
           this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
+          this.wrapTitleByComma = false;
           this.showDefaultQuestionTip = true; // 显示默认题目提示
           
           // 清除之前的定时器（如果存在）
@@ -388,7 +399,7 @@ export default {
         let target = 1;
         let elderSpeech = '';
         let questionTitle = '';
-        let decorations = [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }];
+        let decorations = [];
 
         try {
           // 解析 question_content，取出 options[0] 与 question_title 拼接
@@ -453,7 +464,35 @@ export default {
         };
         this.currentDecorations = decorations;
         this.selectedDecoration = decorations.length > 0 ? decorations[0].type : null;
+        this.wrapTitleByComma = false;
         this.playTyping(this.question.title);
+        if (this.showGamePopup) {
+          this.$nextTick(() => {
+            this.updateTitleWrap();
+          });
+        }
+      });
+    },
+
+    updateTitleWrap() {
+      if (!this.showGamePopup) return;
+      const title = String(this.rawQuestionTitle || '');
+      if (!/[，,]/.test(title)) {
+        this.wrapTitleByComma = false;
+        return;
+      }
+      const sys = uni.getSystemInfoSync ? uni.getSystemInfoSync() : null;
+      const windowWidth = sys && sys.windowWidth ? sys.windowWidth : 375;
+      const paddingPx = (40 * 2 * windowWidth) / 750;
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.rope-title').boundingClientRect();
+      query.select('.rope-title-measure').boundingClientRect();
+      query.exec((res) => {
+        const titleRect = res && res[0] ? res[0] : null;
+        const measureRect = res && res[1] ? res[1] : null;
+        if (!titleRect || !measureRect) return;
+        const available = Math.max(0, (titleRect.width || 0) - paddingPx);
+        this.wrapTitleByComma = (measureRect.width || 0) > available;
       });
     },
 
@@ -732,6 +771,9 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
     },
 
     // 关闭游戏弹窗
@@ -910,7 +952,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 24rpx;
   color: #333;
-  max-width: 300rpx;
+  max-width: 420rpx;
   position: relative;
   z-index: 3;
   animation: fadeInUp 0.3s ease;
@@ -996,6 +1038,24 @@ export default {
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.9);
   letter-spacing: 1rpx;
   -webkit-font-smoothing: antialiased;
+  display: block;
+  line-height: 1.4;
+}
+
+.rope-title--wrap {
+  white-space: pre-line;
+}
+
+.rope-title-measure {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  font-size: 30rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .rope-wrapper {

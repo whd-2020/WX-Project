@@ -30,7 +30,7 @@
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <view class="game-area">
         <view class="question-content">
-          {{ currentQuestion.question_content && currentQuestion.question_content.options && currentQuestion.question_content.options[0] || '' }}
+          <text class="question-content-text" :class="{ 'question-content-text--wrap': wrapTitleByComma }">{{ displayQuestionText }}</text>
           <div v-if="currentQuestion.question_content && currentQuestion.question_content.decorations" class="question-image">
             <span 
               v-for="(decoration, index) in (currentQuestion.question_type === 'drag_item' ? [currentQuestion.question_content.decorations[0]] : Array(displayIconCount).fill(currentQuestion.question_content.decorations[0]))" 
@@ -42,6 +42,7 @@
             </span>
           </div>
         </view>
+        <text class="question-content-measure">{{ rawQuestionText }}</text>
         <!-- <view class="hint" v-if="currentQuestion.question_type === 'drag_item'">
           左边点击添加整十，右边点击添加单个！
         </view> -->
@@ -154,24 +155,24 @@
             <!-- 圆形气泡包裹的图标堆（代表10） -->
             <view 
               class="item-card bubble-item"
-              @click="toggleItem(chickenIcon, 'left')"
+              @click="toggleItem(currentIcon, 'left')"
             >
               <div class="bubble triangle-bubble">
                 <div class="triangle-row">
-                  <span class="bubble-icon">{{ chickenIcon }}</span>
+                  <span class="bubble-icon">{{ currentIcon }}</span>
                 </div>
                 <div class="triangle-row">
-                  <span class="bubble-icon">{{ chickenIcon }}</span>
-                  <span class="bubble-icon">{{ chickenIcon }}</span>
+                  <span class="bubble-icon">{{ currentIcon }}</span>
+                  <span class="bubble-icon">{{ currentIcon }}</span>
                 </div>
               </div>
             </view>
             <!-- 单个图标（代表1） -->
             <view 
               class="item-card single-item"
-              @click="toggleItem(chickenIcon, 'right')"
+              @click="toggleItem(currentIcon, 'right')"
             >
-              {{ chickenIcon }}
+              {{ currentIcon }}
             </view>
           </view>
         </view>
@@ -265,13 +266,8 @@ export default {
       elapsedSeconds: 0,
       elapsedTimer: null,
       numbers: [],
-      chickenIcon: '🐥',
-      itemsPool: [
-        { type: 'XiaoJi', name: '小鸡', icon: '🐥' },
-        { type: 'YuGu', name: '鱼', icon: '🐟' },
-        { type: 'GuoShi', name: '果实', icon: '🍎' }
-      ],
-      isAddMode: true
+      isAddMode: true,
+      wrapTitleByComma: false,
     };
   },
   computed: {
@@ -281,13 +277,15 @@ export default {
     isAnswerCorrect() {
       if (!this.question) return false;
       if (this.question.question_type === 'drag_number') {
-        const userAnswer = this.droppedItems.right[0] || '';
         const correctAnswer = this.question.correct_answer || {};
-        return userAnswer === correctAnswer.answer;
+        const userAnswer = this.droppedItems.right[0];
+        const userNum = Number(userAnswer);
+        const correctNum = Number(correctAnswer.answer);
+        return Number.isFinite(userNum) && Number.isFinite(correctNum) && userNum === correctNum;
       } else if (this.question.question_type === 'drag_item') {
-        const correctAnswer = this.question.correct_answer || {};
-        return this.droppedItems.left.length === correctAnswer.left_count &&
-               this.droppedItems.right.length === correctAnswer.right_count;
+        const { left: correctLeft, right: correctRight } = this.getCorrectCounts();
+        return this.droppedItems.left.length === correctLeft &&
+               this.droppedItems.right.length === correctRight;
       }
       return false;
     },
@@ -302,19 +300,28 @@ export default {
       }
       return [];
     },
+    currentIcon() {
+      const first = this.items && this.items.length ? this.items[0] : null;
+      return first && first.icon ? first.icon : '🐥';
+    },
     needToggleMode() {
-      const correctAnswer = this.currentQuestion.correct_answer || {};
       const currentLeft = this.droppedItems.left.length;
       const currentRight = this.droppedItems.right.length;
-      const correctLeft = correctAnswer.left_count || 0;
-      const correctRight = correctAnswer.right_count || 0;
+      const { left: correctLeft, right: correctRight } = this.getCorrectCounts();
 
       if (this.isAddMode) {
         return currentLeft > correctLeft || currentRight > correctRight;
       } else {
         return currentLeft < correctLeft || currentRight < correctRight;
       }
-    }
+    },
+    rawQuestionText() {
+      return String(this.currentQuestion && this.currentQuestion.question_content && this.currentQuestion.question_content.options && this.currentQuestion.question_content.options[0] || '');
+    },
+    displayQuestionText() {
+      if (!this.wrapTitleByComma) return this.rawQuestionText;
+      return String(this.rawQuestionText).replace(/([，,])\s*/g, '$1\n');
+    },
   },
   onLoad(options) {
     if (options && options.gamer_id) {
@@ -350,6 +357,27 @@ export default {
     }
   },
   methods: {
+    getCorrectCounts() {
+      const correctAnswer = this.currentQuestion.correct_answer || {};
+      const toNum = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+      const total = toNum(correctAnswer.answer);
+      const left =
+        correctAnswer.left_count !== undefined && correctAnswer.left_count !== null
+          ? toNum(correctAnswer.left_count)
+          : (correctAnswer.left_digit !== undefined && correctAnswer.left_digit !== null
+              ? toNum(correctAnswer.left_digit)
+              : Math.floor(total / 10));
+      const right =
+        correctAnswer.right_count !== undefined && correctAnswer.right_count !== null
+          ? toNum(correctAnswer.right_count)
+          : (correctAnswer.right_digit !== undefined && correctAnswer.right_digit !== null
+              ? toNum(correctAnswer.right_digit)
+              : (total % 10));
+      return { left, right, total };
+    },
     handleNumberClick(num) {
       // 数字选择模式：显示用户点击的数字
       if (this.currentQuestion.question_type === 'drag_number') {
@@ -433,6 +461,9 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
     },
     closeGamePopup() {
       this.showGamePopup = false;
@@ -443,6 +474,7 @@ export default {
     },
     startNextQuestion() {
       this.droppedItems = { left: [], right: [] };
+      this.selectedNumber = null;
       this.resetTimer();
       this.showFullSpeech = false;
       this.showGamePopup = false;
@@ -640,6 +672,7 @@ export default {
       if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
         const local = this.generateLocalQuestion();
         this.question = local;
+        this.wrapTitleByComma = false;
         this.playTyping(local.question_content.options[0]);
         return;
       }
@@ -684,6 +717,7 @@ export default {
         if (!json.result || !json.result.questions || json.result.questions.length === 0) {
           const local = this.generateLocalQuestion();
           this.question = local;
+          this.wrapTitleByComma = false;
           this.showDefaultQuestionTip = true;
           if (this.defaultQuestionTipTimer) {
             clearTimeout(this.defaultQuestionTipTimer);
@@ -716,7 +750,31 @@ export default {
         }
 
         this.question = q;
+        this.wrapTitleByComma = false;
         this.playTyping(q.question_content.options[0]);
+        if (this.showGamePopup) {
+          this.$nextTick(() => {
+            this.updateTitleWrap();
+          });
+        }
+      });
+    },
+
+    updateTitleWrap() {
+      if (!this.showGamePopup) return;
+      const title = String(this.rawQuestionText || '');
+      if (!/[，,]/.test(title)) {
+        this.wrapTitleByComma = false;
+        return;
+      }
+      const query = uni.createSelectorQuery().in(this);
+      query.select('.question-content').boundingClientRect();
+      query.select('.question-content-measure').boundingClientRect();
+      query.exec((res) => {
+        const titleRect = res && res[0] ? res[0] : null;
+        const measureRect = res && res[1] ? res[1] : null;
+        if (!titleRect || !measureRect) return;
+        this.wrapTitleByComma = (measureRect.width || 0) > (titleRect.width || 0);
       });
     },
     generateLocalQuestion() {
@@ -924,11 +982,9 @@ export default {
       this.droppedItems = { left: [], right: [] };
     },
     getTipMessage() {
-      const correctAnswer = this.currentQuestion.correct_answer || {};
       const currentLeft = this.droppedItems.left.length;
       const currentRight = this.droppedItems.right.length;
-      const correctLeft = correctAnswer.left_count || 0;
-      const correctRight = correctAnswer.right_count || 0;
+      const { left: correctLeft, right: correctRight } = this.getCorrectCounts();
 
       if (this.isAddMode) {
         if (currentLeft < correctLeft || currentRight < correctRight) {
@@ -1159,7 +1215,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 24rpx;
   color: #333;
-  max-width: 300rpx;
+  max-width: 420rpx;
   position: relative;
   z-index: 3;
   animation: fadeInUp 0.3s ease;
@@ -1193,7 +1249,7 @@ export default {
   border-radius: 20rpx;
   box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.4);
   z-index: 4;
-  animation: bounce 1s ease infinite;
+  animation: hintBounce 1.2s ease-in-out infinite;
 }
 
 .child-tip .tip-text {
@@ -1223,6 +1279,15 @@ export default {
   }
 }
 
+@keyframes hintBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8rpx);
+  }
+}
+
 .rope-title {
   font-size: 30rpx;
   color: #2c2c2c;
@@ -1242,6 +1307,25 @@ export default {
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+.question-content-text {
+  display: block;
+}
+
+.question-content-text--wrap {
+  white-space: pre-line;
+}
+
+.question-content-measure {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  font-size: 28rpx;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .question-image {
@@ -1435,19 +1519,19 @@ export default {
 }
 
 .number-card-smaller {
-  animation: scaleAnimation 1s ease-in-out infinite;
-  transform: scale(0.9);
+  animation: scaleAnimation 1.2s ease-in-out infinite;
+  transform: scale(0.92);
 }
 
 @keyframes scaleAnimation {
   0% {
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
   50% {
-    transform: scale(0.8);
+    transform: scale(0.84);
   }
   100% {
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
 }
 

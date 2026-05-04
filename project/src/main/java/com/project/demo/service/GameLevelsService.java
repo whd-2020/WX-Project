@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 @Service
 public class GameLevelsService extends BaseService<GameLevels> {
 
+    private static final int NEXT_LEVEL_UNLOCK_STARS = 9;
+
     @Autowired
     private GameLevelsMapper gameLevelsMapper;
 
@@ -36,7 +38,7 @@ public class GameLevelsService extends BaseService<GameLevels> {
      *
      * 解锁规则：
      * 1. 第一关默认解锁
-     * 2. 后续关卡：上一关已解锁 且 上一关累计星星数>=20 时，自动解锁当前关
+     * 2. 后续关卡：上一关已解锁 且 上一关累计星星数>=9 时，自动解锁当前关
      * 3. 不同赛道（track_id）之间的关卡完全隔离，互不影响
      * 4. 新建关卡：如果新建关卡插入到中间，只要上一关满足解锁条件，新建关卡也会自动解锁
      *
@@ -87,6 +89,8 @@ public class GameLevelsService extends BaseService<GameLevels> {
         
         // 5. 遍历关卡列表，计算解锁状态
         List<Map<String, Object>> result = new ArrayList<>();
+        boolean prevUnlockedForNext = true;
+        int prevTotalStarsForNext = 0;
 
         for (int i = 0; i < allLevels.size(); i++) {
             GameLevels level = allLevels.get(i);
@@ -118,27 +122,8 @@ public class GameLevelsService extends BaseService<GameLevels> {
                     playerLevelUnlockMapper.insert(unlockRecord);
                 }
             } else {
-                // 后续关卡：检查上一关的累计星星数是否>=20
-                GameLevels prevLevel = allLevels.get(i - 1);
-                Integer prevLevelOrder = prevLevel.getLevel_order();
-                LevelStarRecord prevStarRecord = starMap.get(prevLevelOrder);
-                int prevTotalStars = 0;
-                if (prevStarRecord != null && prevStarRecord.getTotal_stars() != null) {
-                    prevTotalStars = prevStarRecord.getTotal_stars();
-                }
-
-                // 检查上一关的解锁状态
-                PlayerLevelUnlock prevUnlockRecord = unlockMap.get(prevLevelOrder);
-                boolean prevUnlocked = false;
-                if (prevUnlockRecord != null && prevUnlockRecord.getIs_unlocked() != null && prevUnlockRecord.getIs_unlocked() == 1) {
-                    prevUnlocked = true;
-                } else if (i == 1) {
-                    // 第二关的前一关是第一关，第一关默认解锁
-                    prevUnlocked = true;
-                }
-
-                // 解锁条件：上一关已解锁 且 上一关累计星星数>=20
-                if (prevUnlocked && prevTotalStars >= 20) {
+                // 解锁条件：上一关已解锁 且 上一关累计星星数>=9
+                if (prevUnlockedForNext && prevTotalStarsForNext >= NEXT_LEVEL_UNLOCK_STARS) {
                     isUnlocked = true;
                     // 如果数据库中没有解锁记录，创建一条
                     if (unlockRecord == null) {
@@ -150,14 +135,14 @@ public class GameLevelsService extends BaseService<GameLevels> {
                         unlockRecord.setIs_completed(0);
                         unlockRecord.setComplete_times(0);
                         playerLevelUnlockMapper.insert(unlockRecord);
-                        log.info("根据累计星星数自动解锁关卡: gamerId={}, trackId={}, levelOrder={}, prevLevelOrder={}, prevTotalStars={}",
-                                gamerId, trackId, levelOrder, prevLevelOrder, prevTotalStars);
+                        log.info("根据累计星星数自动解锁关卡: gamerId={}, trackId={}, levelOrder={}, prevTotalStars={}",
+                                gamerId, trackId, levelOrder, prevTotalStarsForNext);
                     } else if (unlockRecord.getIs_unlocked() == null || unlockRecord.getIs_unlocked() == 0) {
                         // 如果记录存在但未解锁，更新为已解锁
                         unlockRecord.setIs_unlocked(1);
                         playerLevelUnlockMapper.updateById(unlockRecord);
-                        log.info("根据累计星星数更新解锁状态: gamerId={}, trackId={}, levelOrder={}, prevLevelOrder={}, prevTotalStars={}",
-                                gamerId, trackId, levelOrder, prevLevelOrder, prevTotalStars);
+                        log.info("根据累计星星数更新解锁状态: gamerId={}, trackId={}, levelOrder={}, prevTotalStars={}",
+                                gamerId, trackId, levelOrder, prevTotalStarsForNext);
                     }
                 } else {
                     // 上一关未解锁或累计星星数<20，根据PlayerLevelUnlock表中的is_unlocked字段判断
@@ -207,6 +192,9 @@ public class GameLevelsService extends BaseService<GameLevels> {
             levelInfo.put("totalStars", totalStars); // 添加累计星星数
             levelInfo.put("status", status); // 动态状态文本
             result.add(levelInfo);
+
+            prevUnlockedForNext = isUnlocked;
+            prevTotalStarsForNext = totalStars;
         }
 
         return result;

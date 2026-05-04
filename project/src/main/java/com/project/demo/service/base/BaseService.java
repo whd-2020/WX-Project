@@ -456,8 +456,15 @@ public class BaseService<E>{
 
     public E findOne(Map<String, String> map){
         try {
-            return (E)baseMapper.selectBaseOne(select(map, new HashMap<>()));
-        }catch (Exception e){
+            Object obj = baseMapper.selectBaseOne(select(map, new HashMap<>()));
+            if (obj == null) {
+                return null;
+            }
+            if (eClass.isInstance(obj)) {
+                return (E) obj;
+            }
+            return JSON.parseObject(JSON.toJSONString(obj), eClass);
+        } catch (Exception e) {
             return null;
         }
     }

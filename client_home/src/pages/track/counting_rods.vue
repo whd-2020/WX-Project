@@ -131,51 +131,26 @@ export default {
       try {
         const res = await getLevelProgressApi(this.gamerId, this.trackId);
         if (res.result && res.result.levels) {
-          // 第一次遍历：收集所有关卡的基础数据
           const tempList = res.result.levels.map((level) => {
             const isCompleted = Number(level.isCompleted ?? level.is_completed ?? 0) === 1;
+            const isUnlocked = Number(level.isUnlocked ?? level.is_unlocked ?? 0) === 1;
             const totalStarsRaw = level.totalStars ?? level.total_stars;
             const totalStars = Number.isNaN(Number(totalStarsRaw)) ? 0 : Number(totalStarsRaw);
+            const levelId = Number(level.levelId ?? level.level_id ?? level.levelOrder ?? level.level_order ?? 0);
+            const levelOrder = Number(level.levelOrder ?? level.level_order ?? levelId);
 
             return {
               ...level,
+              levelId,
+              levelOrder,
               isCompleted: isCompleted ? 1 : 0,
+              isUnlocked: isUnlocked ? 1 : 0,
               totalStars,
+              status: level.status || (totalStars > 0 ? `${totalStars}星` : (isUnlocked ? '已解锁' : '未解锁')),
             };
           });
 
-          // 第二次遍历：根据解锁规则设置每个关卡的解锁状态
-          this.levelList = tempList.map((level, index) => {
-            let shouldUnlock = false;
-
-            // 第一关：默认解锁
-            if (index === 0) {
-              shouldUnlock = true;
-            }
-            // 第二关：第一关得星数 >= 9 才解锁
-            else if (index === 1) {
-              const level1Stars = tempList[0].totalStars;
-              shouldUnlock = level1Stars >= 9;
-            }
-            // 第三关及以后：上一个关卡得星数 > 20 才解锁
-            else if (index > 1) {
-              const prevStars = tempList[index - 1].totalStars;
-              shouldUnlock = prevStars > 20;
-            }
-
-            let status = '';
-            if (shouldUnlock) {
-              status = `${level.totalStars}星`;
-            } else {
-              status = '未解锁';
-            }
-
-            return {
-              ...level,
-              isUnlocked: shouldUnlock ? 1 : 0,
-              status,
-            };
-          });
+          this.levelList = tempList.sort((a, b) => Number(a.levelOrder) - Number(b.levelOrder));
 
           // 调试：打印关卡数据
           console.log('关卡列表数据:', this.levelList);
@@ -201,7 +176,7 @@ export default {
         console.error('关卡数据不存在', index, this.levelList);
         return;
       }
-      if (level.status && level.status.includes('未解锁')) {
+      if (Number(level.isUnlocked) === 0) {
         uni.showModal({
           title: '提示',
           content: '小朋友，你还没有解锁这一关哦~',
@@ -210,21 +185,12 @@ export default {
         });
         return;
       }
-      if (index === 0) {
-        this.$navTo(`/pagesC/ChouSuanYanSuan/level1?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
-      } else if (index === 1) {
-        this.$navTo(`/pagesC/ChouSuanYanSuan/level2?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
-      } else if (index === 2) {
-        this.$navTo(`/pagesC/ChouSuanYanSuan/level3?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
-      } else if (index === 3) {
-        this.$navTo(`/pagesC/ChouSuanYanSuan/level4?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
-      } else if (index === 4) {
-        this.$navTo(`/pagesC/ChouSuanYanSuan/level5?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
-      } else if (index === 5) {
-        this.$navTo(`/pagesC/ChouSuanYanSuan/level6?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
-      } else {
-        this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+      const levelNo = Number(level.levelOrder || level.levelId || 0);
+      if (levelNo >= 1 && levelNo <= 6) {
+        this.$navTo(`/pagesC/ChouSuanYanSuan/level${levelNo}?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
+        return;
       }
+      this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
     },
 
   }
