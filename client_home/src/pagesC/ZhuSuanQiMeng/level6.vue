@@ -1,6 +1,6 @@
 <template>
   <view class="abacus-level-page">
-    <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
@@ -9,7 +9,7 @@
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/LaoRen.png" mode="aspectFit" />
+        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
       </view>
       <view class="child-area" @click="openGamePopup">
         <view class="child-speech-bubble" v-if="showChildSpeech">
@@ -18,7 +18,7 @@
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/XiaoHai.png" mode="aspectFit" />
+        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
       </view>
     </view>
     <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>

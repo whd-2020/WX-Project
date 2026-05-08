@@ -2,7 +2,7 @@
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
@@ -15,7 +15,7 @@
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/LaoRen.png" mode="aspectFit" />
+        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
       </view>
 
       <!-- 右侧：小孩 -->
@@ -26,7 +26,7 @@
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/XiaoHai.png" mode="aspectFit" />
+        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
       </view>
     </view>
 

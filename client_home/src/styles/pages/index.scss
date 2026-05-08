@@ -628,8 +628,20 @@
     margin-bottom: 20rpx;
     position: relative;
     z-index: 100;
+  }
 
-    .feature-card {
+  .game-slogan {
+    text-align: center;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #5c4a32;
+    margin-block: -10px;
+    // margin-bottom: 20rpx;
+    position: relative;
+    z-index: 10;
+  }
+
+  .feature-card {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -660,7 +672,6 @@
         transform: scale(0.95);
       }
     }
-  }
 
   // 游戏赛道入口
   .game-tracks {

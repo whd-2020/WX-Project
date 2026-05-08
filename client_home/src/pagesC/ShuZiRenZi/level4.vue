@@ -1,7 +1,7 @@
 <template>
   <view class="digit-level-page">
 
-    <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill"></image>
+    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill"></image>
 
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
@@ -12,7 +12,7 @@
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/LaoRen.png" mode="aspectFit"></image>
+        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit"></image>
       </view>
 
       <view class="child-area" @click="openGamePopup">
@@ -22,7 +22,7 @@
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/XiaoHai.png" mode="aspectFit"></image>
+        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit"></image>
       </view>
     </view>
 

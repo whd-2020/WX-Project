@@ -2,7 +2,7 @@
   <view class="rope-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/CaoYuanBeiJing.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
@@ -15,7 +15,7 @@
         <view class="speech-bubble" :class="{ expanded: showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/LaoRen.png" mode="aspectFit" />
+        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
       </view>
 
       <!-- 右侧：小孩 -->
@@ -26,18 +26,65 @@
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/XiaoHai.png" mode="aspectFit" />
+        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
       </view>
     </view>
 
     <!-- 游戏弹窗 -->
     <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
-      <view class="icon-display-area" v-if="selectedDecorationIcon">
-        <text class="question-icon-unicode">{{ selectedDecorationIcon }}</text>
+      <view class="icon-display-area icon-display-area--left" v-if="cornerIcons[0]">
+        <text class="question-icon-unicode">{{ cornerIcons[0] }}</text>
       </view>
+      <view class="icon-display-area icon-display-area--right" v-if="isComboQuestion && cornerIcons[1]">
+        <text class="question-icon-unicode">{{ cornerIcons[1] }}</text>
+      </view>
+
       <!-- 绳结互动区域 -->
-      <view class="rope-area">
+      <view class="rope-area" v-if="isComboQuestion">
+        <view class="rope-title">
+          <text class="rope-title-main" :class="{ 'rope-title--wrap': titleUsePreLine }">{{ displayQuestionTitle }}</text>
+          <text class="rope-title-measure">{{ rawQuestionTitle }}</text>
+          <br />
+          <text style="font-size: 24rpx; font-weight: 400;">
+            提示：点击绳子打小结表示1，<text style="font-weight: 700">长按打大结表示10</text>
+          </text>
+        </view>
+        <view
+          v-for="(rope, index) in ropes"
+          :key="index"
+          class="rope-section"
+        >
+          <view class="rope-header">
+            <text class="rope-label">{{ rope.decoration ? getDecorationName(rope.decoration) : '未选择装饰物' }}</text>
+            <text class="rope-count">{{ rope.smallKnots.length + rope.bigKnots.length * 10 }} 个</text>
+          </view>
+          <view class="rope-wrapper" :data-index="index" @click="handleRopeClick" @longpress="handleRopeLongPress">
+            <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
+            <view
+              v-for="knot in rope.smallKnots"
+              :key="knot.id"
+              class="rope-knot"
+              :class="{ 'knot-animating': knot.animating }"
+              :style="{ left: knot.x + '%' }"
+            >
+              <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+              <text class="knot-decoration">{{ getDecorationIcon(rope.decoration) }}</text>
+            </view>
+            <view
+              v-for="big in rope.bigKnots"
+              :key="big.id"
+              class="rope-knot big-knot"
+              :class="{ 'knot-animating': big.animating }"
+              :style="{ left: big.x + '%' }"
+            >
+              <image class="knot-image big-knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
+              <text class="knot-decoration big-knot-decoration">{{ getDecorationIcon(rope.decoration) }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="rope-area" v-else>
         <view class="rope-title">
           <text class="rope-title-main" :class="{ 'rope-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
           <text class="rope-title-measure">{{ rawQuestionTitle }}</text>
@@ -52,8 +99,6 @@
           @longpress="handleRopeLongPress"
         >
           <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
-
-          <!-- 小结（1） -->
           <view
             v-for="knot in smallKnots"
             :key="knot.id"
@@ -64,8 +109,6 @@
             <image class="knot-image" src="/static/img/rope/ShengJie.png" mode="aspectFit" />
             <text class="knot-decoration">{{ selectedDecorationIcon }}</text>
           </view>
-
-          <!-- 大结（10） -->
           <view
             v-for="big in bigKnots"
             :key="big.id"
@@ -123,6 +166,19 @@
       </view>
     </view>
 
+    <!-- 错误弹窗 -->
+    <view class="error-modal" v-if="showErrorModal" @click.stop>
+      <view class="error-content" @click.stop>
+        <view class="error-icon">✗</view>
+        <view class="error-title">有点小问题哦～</view>
+        <view class="error-message">再想一想，你可以的！</view>
+        <view class="error-buttons">
+          <button class="error-btn retry-btn" @click="retryQuestion">重新尝试</button>
+          <button class="error-btn next-btn" @click="skipQuestion">换一题</button>
+        </view>
+      </view>
+    </view>
+
     <!-- 所有题目满3星提示弹窗 -->
     <view class="success-modal" v-if="showAllCompleteModal">
       <view class="modal-content all-complete-content" @click.stop>
@@ -148,44 +204,41 @@ export default {
   data() {
     return {
       gamerId: null,
-      trackId: 1, // 结绳计数赛道
-      levelId: 5, // 第六关
+      trackId: 1,
+      levelId: 5,
       question: null,
+      currentQuestionId: null,
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
       typingTimer: null,
-      // 小结（1）和大结（10）分开存
       smallKnots: [],
       bigKnots: [],
+      // 组合题目的多根绳子
+      ropes: [],
       startTime: 0,
       elapsedSeconds: 0,
       elapsedTimer: null,
-      // 成功弹窗相关
       showSuccessModal: false,
       successMessage: '',
       successStarCount: 0,
       successTime: 0,
-      // 所有题目满3星弹窗
+      // 答错弹窗相关
+      showErrorModal: false,
       showAllCompleteModal: false,
-      // 是否显示默认题目提示
       showDefaultQuestionTip: false,
-      // 默认题目提示定时器
       defaultQuestionTipTimer: null,
-      // 是否展开显示全部说话内容
       showFullSpeech: false,
-      // 是否显示游戏弹窗
       showGamePopup: false,
-      // 小孩说话相关
       showChildSpeech: false,
       childSpeechText: '',
       childSpeechTimer: null,
-      // 小孩提示相关
       showChildTip: false,
       childTipTimer: null,
-      // 装饰物相关
       currentDecorations: [],
       selectedDecoration: null,
       wrapTitleByComma: false,
+      // 已尝试的题目ID列表
+      triedQuestionIds: [],
     };
   },
   onLoad(options) {
@@ -212,6 +265,10 @@ export default {
     this.fetchQuestion();
   },
   computed: {
+    // 是否为组合题目
+    isComboQuestion() {
+      return this.question && this.question.question_type === 'rope_decoration_combo';
+    },
     // 获取目标数字文本
     targetNumberText() {
       if (this.question && this.question.targetNumber) {
@@ -223,14 +280,19 @@ export default {
     currentValue() {
       return this.smallKnots.length + this.bigKnots.length * 10;
     },
-    // 判断是否可以提交（是否达到目标数值）
+    // 判断是否可以提交
     canSubmit() {
-      if (!this.question || !this.question.targetNumber) {
+      if (!this.question) {
+        return false;
+      }
+      if (this.isComboQuestion) {
+        return this.ropes.length > 0 && this.ropes.every(r => (r.smallKnots && r.smallKnots.length > 0) || (r.bigKnots && r.bigKnots.length > 0));
+      }
+      if (!this.question.targetNumber) {
         return false;
       }
       const target = Number(this.question.targetNumber);
       const current = this.currentValue;
-      // 确保数值比较时都是数字类型
       return Number(current) === Number(target);
     },
     // 选中装饰物的图标
@@ -239,12 +301,46 @@ export default {
       const deco = this.currentDecorations.find(d => d.type === this.selectedDecoration);
       return deco ? deco.icon : '';
     },
+    cornerIcons() {
+      let icons = [];
+      if (this.isComboQuestion) {
+        let types = [];
+        if (Array.isArray(this.ropes) && this.ropes.length > 0) {
+          types = this.ropes.map(r => r.decoration).filter(Boolean);
+        } else if (this.question && this.question.correct_answer && Array.isArray(this.question.correct_answer.items)) {
+          types = this.question.correct_answer.items.map(i => i.decoration).filter(Boolean);
+        }
+        icons = types.map(t => this.getDecorationIcon(t)).filter(Boolean);
+        if (icons.length === 0 && Array.isArray(this.currentDecorations)) {
+          icons = this.currentDecorations.map(d => d.icon).filter(Boolean);
+        }
+        return icons.slice(0, 2);
+      }
+      if (Array.isArray(this.currentDecorations) && this.currentDecorations.length >= 2) {
+        icons = this.currentDecorations.slice(0, 2).map(d => d.icon).filter(Boolean);
+        return icons;
+      }
+      const single = this.selectedDecorationIcon || (this.currentDecorations && this.currentDecorations[0] ? this.currentDecorations[0].icon : '');
+      return single ? [single] : [];
+    },
     rawQuestionTitle() {
-      return (this.question && this.question.questionTitle ? this.question.questionTitle : '点击绳子打结') || '';
+      const fallback = this.isComboQuestion ? '用不同的绳子记录不同的物品' : '点击绳子打结';
+      return (this.question && this.question.questionTitle ? this.question.questionTitle : fallback) || '';
+    },
+    titleUsePreLine() {
+      return this.wrapTitleByComma || /[；;]/.test(String(this.rawQuestionTitle || ''));
     },
     displayQuestionTitle() {
-      if (!this.wrapTitleByComma) return this.rawQuestionTitle;
-      return String(this.rawQuestionTitle).replace(/([，,])\s*/g, '$1\n');
+      const raw = String(this.rawQuestionTitle || '');
+      if (this.isComboQuestion && /[；;]/.test(raw)) {
+        return raw
+          .split(/[；;]/)
+          .map(s => s.trim())
+          .filter(Boolean)
+          .join('\n');
+      }
+      if (!this.wrapTitleByComma) return raw;
+      return raw.replace(/([，,])\s*/g, '$1\n');
     },
   },
   methods: {
@@ -309,37 +405,41 @@ export default {
       }, 1000);
     },
 
+    getDecorationName(type) {
+      const deco = this.currentDecorations.find(d => d.type === type);
+      return deco ? deco.name : '';
+    },
+
+    getDecorationIcon(type) {
+      const deco = this.currentDecorations.find(d => d.type === type);
+      return deco ? deco.icon : '';
+    },
+
     // 从后端获取本关的一道随机题（优先本地随机）
     fetchQuestion() {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.levelId);
       const trackId = Number(this.trackId);
 
-      // 前端兜底：如果参数不合法，就不用访问后端，直接给默认题
       if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
         const local = {
           question_id: 0,
-          targetNumber: 10,
+          question_type: 'rope_decoration',
           title: '今日族长笑着对你说：用大结表示10，小结表示1，你会怎么用绳结表示数字 10 呢？',
+          correct_answer: { decoration: 'BeiKe', count: 10 },
           decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
         };
         this.question = local;
-        this.currentDecorations = local.decorations || [];
-        this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
+        this.currentQuestionId = local.question_id;
+        this.currentDecorations = local.decorations;
+        this.selectedDecoration = local.decorations[0].type;
         this.wrapTitleByComma = false;
         this.playTyping(local.title);
         return;
       }
 
-      const params = {
-        gamerId,
-        levelId,
-        trackId,
-        question_type: 'rope_knot_number',
-      };
-
+      const params = { gamerId, levelId, trackId };
       this.$get('/question_bank/get_level_questions', params, (json) => {
-        // 如果后端返回错误，直接提示出来
         if (json && json.error) {
           uni.showToast({
             title: json.error.message || '获取题目失败',
@@ -348,33 +448,29 @@ export default {
           return;
         }
 
-        // 检查是否所有题目都满3星
-        const allThreeStars =
-          json.result &&
-          (json.result.allThreeStars === true || json.result.all_three_stars === true);
-
+        const allThreeStars = json.result && (json.result.all_three_stars || json.result.allThreeStars);
         if (allThreeStars) {
-          this.showAllCompleteModal = true;
           setTimeout(() => {
-            this.showAllCompleteModal = false;
-            uni.redirectTo({
-              url: '/pages/track/rope',
-            });
-          }, 3000);
+            this.showAllCompleteModal = true;
+            setTimeout(() => {
+              this.goToNextLevel();
+            }, 3000);
+          }, 1000);
           return;
         }
 
-        // 如果题目列表为空，但不是所有题目都满3星，显示默认题目并提示
         if (!json.result || !json.result.questions || json.result.questions.length === 0) {
           const local = {
             question_id: 0,
-            targetNumber: 10,
+            question_type: 'rope_decoration',
             title: '今日族长笑着对你说：用大结表示10，小结表示1，你会怎么用绳结表示数字 10 呢？',
+            correct_answer: { decoration: 'BeiKe', count: 10 },
             decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
           };
           this.question = local;
-          this.currentDecorations = local.decorations || [];
-          this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
+          this.currentQuestionId = local.question_id;
+          this.currentDecorations = local.decorations;
+          this.selectedDecoration = local.decorations[0].type;
           this.wrapTitleByComma = false;
           this.showDefaultQuestionTip = true;
 
@@ -391,7 +487,6 @@ export default {
           return;
         }
 
-        // 有正常题目时，隐藏默认题目提示
         this.showDefaultQuestionTip = false;
         if (this.defaultQuestionTipTimer) {
           clearTimeout(this.defaultQuestionTipTimer);
@@ -399,73 +494,92 @@ export default {
         }
 
         const list = json.result.questions;
-        const q = list[Math.floor(Math.random() * list.length)];
-        // 默认目标数字：10（代表 1 个大结），如果题目里配置了其他数字，再覆盖
-        let target = 10;
+        let availableList = list.filter(item => !this.triedQuestionIds.includes(item.question_id));
+
+        if (availableList.length === 0) {
+          this.triedQuestionIds = [];
+          availableList = list;
+        }
+
+        if (availableList.length === 0) {
+          availableList = list;
+        }
+
+        const q = availableList[Math.floor(Math.random() * availableList.length)];
+
+        let content = {};
+        let answer = {};
         let elderSpeech = '';
         let questionTitle = '';
+        let target = 10;
         let decorations = [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }];
 
         try {
-          if (q.question_content) {
-            const content = JSON.parse(q.question_content);
-            if (content.options && Array.isArray(content.options) && content.options.length > 0) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
-              // 保存 options[0] 用于弹窗标题
-              questionTitle = content.options[0];
-            }
-            if (content.targetNumber) {
-              target = Number(content.targetNumber);
-            }
-            // 解析装饰物数据
-            if (content.decorations && Array.isArray(content.decorations)) {
-              decorations = content.decorations;
-            }
+          content = typeof q.question_content === 'string' ? JSON.parse(q.question_content) : q.question_content;
+          answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
+
+          if (content.options && content.options[0]) {
+            elderSpeech = (q.question_title || '') + "," + content.options[0];
+            questionTitle = content.options[0];
           }
 
-          // 如果 question_content 里没有 targetNumber，
-          // 则和第一关一样，从 correct_answer 里解析目标数字
-          if (target === 10 && q.correct_answer) {
-            try {
-              const answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
-              // 支持两种格式：{"answer":"12"} 或 {"decoration":"YuGu","count":12}
-              if (answer.count) {
-                const countNum = Number(answer.count);
-                if (!Number.isNaN(countNum) && countNum > 0) {
-                  target = countNum;
-                }
-              } else if (answer.answer) {
-                const answerNum = Number(answer.answer);
-                if (!Number.isNaN(answerNum) && answerNum > 0) {
-                  target = answerNum;
-                }
-              }
-            } catch (e) {
-              // 忽略解析错误
-            }
+          if (content.decorations && Array.isArray(content.decorations)) {
+            decorations = content.decorations;
+          }
+
+          if (answer.count) {
+            target = Number(answer.count);
+          } else if (answer.answer) {
+            target = Number(answer.answer);
           }
         } catch (e) {
-          // 忽略解析错误
+          console.error('解析题目JSON失败', e);
         }
 
         if (!elderSpeech || elderSpeech.trim() === '') {
-          elderSpeech = `今日族长笑着对你说：用大结表示10，小结表示1，你会怎么用绳结表示数字 ${target} 呢？`;
+          elderSpeech = '请完成题目';
         }
 
-        // 如果 questionTitle 为空，使用默认标题
         if (!questionTitle || questionTitle.trim() === '') {
-          questionTitle = `点击绳子打结，表示数字${target}`;
+          questionTitle = '请完成题目';
         }
 
         this.question = {
           question_id: q.question_id,
-          targetNumber: target,
+          question_type: q.question_type,
           title: elderSpeech,
           questionTitle: questionTitle,
+          targetNumber: target,
+          correct_answer: answer,
           decorations: decorations,
         };
-        this.currentDecorations = decorations;
-        this.selectedDecoration = decorations.length > 0 ? decorations[0].type : null;
+        this.currentQuestionId = q.question_id;
+
+        if (!this.triedQuestionIds.includes(q.question_id)) {
+          this.triedQuestionIds.push(q.question_id);
+        }
+
+        this.currentDecorations = this.question.decorations;
+
+        if (this.question.question_type === 'rope_decoration_combo') {
+          this.ropes = Array.isArray(answer.items)
+            ? answer.items.map(item => ({
+                decoration: item.decoration,
+                smallKnots: [],
+                bigKnots: [],
+              }))
+            : [];
+          if (this.currentDecorations.length > 0) {
+            this.selectedDecoration = this.currentDecorations[0].type;
+          }
+        } else {
+          this.smallKnots = [];
+          this.bigKnots = [];
+          if (this.currentDecorations.length > 0) {
+            this.selectedDecoration = this.currentDecorations[0].type;
+          }
+        }
+
         this.wrapTitleByComma = false;
         this.playTyping(this.question.title);
         if (this.showGamePopup) {
@@ -516,23 +630,20 @@ export default {
         .exec();
     },
 
-    // 点击绳子：小结（1）
-    handleRopeClick(e) {
+    // 单一题目：点击绳子打小结（1）或解结
+    handleSingleRopeClick(e) {
       this.computeClickPercent(e, (percent) => {
         const threshold = 5;
-        // 先看附近有没有小结，有就解小结
         const idx = this.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
         if (idx !== -1) {
           this.smallKnots.splice(idx, 1);
           return;
         }
-        // 再看附近有没有大结，有就解大结
         const bigIdx = this.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
         if (bigIdx !== -1) {
           this.bigKnots.splice(bigIdx, 1);
           return;
         }
-        // 否则新增一个小结
         if (this.smallKnots.length + this.bigKnots.length < 12) {
           const newKnot = {
             id: Date.now() + '_' + this.smallKnots.length,
@@ -545,22 +656,25 @@ export default {
             if (idx2 !== -1) {
               this.$set(this.smallKnots[idx2], 'animating', false);
             }
-          }, 400);
+          }, 300);
         }
       });
     },
 
-    // 长按绳子：大结（10）
-    handleRopeLongPress(e) {
+    // 单一题目：长按绳子打大结（10）或解结
+    handleSingleRopeLongPress(e) {
       this.computeClickPercent(e, (percent) => {
         const threshold = 5;
-        // 附近有大结则解大结
         const bigIdx = this.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
         if (bigIdx !== -1) {
           this.bigKnots.splice(bigIdx, 1);
           return;
         }
-        // 否则生成一个大结
+        const idx = this.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (idx !== -1) {
+          this.smallKnots.splice(idx, 1);
+          return;
+        }
         if (this.smallKnots.length + this.bigKnots.length < 12) {
           const newBig = {
             id: Date.now() + '_big_' + this.bigKnots.length,
@@ -573,93 +687,131 @@ export default {
             if (idx2 !== -1) {
               this.$set(this.bigKnots[idx2], 'animating', false);
             }
-          }, 400);
+          }, 300);
         }
       });
     },
 
-    // 提交答案：前端先根据当前数值判断，再调用后端记录
-    submitAnswer() {
-      if (!this.question) return;
-      if (!this.canSubmit) return;
-
-      const value = this.currentValue;
-      const target = Number(this.question.targetNumber || 0);
-      const isCorrectFront = value === target;
-
-      const usedTime = (Date.now() - this.startTime) / 1000.0;
-      const stars = this.calculateStars(isCorrectFront, usedTime);
-
-      if (!this.gamerId || !this.question.question_id) {
-        if (isCorrectFront) {
-          const actualTime = usedTime;
-          let encouragement = '';
-          if (stars === 3) {
-            encouragement = '太厉害了！1分钟内完成，获得3颗星！';
-          } else if (stars === 2) {
-            encouragement = '不错！1分半内完成，获得2颗星！';
-          } else if (stars === 1) {
-            encouragement = '很好！2分钟内完成，获得1颗星！';
-          } else {
-            encouragement = '答对了！继续努力，争取获得更多星星！';
-          }
-
-          this.showGamePopup = false;
-          this.successMessage = encouragement;
-          this.successStarCount = stars;
-          this.successTime = Math.round(actualTime);
-          this.showSuccessModal = true;
-          this.$forceUpdate();
-        } else {
-          uni.showToast({
-            title: '再想一想，试试换换大结和小结的数量～',
-            icon: 'none',
-          });
-        }
+    // 组合题目：点击某根绳子打小结（1）或解结
+    handleRopeClick(e) {
+      const ropeIndex = e.currentTarget.dataset.index;
+      if (ropeIndex === undefined) {
+        this.handleSingleRopeClick(e);
         return;
       }
 
-      // 构建用户答案：如果有选中的装饰物，使用装饰物格式，否则使用简单格式
-      let userAnswerObj;
-      if (this.selectedDecoration) {
-        userAnswerObj = {
-          decoration: this.selectedDecoration,
-          count: value
+      const rope = this.ropes[ropeIndex];
+      if (!rope || !rope.decoration) {
+        return;
+      }
+
+      this.computeClickPercent(e, (percent) => {
+        const threshold = 5;
+        const idx = rope.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (idx !== -1) {
+          rope.smallKnots.splice(idx, 1);
+          return;
+        }
+        const bigIdx = rope.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (bigIdx !== -1) {
+          rope.bigKnots.splice(bigIdx, 1);
+          return;
+        }
+        if (rope.smallKnots.length + rope.bigKnots.length < 12) {
+          const newKnot = {
+            id: Date.now() + '_' + rope.smallKnots.length,
+            x: percent,
+            animating: true,
+          };
+          rope.smallKnots.push(newKnot);
+          setTimeout(() => {
+            const idx2 = rope.smallKnots.findIndex((k) => k.id === newKnot.id);
+            if (idx2 !== -1) {
+              this.$set(rope.smallKnots, idx2, { ...rope.smallKnots[idx2], animating: false });
+            }
+          }, 300);
+        }
+      });
+    },
+
+    // 组合题目：长按某根绳子打大结（10）或解结
+    handleRopeLongPress(e) {
+      const ropeIndex = e.currentTarget.dataset.index;
+      if (ropeIndex === undefined) {
+        this.handleSingleRopeLongPress(e);
+        return;
+      }
+
+      const rope = this.ropes[ropeIndex];
+      if (!rope || !rope.decoration) {
+        return;
+      }
+
+      this.computeClickPercent(e, (percent) => {
+        const threshold = 5;
+        const bigIdx = rope.bigKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (bigIdx !== -1) {
+          rope.bigKnots.splice(bigIdx, 1);
+          return;
+        }
+        const idx = rope.smallKnots.findIndex((k) => Math.abs(k.x - percent) <= threshold);
+        if (idx !== -1) {
+          rope.smallKnots.splice(idx, 1);
+          return;
+        }
+        if (rope.smallKnots.length + rope.bigKnots.length < 12) {
+          const newBig = {
+            id: Date.now() + '_big_' + rope.bigKnots.length,
+            x: percent,
+            animating: true,
+          };
+          rope.bigKnots.push(newBig);
+          setTimeout(() => {
+            const idx2 = rope.bigKnots.findIndex((k) => k.id === newBig.id);
+            if (idx2 !== -1) {
+              this.$set(rope.bigKnots, idx2, { ...rope.bigKnots[idx2], animating: false });
+            }
+          }, 300);
+        }
+      });
+    },
+
+    // 提交答案
+    submitAnswer() {
+      const actualTime = Math.round((Date.now() - this.startTime) / 1000);
+
+      let userAnswer;
+      if (this.isComboQuestion) {
+        userAnswer = {
+          items: this.ropes.map(rope => ({
+            decoration: rope.decoration,
+            count: rope.smallKnots.length + rope.bigKnots.length * 10,
+          })),
         };
       } else {
-        userAnswerObj = {
-          answer: String(value)
+        userAnswer = {
+          decoration: this.selectedDecoration,
+          count: this.currentValue,
         };
       }
 
-      const body = {
+      const params = {
         gamerId: this.gamerId,
         questionId: this.question.question_id,
-        levelId: this.levelId,
         trackId: this.trackId,
-        userAnswer: JSON.stringify(userAnswerObj),
-        answerTime: usedTime,
+        levelId: this.levelId,
+        userAnswer: JSON.stringify(userAnswer),
+        answerTime: actualTime,
       };
 
-      this.$post('/question_bank/submit_answer', body, (res) => {
+      this.$post('/question_bank/submit_answer', params, (json) => {
         let isCorrect = false;
-        if (res && res.result) {
-          const result = res.result;
-          const isCorrectValue =
-            result.isCorrect !== undefined ? result.isCorrect : result.is_correct;
-          if (
-            isCorrectValue === true ||
-            isCorrectValue === 1 ||
-            isCorrectValue === '1' ||
-            isCorrectValue === 'true'
-          ) {
+        if (json && json.result) {
+          const result = json.result;
+          const isCorrectValue = result.isCorrect !== undefined ? result.isCorrect : result.is_correct;
+          if (isCorrectValue === true || isCorrectValue === 1 || isCorrectValue === '1' || isCorrectValue === 'true') {
             isCorrect = true;
-          } else if (
-            isCorrectValue === false ||
-            isCorrectValue === 0 ||
-            isCorrectValue === '0' ||
-            isCorrectValue === 'false'
-          ) {
+          } else if (isCorrectValue === false || isCorrectValue === 0 || isCorrectValue === '0' || isCorrectValue === 'false') {
             isCorrect = false;
           } else if (isCorrectValue != null) {
             isCorrect = Boolean(isCorrectValue);
@@ -667,15 +819,15 @@ export default {
         }
 
         if (isCorrect) {
-          const actualTime = usedTime;
           const starCount = this.calculateStars(true, actualTime);
+
           let encouragement = '';
           if (starCount === 3) {
             encouragement = '太厉害了！1分钟内完成，获得3颗星！';
           } else if (starCount === 2) {
-            encouragement = '不错！1分半内完成，获得2颗星！';
+            encouragement = '不错！2分钟内完成，获得2颗星！';
           } else if (starCount === 1) {
-            encouragement = '很好！2分钟内完成，获得1颗星！';
+            encouragement = '很好！完成了题目，获得1颗星！';
           } else {
             encouragement = '答对了！继续努力，争取获得更多星星！';
           }
@@ -685,12 +837,152 @@ export default {
           this.successStarCount = starCount;
           this.successTime = Math.round(actualTime);
           this.showSuccessModal = true;
-          this.$forceUpdate();
         } else {
-          uni.showToast({
-            title: '有点小问题，再想一想～',
-            icon: 'none',
-          });
+          this.showGamePopup = false;
+          this.showErrorModal = true;
+        }
+      });
+    },
+
+    retryQuestion() {
+      this.showErrorModal = false;
+      if (this.isComboQuestion) {
+        this.ropes.forEach(rope => {
+          rope.smallKnots = [];
+          rope.bigKnots = [];
+        });
+      } else {
+        this.smallKnots = [];
+        this.bigKnots = [];
+      }
+      this.resetTimer();
+    },
+
+    skipQuestion() {
+      this.showErrorModal = false;
+      this.showGamePopup = false;
+      this.smallKnots = [];
+      this.bigKnots = [];
+      this.ropes = [];
+      this.selectedDecoration = null;
+      this.currentDecorations = [];
+      this.resetTimer();
+      this.showFullSpeech = false;
+      this.showChildSpeech = false;
+      this.showChildTip = false;
+      this.childSpeechText = '';
+      if (this.childTipTimer) {
+        clearTimeout(this.childTipTimer);
+        this.childTipTimer = null;
+      }
+      this.fetchNextQuestion();
+    },
+
+    fetchNextQuestion() {
+      const gamerId = Number(this.gamerId);
+      const levelId = Number(this.levelId);
+      const trackId = Number(this.trackId);
+
+      if (!gamerId || Number.isNaN(levelId) || levelId <= 0 || Number.isNaN(trackId) || trackId <= 0) {
+        const local = {
+          question_id: 0,
+          question_type: 'rope_decoration',
+          title: '今日族长笑着对你说：用大结表示10，小结表示1，你会怎么用绳结表示数字 10 呢？',
+          correct_answer: { decoration: 'BeiKe', count: 10 },
+          decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
+        };
+        this.question = local;
+        this.currentQuestionId = local.question_id;
+        this.currentDecorations = local.decorations;
+        this.selectedDecoration = local.decorations[0].type;
+        this.wrapTitleByComma = false;
+        this.playTyping(local.title);
+        return;
+      }
+
+      const params = { gamerId, levelId, trackId };
+      this.$get('/question_bank/get_next_question', params, (json) => {
+        const allThreeStars = json.result && (json.result.all_three_stars || json.result.allThreeStars);
+        if (allThreeStars) {
+          setTimeout(() => {
+            this.showAllCompleteModal = true;
+            setTimeout(() => {
+              this.goToNextLevel();
+            }, 3000);
+          }, 1000);
+          return;
+        }
+
+        if (json.result && json.result.questions && json.result.questions.length > 0) {
+          const list = json.result.questions;
+          const q = list[0];
+
+          let content = {};
+          let answer = {};
+          let elderSpeech = '';
+          let questionTitle = '';
+          try {
+            content = typeof q.question_content === 'string' ? JSON.parse(q.question_content) : q.question_content;
+            answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
+
+            if (content.options && content.options[0]) {
+              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              questionTitle = content.options[0];
+            }
+          } catch (e) {
+            console.error('解析题目JSON失败', e);
+          }
+
+          if (!elderSpeech || elderSpeech.trim() === '') {
+            elderSpeech = '请完成题目';
+          }
+
+          if (!questionTitle || questionTitle.trim() === '') {
+            questionTitle = '请完成题目';
+          }
+
+          this.question = {
+            question_id: q.question_id,
+            question_type: q.question_type,
+            title: elderSpeech,
+            questionTitle: questionTitle,
+            correct_answer: answer,
+            decorations: content.decorations || [],
+          };
+          this.currentQuestionId = q.question_id;
+
+          if (!this.triedQuestionIds.includes(q.question_id)) {
+            this.triedQuestionIds.push(q.question_id);
+          }
+
+          this.currentDecorations = this.question.decorations;
+
+          if (this.question.question_type === 'rope_decoration_combo') {
+            this.ropes = Array.isArray(answer.items)
+              ? answer.items.map(item => ({
+                  decoration: item.decoration,
+                  smallKnots: [],
+                  bigKnots: [],
+                }))
+              : [];
+            if (this.currentDecorations.length > 0) {
+              this.selectedDecoration = this.currentDecorations[0].type;
+            }
+          } else {
+            this.smallKnots = [];
+            this.bigKnots = [];
+            if (this.currentDecorations.length > 0) {
+              this.selectedDecoration = this.currentDecorations[0].type;
+            }
+          }
+
+          this.wrapTitleByComma = false;
+          this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
       });
     },
@@ -736,6 +1028,10 @@ export default {
     startNextQuestion() {
       this.smallKnots = [];
       this.bigKnots = [];
+      this.ropes = [];
+      this.selectedDecoration = null;
+      this.currentDecorations = [];
+      this.triedQuestionIds = [];
       this.resetTimer();
       this.showFullSpeech = false;
       this.showGamePopup = false;
@@ -861,8 +1157,8 @@ export default {
 }
 
 .elder-img {
-  width: 240rpx;
-  height: 320rpx;
+  width: 350rpx;
+  height: 470rpx;
   z-index: 2;
 }
 
@@ -929,8 +1225,8 @@ export default {
 }
 
 .child-img {
-  width: 220rpx;
-  height: 280rpx;
+  width: 350rpx;
+  height: 340rpx;
   z-index: 2;
 }
 
@@ -1254,7 +1550,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 20000;
   animation: fadeIn 0.3s ease;
 }
 
@@ -1414,8 +1710,8 @@ export default {
   top: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 998;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
 }
 
 /* 游戏弹窗 */
@@ -1424,7 +1720,7 @@ export default {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  z-index: 999; /* 比绳子层级高 */
+  z-index: 10001;
 
   width: 600rpx;
   padding: 40rpx;
@@ -1450,6 +1746,111 @@ export default {
 
 .big-knot-image {
   transform: rotate(90deg) scale(1.2);
+}
+
+.icon-display-area--right {
+  left: auto;
+  right: 30rpx;
+}
+
+.rope-section {
+  margin-bottom: 20rpx;
+}
+
+.rope-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20rpx;
+  margin-bottom: 8rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.rope-label {
+  color: #5a4a3a;
+}
+
+.rope-count {
+  color: #ff6b35;
+}
+
+/* 错误弹窗 */
+.error-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+}
+
+.error-content {
+  width: 80%;
+  max-width: 500rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx 40rpx;
+  text-align: center;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
+}
+
+.error-icon {
+  width: 100rpx;
+  height: 100rpx;
+  line-height: 100rpx;
+  margin: 0 auto 30rpx;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: #fff;
+  font-size: 60rpx;
+  border-radius: 50%;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.3);
+}
+
+.error-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.error-message {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 40rpx;
+}
+
+.error-buttons {
+  display: flex;
+  gap: 20rpx;
+  justify-content: center;
+}
+
+.error-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  border: none;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.retry-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
+}
+
+.next-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
 }
 </style>
 

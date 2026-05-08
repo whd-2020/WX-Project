@@ -17,7 +17,7 @@
 
     <view class="tab-pane" v-show="tabIndex === 0" :style="{ paddingTop: vuex_custom_bar_height + 'px', paddingBottom: '120rpx' }">
       <!-- 背景图片 -->
-      <image class="bg-image" src="/static/img/index/LoadingPage.png"></image>
+      <image class="bg-image" src="/static/img/index/ShouYe.png"></image>
       <!-- 游戏特色卡片(开始) -->
       <view class="game-features" style="position: relative; z-index: 10;">
         <view class="feature-card" @click="$navTo('/pages/track/rope')">
@@ -42,12 +42,7 @@
         </view>
       </view>
       <!-- 游戏特色卡片(结束) -->
-
-      <!-- 菜单模块(开始) -->
-      <!-- <view class="menu" v-if="list_menu.length > 0">
-        <list_menu :list="list_menu"></list_menu>
-      </view> -->
-      <!-- 菜单模块(结束) -->
+      <view class="game-slogan">在游戏中解锁古代算数智慧</view>
 	  <view class="home_recommend">
               	  </view>
       <!-- 底部“游戏公告”和“更多”区域已移除 -->

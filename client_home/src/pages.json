@@ -124,7 +124,7 @@
     {
       "path": "pages/track/comprehensive",
       "style": {
-        "navigationBarTitleText": "综合挑战"
+        "navigationBarTitleText": "数字认知"
       },
       "meta": {
         "noAuth": true
