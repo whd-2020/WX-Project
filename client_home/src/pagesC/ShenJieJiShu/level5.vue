@@ -239,6 +239,12 @@ export default {
       wrapTitleByComma: false,
       // 已尝试的题目ID列表
       triedQuestionIds: [],
+      // 控制是否显示欢迎文字
+      showWelcomeText: true,
+      // 预加载的题目数据
+      preloadedQuestion: null,
+      // 预加载的图标
+      preloadedIcon: '',
     };
   },
   onLoad(options) {
@@ -262,7 +268,10 @@ export default {
       }
     }
     this.resetTimer();
-    this.fetchQuestion();
+    this.fetchQuestion(true);
+    setTimeout(() => {
+      this.playTyping('你已经成长为靠谱的小管家！现在要记录部落全部物资的总数，用大结记十位、小结记个位，认真完成两位数记录任务，顺利完成本赛道所有挑战吧！');
+    }, 200);
   },
   computed: {
     // 是否为组合题目
@@ -346,7 +355,7 @@ export default {
   methods: {
     // 打字机效果
     playTyping(text) {
-      this.fullText = text;
+      this.fullText = text.replace(/([，,])/g, '$1\n');
       this.displayText = '';
       this.showFullSpeech = false; // 重置展开状态
       // 重置小孩说话和提示
@@ -365,8 +374,33 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          // 打字机效果完成后，显示小孩说话
-          this.displayChildSpeech();
+          
+          // 判断是否是欢迎文字
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            // 欢迎文字展示完后，等待1秒再显示题目
+            setTimeout(() => {
+              if (this.preloadedQuestion) {
+                // 使用预加载的题目
+                this.question = this.preloadedQuestion;
+                this.currentDecorations = this.preloadedQuestion.decorations || [];
+                this.selectedDecoration = this.currentDecorations.length > 0 ? this.currentDecorations[0].type : null;
+                this.wrapTitleByComma = false;
+                this.playTyping(this.question.title);
+                if (this.showGamePopup) {
+                  this.$nextTick(() => {
+                    this.updateTitleWrap();
+                  });
+                }
+              } else {
+                // 如果没有预加载的题目，重新获取
+                this.fetchQuestion();
+              }
+            }, 1000);
+          } else {
+            // 打字机效果完成后，显示小孩说话
+            this.displayChildSpeech();
+          }
           return;
         }
         this.displayText += this.fullText[index];
@@ -416,7 +450,7 @@ export default {
     },
 
     // 从后端获取本关的一道随机题（优先本地随机）
-    fetchQuestion() {
+    fetchQuestion(preload = false) {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.levelId);
       const trackId = Number(this.trackId);
@@ -429,12 +463,17 @@ export default {
           correct_answer: { decoration: 'BeiKe', count: 10 },
           decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
         };
-        this.question = local;
-        this.currentQuestionId = local.question_id;
-        this.currentDecorations = local.decorations;
-        this.selectedDecoration = local.decorations[0].type;
-        this.wrapTitleByComma = false;
-        this.playTyping(local.title);
+        if (preload) {
+          this.preloadedQuestion = local;
+          this.preloadedIcon = '';
+        } else {
+          this.question = local;
+          this.currentQuestionId = local.question_id;
+          this.currentDecorations = local.decorations;
+          this.selectedDecoration = local.decorations[0].type;
+          this.wrapTitleByComma = false;
+          this.playTyping(local.title);
+        }
         return;
       }
 
@@ -467,23 +506,28 @@ export default {
             correct_answer: { decoration: 'BeiKe', count: 10 },
             decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
           };
-          this.question = local;
-          this.currentQuestionId = local.question_id;
-          this.currentDecorations = local.decorations;
-          this.selectedDecoration = local.decorations[0].type;
-          this.wrapTitleByComma = false;
-          this.showDefaultQuestionTip = true;
+          if (preload) {
+            this.preloadedQuestion = local;
+            this.preloadedIcon = '';
+          } else {
+            this.question = local;
+            this.currentQuestionId = local.question_id;
+            this.currentDecorations = local.decorations;
+            this.selectedDecoration = local.decorations[0].type;
+            this.wrapTitleByComma = false;
+            this.showDefaultQuestionTip = true;
 
-          if (this.defaultQuestionTipTimer) {
-            clearTimeout(this.defaultQuestionTipTimer);
+            if (this.defaultQuestionTipTimer) {
+              clearTimeout(this.defaultQuestionTipTimer);
+            }
+
+            this.defaultQuestionTipTimer = setTimeout(() => {
+              this.showDefaultQuestionTip = false;
+              this.defaultQuestionTipTimer = null;
+            }, 2000);
+
+            this.playTyping(local.title);
           }
-
-          this.defaultQuestionTipTimer = setTimeout(() => {
-            this.showDefaultQuestionTip = false;
-            this.defaultQuestionTipTimer = null;
-          }, 2000);
-
-          this.playTyping(local.title);
           return;
         }
 
@@ -519,7 +563,7 @@ export default {
           answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
 
           if (content.options && content.options[0]) {
-            elderSpeech = (q.question_title || '') + "," + content.options[0];
+            elderSpeech = content.options[0];
             questionTitle = content.options[0];
           }
 
@@ -926,7 +970,7 @@ export default {
             answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
 
             if (content.options && content.options[0]) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               questionTitle = content.options[0];
             }
           } catch (e) {

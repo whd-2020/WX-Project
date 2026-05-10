@@ -2,7 +2,7 @@
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/counting_rods/BeiJing2.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
@@ -10,23 +10,15 @@
     </view>
 
     <view class="scene">
-      <!-- 左侧：族长 -->
-      <view class="elder-area">
-        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
-          <text class="speech-text">{{ displayText }}</text>
-        </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
-      </view>
-
-      <!-- 右侧：小孩 -->
+      <!-- 右侧：椅子 -->
       <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
+         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
+          <text class="speech-text">{{ displayText }}</text>
         </view>
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
+        <image class="child-img" src="/static/img/counting_rods/YiZi.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -35,6 +27,8 @@
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <!-- 筹算木棍互动区域 -->
       <view class="chouSuan-area">
+        <!-- 题目图标 -->
+        <image v-if="questionIcon" class="question-icon" :src="questionIcon" mode="aspectFit" />
         <text class="chouSuan-title" :class="{ 'chouSuan-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
         <text class="chouSuan-title-measure">{{ rawQuestionTitle }}</text>
         
@@ -161,6 +155,7 @@ export default {
       levelId: 1, // 第一关（关卡顺序）
       routeLevelId: 1, // 保存路由参数中的levelId
       question: null,
+      questionIcon: '',
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
       typingTimer: null,
@@ -192,6 +187,9 @@ export default {
       showChildTip: false,
       childTipTimer: null,
       wrapTitleByComma: false,
+      showWelcomeText: true, // 控制是否显示欢迎文字
+      preloadedQuestion: null, // 预加载的题目数据
+      preloadedIcon: '', // 预加载的图标
     };
   },
   onLoad(options) {
@@ -216,7 +214,12 @@ export default {
       }
     }
     this.resetTimer();
-    this.fetchQuestion();
+    // 先预加载题目
+    this.fetchQuestion(true);
+    // 延迟一下再显示欢迎文字，确保预加载完成
+    setTimeout(() => {
+      this.playTyping('小朋友好呀，我们先来认识神奇的算筹，不同摆法对应不同的数字，跟着练习，学会用算筹摆出指定的数字吧～');
+    }, 200);
   },
   computed: {
     // 获取目标数字文本
@@ -273,11 +276,39 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          // 打字机效果完成后，显示小孩说话
-          this.displayChildSpeech();
+          
+          // 判断是否是欢迎文字
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            // 欢迎文字展示完后，等待1秒再显示题目
+            setTimeout(() => {
+              if (this.preloadedQuestion) {
+                // 使用预加载的题目
+                this.question = this.preloadedQuestion;
+                this.questionIcon = this.preloadedIcon;
+                this.wrapTitleByComma = false;
+                this.playTyping(this.question.title);
+                if (this.showGamePopup) {
+                  this.$nextTick(() => {
+                    this.updateTitleWrap();
+                  });
+                }
+              } else {
+                // 如果没有预加载的题目，重新获取
+                this.fetchQuestion();
+              }
+            }, 1000);
+          } else {
+            this.displayChildSpeech();
+          }
           return;
         }
-        this.displayText += this.fullText[index];
+        let char = this.fullText[index];
+        if (char === '，' || char === ',') {
+          this.displayText += char + '\n';
+        } else {
+          this.displayText += char;
+        }
         index++;
       }, 80);
     },
@@ -314,7 +345,7 @@ export default {
     },
 
     // 从后端获取本关的一道随机题（优先本地随机）
-    fetchQuestion() {
+    fetchQuestion(preload = false) {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.routeLevelId || this.levelId); // 使用保存的路由参数中的levelId
       const trackId = Number(this.trackId);
@@ -327,9 +358,14 @@ export default {
           targetNumber: 1,
           title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
         };
-        this.question = local;
-        this.wrapTitleByComma = false;
-        this.playTyping(local.title);
+        if (preload) {
+          this.preloadedQuestion = local;
+          this.preloadedIcon = '';
+        } else {
+          this.question = local;
+          this.wrapTitleByComma = false;
+          this.playTyping(local.title);
+        }
         return;
       }
       const params = {
@@ -406,31 +442,38 @@ export default {
             targetNumber: 1,
             title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
           };
-          this.question = local;
-          this.wrapTitleByComma = false;
-          this.showDefaultQuestionTip = true; // 显示默认题目提示
-          
-          // 清除之前的定时器（如果存在）
-          if (this.defaultQuestionTipTimer) {
-            clearTimeout(this.defaultQuestionTipTimer);
+          if (preload) {
+            this.preloadedQuestion = local;
+            this.preloadedIcon = '';
+          } else {
+            this.question = local;
+            this.wrapTitleByComma = false;
+            this.showDefaultQuestionTip = true; // 显示默认题目提示
+            
+            // 清除之前的定时器（如果存在）
+            if (this.defaultQuestionTipTimer) {
+              clearTimeout(this.defaultQuestionTipTimer);
+            }
+            
+            // 2秒后隐藏提示
+            this.defaultQuestionTipTimer = setTimeout(() => {
+              this.showDefaultQuestionTip = false;
+              this.defaultQuestionTipTimer = null;
+            }, 2000);
+            
+            this.playTyping(local.title);
           }
-          
-          // 2秒后隐藏提示
-          this.defaultQuestionTipTimer = setTimeout(() => {
-            this.showDefaultQuestionTip = false;
-            this.defaultQuestionTipTimer = null;
-          }, 2000);
-          
-          this.playTyping(local.title);
           return;
         }
         
         // 有正常题目时，隐藏默认题目提示
-        this.showDefaultQuestionTip = false;
-        // 清除定时器（如果存在）
-        if (this.defaultQuestionTipTimer) {
-          clearTimeout(this.defaultQuestionTipTimer);
-          this.defaultQuestionTipTimer = null;
+        if (!preload) {
+          this.showDefaultQuestionTip = false;
+          // 清除定时器（如果存在）
+          if (this.defaultQuestionTipTimer) {
+            clearTimeout(this.defaultQuestionTipTimer);
+            this.defaultQuestionTipTimer = null;
+          }
         }
         const list = json.result.questions;
         const q = list[Math.floor(Math.random() * list.length)];
@@ -444,7 +487,7 @@ export default {
             const content = JSON.parse(q.question_content);
             if (content.options && Array.isArray(content.options) && content.options.length > 0) {
               // 拼接：question_title + options[0]
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               // 保存 options[0] 用于弹窗标题
               questionTitle = content.options[0];
             }
@@ -487,18 +530,37 @@ export default {
           questionTitle = `点击放置木棍，表示数字${target}`;
         }
 
-        this.question = {
+        let iconUrl = '';
+        if (q.question_content) {
+          try {
+            const content = JSON.parse(q.question_content);
+            if (content.decorations && Array.isArray(content.decorations) && content.decorations.length > 0) {
+              iconUrl = content.decorations[0].icon || '';
+            }
+          } catch (e) {
+          }
+        }
+
+        const questionData = {
           question_id: q.question_id,
           targetNumber: target,
           title: elderSpeech,
           questionTitle: questionTitle,
         };
-        this.wrapTitleByComma = false;
-        this.playTyping(this.question.title);
-        if (this.showGamePopup) {
-          this.$nextTick(() => {
-            this.updateTitleWrap();
-          });
+        
+        if (preload) {
+          this.preloadedQuestion = questionData;
+          this.preloadedIcon = iconUrl;
+        } else {
+          this.question = questionData;
+          this.questionIcon = iconUrl;
+          this.wrapTitleByComma = false;
+          this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
       });
     },
@@ -818,6 +880,7 @@ export default {
       this.resetTimer();
       this.showFullSpeech = false; // 重置展开状态
       this.showGamePopup = false; // 关闭游戏弹窗
+      this.questionIcon = ''; // 重置图标
       // 重置小孩说话和提示
       this.showChildSpeech = false;
       this.showChildTip = false;
@@ -948,14 +1011,14 @@ export default {
 }
 
 .speech-bubble {
-  margin-bottom: 20rpx;
+  margin-bottom: 0;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #fff59d 0%, #ffeb3b 50%, #ffc107 100%);
+  background: linear-gradient(135deg, #f5e6d3 0%, #ecd5b0 50%, #d4b896 100%);
   border-radius: 28rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
-  color: #333;
+  color: #4a3728;
   max-width: 480rpx;
   min-width: 300rpx;
   position: relative;
@@ -988,19 +1051,20 @@ export default {
   height: 0;
   border-left: 16rpx solid transparent;
   border-right: 16rpx solid transparent;
-  border-top: 16rpx solid #ffc107;
+  border-top: 16rpx solid #d4b896;
   filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
 }
 
 .speech-text {
   line-height: 1.8;
   font-weight: 500;
+  white-space: pre-wrap;
 }
 
 .child-area {
   position: fixed;
   right: 20rpx;
-  bottom: 200rpx;
+  bottom: 120rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -1010,8 +1074,8 @@ export default {
 }
 
 .child-img {
-  width: 220rpx;
-  height: 280rpx;
+  width: 350rpx;
+  height: 600rpx;
   z-index: 2;
 }
 
@@ -1098,6 +1162,13 @@ export default {
   position: relative;
   z-index: 1;
   border: none;
+}
+
+.question-icon {
+  width: 120rpx;
+  height: 120rpx;
+  margin: 0 auto 20rpx;
+  display: block;
 }
 
 .chouSuan-title {

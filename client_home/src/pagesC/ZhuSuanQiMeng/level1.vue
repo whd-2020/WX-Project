@@ -285,7 +285,7 @@ export default {
           if (q.question_content) {
             const content = JSON.parse(q.question_content);
             if (content.options && Array.isArray(content.options) && content.options.length > 0) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               questionTitle = content.options[0];
             }
             if (content.targetNumber) target = Number(content.targetNumber);

@@ -8,7 +8,12 @@
       />
       <view class="track-info">
         <view class="track-title">结绳计数</view>
-        <view class="track-desc">通过打结的方式记录数字，体验古代计数智慧</view>
+        <view class="desc-row">
+          <view class="track-desc">通过打结的方式记录数字，体验古代计数智慧</view>
+          <view class="info-btn" @click="showIntroCard = true">
+            <text class="star-icon">⭐</text>
+          </view>
+        </view>
         <view class="track-levels" v-if="loading">
           <view class="loading-text">加载中...</view>
         </view>
@@ -36,6 +41,21 @@
         </view>
       </view>
     </view>
+
+    <view class="modal-overlay" v-if="showIntroCard" @click="closeIntroCard">
+      <view class="intro-card" :class="{ 'card-visible': showIntroCard }" @click.stop>
+        <view class="card-wood-top"></view>
+        <view class="card-header">
+          <view class="card-header-inner">
+            <text class="card-title">📜 结绳计数</text>
+          </view>
+        </view>
+        <view class="card-content">
+          <text class="intro-text">欢迎来到远古计数世界！远古的先民没有数字和纸笔，只能用绳结记录生活里的物资总数。长按打出代表10的大绳结，点击打出代表1的小绳结，今天你将化身部落小勇士，从零学习结绳计数，根据任务给出的数字，用绳结完成记录，感受最古老的数字智慧。</text>
+        </view>
+        <view class="card-wood-bottom"></view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -48,28 +68,30 @@ export default {
   data() {
     return {
       trackCode: 'rope',
-      trackId: 1, // 结绳计数赛道ID
+      trackId: 1,
       levelList: [],
       loading: true,
-      gamerId: null
+      gamerId: null,
+      showIntroCard: false
     };
   },
   onLoad(options) {
-    // 获取玩家ID（从用户信息或store中获取）
     this.getGamerId();
   },
   onShow() {
-    // 每次显示页面时刷新关卡进度
     if (this.gamerId) {
       this.loadLevelProgress();
     }
+    // 只在第一次进入时显示介绍卡片
+    const hasSeenIntro = uni.getStorageSync('rope_intro_shown');
+    if (!hasSeenIntro) {
+      setTimeout(() => {
+        this.showIntroCard = true;
+      }, 300);
+    }
   },
   methods: {
-    /**
-     * 获取玩家ID
-     */
     getGamerId() {
-      // 检查是否登录
       if (!this.token) {
         uni.showToast({
           title: '请先登录',
@@ -83,7 +105,6 @@ export default {
         return;
       }
 
-      // 从store中获取用户信息
       const userInfo = this.userInfo || {};
       const userId = userInfo.user_id;
 
@@ -100,18 +121,12 @@ export default {
         return;
       }
 
-      // 通过 user_id 查询 gamer 信息
       this.$get('/gamer/get_obj', { user_id: userId }, (json) => {
-        // 兼容后端返回结构：result.obj 或 直接 result
         const gamerObj = json.result ? (json.result.obj || json.result) : null;
         if (gamerObj && gamerObj.gamer_id) {
-          // 已有玩家记录
           this.gamerId = gamerObj.gamer_id;
           this.loadLevelProgress();
         } else {
-          // 如果没有 gamer 记录，自动创建
-          const userInfo = this.userInfo || {};
-          // 统一使用 username 作为玩家展示名
           const screenName = userInfo.username || ('玩家' + userId);
           const data = {
             player_screen_name: screenName,
@@ -120,7 +135,6 @@ export default {
           };
           this.$post('~/api/gamer/add?', data, (res) => {
             if (res.result) {
-              // 创建成功后再次查询获取 gamer_id
               this.$get('/gamer/get_obj', { user_id: userId }, (json2) => {
                 const gamerObj2 = json2.result ? (json2.result.obj || json2.result) : null;
                 if (gamerObj2 && gamerObj2.gamer_id) {
@@ -139,9 +153,6 @@ export default {
       });
     },
 
-    /**
-     * 加载关卡进度
-     */
     async loadLevelProgress() {
       if (!this.gamerId) {
         return;
@@ -172,7 +183,6 @@ export default {
 
           this.levelList = tempList.sort((a, b) => Number(a.levelOrder) - Number(b.levelOrder));
 
-          // 调试：打印关卡数据
           console.log('关卡列表数据:', this.levelList);
         } else {
           uni.showToast({
@@ -191,10 +201,6 @@ export default {
       }
     },
 
-    /**
-     * 开始关卡
-     * 通过下标从 levelList 中取，避免点击事件参数异常导致 level 为 undefined
-     */
     startLevel(index) {
       const level = this.levelList[index];
       if (!level) {
@@ -202,7 +208,6 @@ export default {
         return;
       }
 
-      // 打印调试信息
       console.log('点击关卡:', index, 'level数据:', level);
       console.log('status值:', level.status);
 
@@ -226,10 +231,14 @@ export default {
       this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
     },
 
+    closeIntroCard() {
+      this.showIntroCard = false;
+      // 标记已经展示过，下次不自动显示
+      uni.setStorageSync('rope_intro_shown', true);
+    }
+
   }
 };
-
-
 </script>
 
 <style lang="scss" scoped>
@@ -237,7 +246,6 @@ export default {
   min-height: 100vh;
   background-color: #f5f5f5;
 }
-
 
 
 .track-content {
@@ -264,11 +272,53 @@ export default {
   margin-bottom: 20rpx;
 }
 
+.desc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40rpx;
+}
+
 .track-desc {
+  flex: 1;
   font-size: 28rpx;
   color: #666;
   line-height: 1.6;
-  margin-bottom: 40rpx;
+}
+
+.info-btn {
+  width: 60rpx;
+  height: 60rpx;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 215, 0, 0.5);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  border: 3rpx solid #FFE4B5;
+
+  &:active {
+    transform: scale(0.9);
+    box-shadow: 0 2rpx 8rpx rgba(255, 215, 0, 0.4);
+  }
+}
+
+.star-icon {
+  font-size: 36rpx;
+  line-height: 1;
+  animation: starPulse 2s ease-in-out infinite;
+}
+
+@keyframes starPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .track-levels {
@@ -338,5 +388,175 @@ export default {
   padding: 40rpx;
   color: #999;
   font-size: 28rpx;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, rgba(139, 105, 20, 0.35) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0.8) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlayFadeIn 0.4s ease;
+  backdrop-filter: blur(4px);
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+    background: rgba(0, 0, 0, 0);
+  }
+  to {
+    opacity: 1;
+    background: radial-gradient(ellipse at center, rgba(139, 105, 20, 0.35) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0, 0, 0, 0.8) 100%);
+  }
+}
+
+.intro-card {
+  width: 85%;
+  max-width: 680rpx;
+  background: linear-gradient(180deg, #FAF0E6 0%, #F4E4BC 30%, #E8D5A3 70%, #DCC48D 100%);
+  border-radius: 16rpx;
+  box-shadow: 
+    0 0 0 6rpx #5D4037,
+    0 0 0 10rpx #8B6914,
+    0 0 0 14rpx #D4A574,
+    0 24rpx 80rpx rgba(0, 0, 0, 0.4),
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transform: perspective(1200px) rotateY(90deg) rotateX(-15deg) scale(0.75);
+  opacity: 0;
+  transition: all 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+.intro-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(139, 105, 20, 0.03) 2px,
+    rgba(139, 105, 20, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.intro-card.card-visible {
+  transform: perspective(1200px) rotateY(0deg) rotateX(0deg) scale(1);
+  opacity: 1;
+}
+
+@keyframes cardRotateIn {
+  0% {
+    transform: perspective(1000px) rotateY(360deg) rotateX(0deg) scale(0.6);
+    opacity: 0;
+  }
+  50% {
+    transform: perspective(1000px) rotateY(180deg) rotateX(0deg) scale(0.95);
+    opacity: 0.9;
+  }
+  80% {
+    transform: perspective(1000px) rotateY(45deg) rotateX(0deg) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.intro-card.card-visible {
+  animation: cardRotateIn 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 0;
+  background: linear-gradient(180deg, #8B6914 0%, #6B4423 50%, #8B6914 100%);
+  border-bottom: 4rpx solid #D4A574;
+}
+
+.card-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40rpx;
+}
+
+.card-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #F4E4BC;
+  text-shadow: 2rpx 2rpx 4rpx rgba(0, 0, 0, 0.4);
+  letter-spacing: 4rpx;
+}
+
+.close-btn {
+  width: 56rpx;
+  height: 56rpx;
+  background: linear-gradient(180deg, #A08060 0%, #6B4423 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  border: 2rpx solid #D4A574;
+
+  &:active {
+    transform: scale(0.9);
+  }
+}
+
+.close-icon {
+  font-size: 36rpx;
+  color: #F4E4BC;
+  line-height: 1;
+  font-weight: bold;
+}
+
+.card-content {
+  padding: 40rpx;
+  background: linear-gradient(180deg, #FAF0E6 0%, #F4E4BC 100%);
+  min-height: 280rpx;
+}
+
+.intro-text {
+  font-size: 28rpx;
+  color: #5D4037;
+  line-height: 1.8;
+  text-align: justify;
+  text-indent: 56rpx;
+  font-family: '楷体', 'KaiTi', serif;
+}
+
+.card-wood-top,
+.card-wood-bottom {
+  height: 32rpx;
+  background: linear-gradient(90deg, #4A3728 0%, #8B5A2B 20%, #A08060 50%, #8B5A2B 80%, #4A3728 100%);
+  border-radius: 4rpx;
+}
+
+.card-wood-top {
+  margin-top: 8rpx;
+  box-shadow: inset 0 2rpx 4rpx rgba(255, 255, 255, 0.2), 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+}
+
+.card-wood-bottom {
+  margin-bottom: 8rpx;
+  box-shadow: inset 0 -2rpx 4rpx rgba(255, 255, 255, 0.2), 0 -2rpx 4rpx rgba(0, 0, 0, 0.3);
 }
 </style>

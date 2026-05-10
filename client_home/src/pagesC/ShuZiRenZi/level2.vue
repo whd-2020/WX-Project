@@ -329,6 +329,7 @@ export default {
         this.displayText += this.fullText[index];
         index++;
       }, 80);
+      console.log("whd"+displayText)
     },
 
     displayChildSpeech() {

@@ -2,7 +2,7 @@
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/counting_rods/BeiJing2.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
@@ -10,23 +10,15 @@
     </view>
 
     <view class="scene">
-      <!-- 左侧：族长 -->
-      <view class="elder-area">
+      <!-- 右侧：椅子 -->
+      <view class="child-area" @click="openGamePopup">
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
-        </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
-      </view>
-
-      <!-- 右侧：小孩 -->
-      <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
         </view>
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
+        <image class="child-img" src="/static/img/counting_rods/YiZi.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -600,7 +592,7 @@ export default {
           if (q.question_content) {
             const content = JSON.parse(q.question_content);
             if (content.options && Array.isArray(content.options) && content.options.length > 0) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               questionTitle = content.options[0];
             }
             if (content.targetNumber) {
@@ -1155,7 +1147,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
   color: #333;
-  max-width: 480rpx;
+  max-width: 430rpx;
   min-width: 300rpx;
   position: relative;
   z-index: 3;
@@ -1209,8 +1201,8 @@ export default {
 }
 
 .child-img {
-  width: 220rpx;
-  height: 280rpx;
+  width: 350rpx;
+  height: 600rpx;
   z-index: 2;
 }
 

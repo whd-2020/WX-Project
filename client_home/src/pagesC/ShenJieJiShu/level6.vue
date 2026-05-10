@@ -342,7 +342,7 @@ export default {
   methods: {
     // 打字机效果
     playTyping(text) {
-      this.fullText = text;
+      this.fullText = text.replace(/([，,])/g, '$1\n');
       this.displayText = '';
       this.showFullSpeech = false;
       this.showChildSpeech = false;
@@ -461,7 +461,7 @@ export default {
 
             // 拼接：question_title + options[0]
             if (content.options && content.options[0]) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               // 保存 options[0] 用于弹窗标题
               questionTitle = content.options[0];
             }
@@ -901,7 +901,7 @@ export default {
 
             // 拼接：question_title + options[0]
             if (content.options && content.options[0]) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               // 保存 options[0] 用于弹窗标题
               questionTitle = content.options[0];
             }

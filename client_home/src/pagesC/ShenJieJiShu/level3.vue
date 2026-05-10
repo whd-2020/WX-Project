@@ -92,7 +92,7 @@
         </view>
       </view>
 
-      <!-- 底部操作区：只保留提交按钮 -->
+      <!-- 底部操作区 -->
       <view class="bottom-bar">
         <button 
           class="btn-submit" 
@@ -156,6 +156,7 @@
 
 <script>
 import mixin from '@/libs/mixins/page.js';
+import { audioManager } from '@/utils';
 
 export default {
   mixins: [mixin],
@@ -205,6 +206,12 @@ export default {
       wrapTitleByComma: false,
       // 已尝试的题目ID列表，用于换一题功能
       triedQuestionIds: [],
+      // 控制是否显示欢迎文字
+      showWelcomeText: true,
+      // 预加载的题目数据
+      preloadedQuestion: null,
+      // 预加载的图标
+      preloadedIcon: '',
     };
   },
   onLoad(options) {
@@ -228,7 +235,12 @@ export default {
       }
     }
     this.resetTimer();
-    this.fetchQuestion();
+    // 先预加载题目
+    this.fetchQuestion(true);
+    // 延迟一下再显示欢迎文字，确保预加载完成
+    setTimeout(() => {
+      this.playTyping('恭喜你成为部落小采手！我们今天收获了各类食物与物资，根据任务给出的数量，用绳结准确记录下来吧～');
+    }, 200);
   },
   computed: {
     // 是否为组合题目
@@ -308,7 +320,7 @@ export default {
   methods: {
     // 打字机效果
     playTyping(text) {
-      this.fullText = text;
+      this.fullText = text.replace(/([，,])/g, '$1\n');
       this.displayText = '';
       this.showFullSpeech = false; // 重置展开状态
       // 重置小孩说话和提示
@@ -327,8 +339,57 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          // 打字机效果完成后，显示小孩说话
-          this.displayChildSpeech();
+          
+          // 判断是否是欢迎文字
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            // 欢迎文字展示完后，等待1秒再显示题目
+            setTimeout(() => {
+              if (this.preloadedQuestion) {
+                // 使用预加载的题目
+                this.question = this.preloadedQuestion;
+                this.currentQuestionId = this.preloadedQuestion.question_id;
+                
+                if (!this.triedQuestionIds.includes(this.preloadedQuestion.question_id)) {
+                  this.triedQuestionIds.push(this.preloadedQuestion.question_id);
+                }
+                
+                this.currentDecorations = this.preloadedQuestion.decorations;
+                
+                if (this.preloadedQuestion.question_type === 'rope_decoration_combo') {
+                  const answer = this.preloadedQuestion.correct_answer;
+                  this.ropes = Array.isArray(answer.items)
+                    ? answer.items.map(item => ({
+                        decoration: item.decoration,
+                        knots: [],
+                      }))
+                    : [];
+                  if (this.currentDecorations.length > 0) {
+                    this.selectedDecoration = this.currentDecorations[0].type;
+                  }
+                } else {
+                  this.knots = [];
+                  if (this.currentDecorations.length > 0) {
+                    this.selectedDecoration = this.currentDecorations[0].type;
+                  }
+                }
+                
+                this.wrapTitleByComma = false;
+                this.playTyping(this.question.title);
+                if (this.showGamePopup) {
+                  this.$nextTick(() => {
+                    this.updateTitleWrap();
+                  });
+                }
+              } else {
+                // 如果没有预加载的题目，重新获取
+                this.fetchQuestion();
+              }
+            }, 1000);
+          } else {
+            // 打字机效果完成后，显示小孩说话
+            this.displayChildSpeech();
+          }
           return;
         }
         this.displayText += this.fullText[index];
@@ -368,7 +429,7 @@ export default {
     },
 
     // 从后端获取本关的一道随机题（优先本地随机）
-    fetchQuestion() {
+    fetchQuestion(preload = false) {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.levelId);
       const trackId = Number(this.trackId);
@@ -382,12 +443,17 @@ export default {
           correct_answer: { decoration: 'BeiKe', count: 1 },
           decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
         };
-        this.question = local;
-        this.currentQuestionId = local.question_id;
-        this.currentDecorations = local.decorations;
-        this.selectedDecoration = local.decorations[0].type;
-        this.wrapTitleByComma = false;
-        this.playTyping(local.title);
+        if (preload) {
+          this.preloadedQuestion = local;
+          this.preloadedIcon = '';
+        } else {
+          this.question = local;
+          this.currentQuestionId = local.question_id;
+          this.currentDecorations = local.decorations;
+          this.selectedDecoration = local.decorations[0].type;
+          this.wrapTitleByComma = false;
+          this.playTyping(local.title);
+        }
         return;
       }
 
@@ -412,23 +478,28 @@ export default {
             correct_answer: { decoration: 'BeiKe', count: 1 },
             decorations: [{ type: 'BeiKe', name: '贝壳', icon: '🐚' }],
           };
-          this.question = local;
-          this.currentQuestionId = local.question_id;
-          this.currentDecorations = local.decorations;
-          this.selectedDecoration = local.decorations[0].type;
-          this.wrapTitleByComma = false;
-          this.showDefaultQuestionTip = true;
+          if (preload) {
+            this.preloadedQuestion = local;
+            this.preloadedIcon = '';
+          } else {
+            this.question = local;
+            this.currentQuestionId = local.question_id;
+            this.currentDecorations = local.decorations;
+            this.selectedDecoration = local.decorations[0].type;
+            this.wrapTitleByComma = false;
+            this.showDefaultQuestionTip = true;
 
-          if (this.defaultQuestionTipTimer) {
-            clearTimeout(this.defaultQuestionTipTimer);
+            if (this.defaultQuestionTipTimer) {
+              clearTimeout(this.defaultQuestionTipTimer);
+            }
+
+            this.defaultQuestionTipTimer = setTimeout(() => {
+              this.showDefaultQuestionTip = false;
+              this.defaultQuestionTipTimer = null;
+            }, 2000);
+
+            this.playTyping(local.title);
           }
-
-          this.defaultQuestionTipTimer = setTimeout(() => {
-            this.showDefaultQuestionTip = false;
-            this.defaultQuestionTipTimer = null;
-          }, 2000);
-
-          this.playTyping(local.title);
           return;
         }
 
@@ -464,7 +535,7 @@ export default {
           answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
 
           if (content.options && content.options[0]) {
-            elderSpeech = (q.question_title || '') + "," + content.options[0];
+            elderSpeech = content.options[0];
             questionTitle = content.options[0];
           }
 
@@ -489,7 +560,7 @@ export default {
           questionTitle = '请完成题目';
         }
 
-        this.question = {
+        const questionData = {
           question_id: q.question_id,
           question_type: q.question_type,
           title: elderSpeech,
@@ -498,40 +569,47 @@ export default {
           correct_answer: answer,
           decorations: decorations,
         };
-        this.currentQuestionId = q.question_id;
-
-        if (!this.triedQuestionIds.includes(q.question_id)) {
-          this.triedQuestionIds.push(q.question_id);
-        }
-
-        this.currentDecorations = this.question.decorations;
-
-        if (this.question.question_type === 'rope_decoration_combo') {
-          this.ropes = Array.isArray(answer.items)
-            ? answer.items.map(item => ({
-                decoration: item.decoration,
-                knots: [],
-              }))
-            : [];
-          if (this.currentDecorations.length > 0) {
-            this.selectedDecoration = this.currentDecorations[0].type;
-          }
+        
+        if (preload) {
+          this.preloadedQuestion = questionData;
+          this.preloadedIcon = '';
         } else {
-          this.knots = [];
-          if (this.currentDecorations.length > 0) {
-            this.selectedDecoration = this.currentDecorations[0].type;
+          this.question = questionData;
+          this.currentQuestionId = q.question_id;
+
+          if (!this.triedQuestionIds.includes(q.question_id)) {
+            this.triedQuestionIds.push(q.question_id);
+          }
+
+          this.currentDecorations = this.question.decorations;
+
+          if (this.question.question_type === 'rope_decoration_combo') {
+            this.ropes = Array.isArray(answer.items)
+              ? answer.items.map(item => ({
+                  decoration: item.decoration,
+                  knots: [],
+                }))
+              : [];
+            if (this.currentDecorations.length > 0) {
+              this.selectedDecoration = this.currentDecorations[0].type;
+            }
+          } else {
+            this.knots = [];
+            if (this.currentDecorations.length > 0) {
+              this.selectedDecoration = this.currentDecorations[0].type;
+            }
+          }
+
+          this.wrapTitleByComma = false;
+          this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
           }
         }
-
-        this.wrapTitleByComma = false;
-        this.playTyping(this.question.title);
-        if (this.showGamePopup) {
-          this.$nextTick(() => {
-            this.updateTitleWrap();
-          });
-        }
-      });
-    },
+    });
+  },
 
     getDecorationName(type) {
       const deco = this.currentDecorations.find(d => d.type === type);
@@ -644,6 +722,9 @@ export default {
 
     // 提交答案：前端先根据绳结数量判断，再调用后端记录
     submitAnswer() {
+      console.log('提交按钮被点击');
+      console.log('音效开关状态:', !uni.getStorageSync('disable_tip_sound'));
+      audioManager.playTipSound('/static/sounds/button_click_sound.MP3');
       const actualTime = Math.round((Date.now() - this.startTime) / 1000);
 
       let userAnswer;
@@ -789,7 +870,7 @@ export default {
             answer = typeof q.correct_answer === 'string' ? JSON.parse(q.correct_answer) : q.correct_answer;
 
             if (content.options && content.options[0]) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               questionTitle = content.options[0];
             }
           } catch (e) {

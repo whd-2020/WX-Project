@@ -2,7 +2,7 @@
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/counting_rods/BeiJing2.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
@@ -10,23 +10,15 @@
     </view>
 
     <view class="scene">
-      <!-- 左侧：族长 -->
-      <view class="elder-area">
+      <!-- 右侧：椅子 -->
+      <view class="child-area" @click="openGamePopup">
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
-        </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
-      </view>
-
-      <!-- 右侧：小孩 -->
-      <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
         </view>
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
+        <image class="child-img" src="/static/img/counting_rods/YiZi.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -196,6 +188,10 @@ export default {
       levelId: 5,
       routeLevelId: 5,
       question: null,
+      questionIcon: '',
+      showWelcomeText: true,
+      preloadedQuestion: null,
+      preloadedIcon: '',
       fullText: '今日族长正在思考要出什么题目给你……',
       displayText: '',
       typingTimer: null,
@@ -221,7 +217,6 @@ export default {
       tensVerticalSticks: [],
       onesHasHorizontalStick: false,
       onesVerticalSticks: [],
-      questionIcon: '',
       wrapTitleByComma: false,
     };
   },
@@ -246,7 +241,10 @@ export default {
       }
     }
     this.resetTimer();
-    this.fetchQuestion();
+    this.fetchQuestion(true);
+    setTimeout(() => {
+      this.playTyping('辛苦小驿卒啦！驿站已统计好往来物资的总数量，根据给出的总数，用算筹分位摆出对应的两位数字，圆满完成全部核算任务吧～');
+    }, 200);
   },
   computed: {
     targetNumberText() {
@@ -309,7 +307,11 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          this.displayChildSpeech();
+          if (this.showWelcomeText) {
+            this.showChildTip = true;
+          } else {
+            this.displayChildSpeech();
+          }
           return;
         }
         this.displayText += this.fullText[index];
@@ -343,7 +345,7 @@ export default {
       }, 1000);
     },
 
-    fetchQuestion() {
+    fetchQuestion(preload = false) {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.routeLevelId || this.levelId);
       const trackId = Number(this.trackId);
@@ -354,9 +356,15 @@ export default {
           targetNumber: 1,
           title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
         };
-        this.question = local;
-        this.wrapTitleByComma = false;
-        this.playTyping(local.title);
+        if (preload) {
+          this.preloadedQuestion = local;
+          this.preloadedIcon = '';
+        } else {
+          this.question = local;
+          this.questionIcon = '';
+          this.wrapTitleByComma = false;
+          this.playTyping(local.title);
+        }
         return;
       }
       const params = {
@@ -398,7 +406,7 @@ export default {
           all_three_stars_snake: json.result?.all_three_stars
         });
 
-        if (allThreeStars) {
+        if (allThreeStars && !preload) {
           console.log('✅ 检测到所有题目都满3星，显示弹窗并准备跳转');
           this.showAllCompleteModal = true;
           console.log('弹窗状态 showAllCompleteModal:', this.showAllCompleteModal);
@@ -425,20 +433,26 @@ export default {
             targetNumber: 1,
             title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
           };
-          this.question = local;
-          this.wrapTitleByComma = false;
-          this.showDefaultQuestionTip = true;
+          if (preload) {
+            this.preloadedQuestion = local;
+            this.preloadedIcon = '';
+          } else {
+            this.question = local;
+            this.questionIcon = '';
+            this.wrapTitleByComma = false;
+            this.showDefaultQuestionTip = true;
 
-          if (this.defaultQuestionTipTimer) {
-            clearTimeout(this.defaultQuestionTipTimer);
+            if (this.defaultQuestionTipTimer) {
+              clearTimeout(this.defaultQuestionTipTimer);
+            }
+
+            this.defaultQuestionTipTimer = setTimeout(() => {
+              this.showDefaultQuestionTip = false;
+              this.defaultQuestionTipTimer = null;
+            }, 2000);
+
+            this.playTyping(local.title);
           }
-
-          this.defaultQuestionTipTimer = setTimeout(() => {
-            this.showDefaultQuestionTip = false;
-            this.defaultQuestionTipTimer = null;
-          }, 2000);
-
-          this.playTyping(local.title);
           return;
         }
 
@@ -458,7 +472,7 @@ export default {
           if (q.question_content) {
             const content = JSON.parse(q.question_content);
             if (content.options && Array.isArray(content.options) && content.options.length > 0) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               questionTitle = content.options[0];
             }
             if (content.targetNumber) {
@@ -497,19 +511,26 @@ export default {
           questionTitle = `点击放置木棍，表示数字${target}`;
         }
 
-        this.questionIcon = iconUrl;
-        this.question = {
+        const questionData = {
           question_id: q.question_id,
           targetNumber: target,
           title: elderSpeech,
           questionTitle: questionTitle,
         };
-        this.wrapTitleByComma = false;
-        this.playTyping(this.question.title);
-        if (this.showGamePopup) {
-          this.$nextTick(() => {
-            this.updateTitleWrap();
-          });
+        
+        if (preload) {
+          this.preloadedQuestion = questionData;
+          this.preloadedIcon = iconUrl;
+        } else {
+          this.question = questionData;
+          this.questionIcon = iconUrl;
+          this.wrapTitleByComma = false;
+          this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
       });
     },
@@ -824,7 +845,6 @@ export default {
       this.tensVerticalSticks = [];
       this.onesHasHorizontalStick = false;
       this.onesVerticalSticks = [];
-      this.questionIcon = '';
       this.resetTimer();
       this.showFullSpeech = false;
       this.showGamePopup = false;
@@ -835,7 +855,19 @@ export default {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
       }
-      this.fetchQuestion();
+      
+      if (this.preloadedQuestion) {
+        this.question = this.preloadedQuestion;
+        this.questionIcon = this.preloadedIcon;
+        this.preloadedQuestion = null;
+        this.preloadedIcon = '';
+        this.wrapTitleByComma = false;
+        this.playTyping(this.question.title);
+        this.fetchQuestion(true);
+      } else {
+        this.questionIcon = '';
+        this.fetchQuestion();
+      }
     },
 
     toggleSpeech() {
@@ -843,6 +875,16 @@ export default {
     },
 
     openGamePopup() {
+      if (this.showWelcomeText && this.preloadedQuestion) {
+        this.question = this.preloadedQuestion;
+        this.questionIcon = this.preloadedIcon;
+        this.preloadedQuestion = null;
+        this.preloadedIcon = '';
+        this.showWelcomeText = false;
+        this.wrapTitleByComma = false;
+        this.playTyping(this.question.title);
+        this.fetchQuestion(true);
+      }
       this.showGamePopup = true;
       this.showChildTip = false;
       if (this.childTipTimer) {
@@ -952,21 +994,21 @@ export default {
 }
 
 .speech-bubble {
-  margin-bottom: 20rpx;
-  margin-left: 10rpx;
-  padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #fff59d 0%, #ffeb3b 50%, #ffc107 100%);
-  border-radius: 28rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
-  font-size: 26rpx;
-  color: #333;
-  max-width: 480rpx;
-  min-width: 300rpx;
-  position: relative;
-  z-index: 3;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+      margin-bottom: 0;
+      margin-left: 10rpx;
+      padding: 24rpx 28rpx;
+      background: linear-gradient(135deg, #f5e6d3 0%, #ecd5b0 50%, #d4b896 100%);
+      border-radius: 28rpx;
+      box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+      font-size: 26rpx;
+      color: #4a3728;
+      max-width: 480rpx;
+      min-width: 300rpx;
+      position: relative;
+      z-index: 3;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
 .speech-bubble:not(.expanded) .speech-text {
   display: -webkit-box;
@@ -983,18 +1025,18 @@ export default {
 }
 
 .speech-bubble::before {
-  content: '';
-  position: absolute;
-  top: 100%;
-  bottom: auto;
-  left: 40rpx;
-  width: 0;
-  height: 0;
-  border-left: 16rpx solid transparent;
-  border-right: 16rpx solid transparent;
-  border-top: 16rpx solid #ffc107;
-  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
-}
+      content: '';
+      position: absolute;
+      top: 100%;
+      bottom: auto;
+      left: 40rpx;
+      width: 0;
+      height: 0;
+      border-left: 16rpx solid transparent;
+      border-right: 16rpx solid transparent;
+      border-top: 16rpx solid #d4b896;
+      filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
+    }
 
 .speech-text {
   line-height: 1.8;
@@ -1002,20 +1044,20 @@ export default {
 }
 
 .child-area {
-  position: fixed;
-  right: 20rpx;
-  bottom: 200rpx;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-end;
-  cursor: pointer;
-}
+      position: fixed;
+      right: 20rpx;
+      bottom: 120rpx;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-end;
+      cursor: pointer;
+    }
 
 .child-img {
-  width: 220rpx;
-  height: 280rpx;
+  width: 350rpx;
+  height: 600rpx;
   z-index: 2;
 }
 

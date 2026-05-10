@@ -2,7 +2,7 @@
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/counting_rods/BeiJing2.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
@@ -10,23 +10,15 @@
     </view>
 
     <view class="scene">
-      <!-- 左侧：族长 -->
-      <view class="elder-area">
+      <!-- 右侧：椅子 -->
+      <view class="child-area" @click="openGamePopup">
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
-        </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
-      </view>
-
-      <!-- 右侧：小孩 -->
-      <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
         </view>
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
+        <image class="child-img" src="/static/img/counting_rods/YiZi.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -189,6 +181,9 @@ export default {
       showChildTip: false,
       childTipTimer: null,
       wrapTitleByComma: false,
+      showWelcomeText: true, // 控制是否显示欢迎文字
+      preloadedQuestion: null, // 预加载的题目数据
+      preloadedIcon: '', // 预加载的图标
     };
   },
   onLoad(options) {
@@ -212,7 +207,12 @@ export default {
       }
     }
     this.resetTimer();
-    this.fetchQuestion();
+    // 先预加载题目
+    this.fetchQuestion(true);
+    // 延迟一下再显示欢迎文字，确保预加载完成
+    setTimeout(() => {
+      this.playTyping('恭喜你成为新任小仓吏！县衙新进了各类粮草物资，根据任务给出的数量，用算筹准确摆出对应的数字吧～');
+    }, 200);
   },
   computed: {
     targetNumberText() {
@@ -264,10 +264,39 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          this.displayChildSpeech();
+          
+          // 判断是否是欢迎文字
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            // 欢迎文字展示完后，等待1秒再显示题目
+            setTimeout(() => {
+              if (this.preloadedQuestion) {
+                // 使用预加载的题目
+                this.question = this.preloadedQuestion;
+                this.questionIcon = this.preloadedIcon;
+                this.wrapTitleByComma = false;
+                this.playTyping(this.question.title);
+                if (this.showGamePopup) {
+                  this.$nextTick(() => {
+                    this.updateTitleWrap();
+                  });
+                }
+              } else {
+                // 如果没有预加载的题目，重新获取
+                this.fetchQuestion();
+              }
+            }, 1000);
+          } else {
+            this.displayChildSpeech();
+          }
           return;
         }
-        this.displayText += this.fullText[index];
+        let char = this.fullText[index];
+        if (char === '，' || char === ',') {
+          this.displayText += char + '\n';
+        } else {
+          this.displayText += char;
+        }
         index++;
       }, 80);
     },
@@ -298,7 +327,7 @@ export default {
       }, 1000);
     },
 
-    fetchQuestion() {
+    fetchQuestion(preload = false) {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.routeLevelId || this.levelId);
       const trackId = Number(this.trackId);
@@ -309,9 +338,14 @@ export default {
           targetNumber: 1,
           title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
         };
-        this.question = local;
-        this.wrapTitleByComma = false;
-        this.playTyping(local.title);
+        if (preload) {
+          this.preloadedQuestion = local;
+          this.preloadedIcon = '';
+        } else {
+          this.question = local;
+          this.wrapTitleByComma = false;
+          this.playTyping(local.title);
+        }
         return;
       }
       const params = {
@@ -380,20 +414,25 @@ export default {
             targetNumber: 1,
             title: '今日族长笑着对你说：用筹算木棍表示数字 1，你会怎么摆放呢？',
           };
-          this.question = local;
-          this.wrapTitleByComma = false;
-          this.showDefaultQuestionTip = true;
+          if (preload) {
+            this.preloadedQuestion = local;
+            this.preloadedIcon = '';
+          } else {
+            this.question = local;
+            this.wrapTitleByComma = false;
+            this.showDefaultQuestionTip = true;
 
-          if (this.defaultQuestionTipTimer) {
-            clearTimeout(this.defaultQuestionTipTimer);
+            if (this.defaultQuestionTipTimer) {
+              clearTimeout(this.defaultQuestionTipTimer);
+            }
+
+            this.defaultQuestionTipTimer = setTimeout(() => {
+              this.showDefaultQuestionTip = false;
+              this.defaultQuestionTipTimer = null;
+            }, 2000);
+
+            this.playTyping(local.title);
           }
-
-          this.defaultQuestionTipTimer = setTimeout(() => {
-            this.showDefaultQuestionTip = false;
-            this.defaultQuestionTipTimer = null;
-          }, 2000);
-
-          this.playTyping(local.title);
           return;
         }
 
@@ -412,7 +451,7 @@ export default {
           if (q.question_content) {
             const content = JSON.parse(q.question_content);
             if (content.options && Array.isArray(content.options) && content.options.length > 0) {
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               questionTitle = content.options[0];
             }
             if (content.targetNumber) {
@@ -459,19 +498,26 @@ export default {
           }
         }
 
-        this.question = {
+        const questionData = {
           question_id: q.question_id,
           targetNumber: target,
           title: elderSpeech,
           questionTitle: questionTitle,
         };
-        this.questionIcon = iconUrl;
-        this.wrapTitleByComma = false;
-        this.playTyping(this.question.title);
-        if (this.showGamePopup) {
-          this.$nextTick(() => {
-            this.updateTitleWrap();
-          });
+        
+        if (preload) {
+          this.preloadedQuestion = questionData;
+          this.preloadedIcon = iconUrl;
+        } else {
+          this.question = questionData;
+          this.questionIcon = iconUrl;
+          this.wrapTitleByComma = false;
+          this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
     });
   },
@@ -877,15 +923,15 @@ export default {
 }
 
 .speech-bubble {
-  margin-bottom: 20rpx;
+  margin-bottom: 0;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #fff59d 0%, #ffeb3b 50%, #ffc107 100%);
+  background: linear-gradient(135deg, #f5e6d3 0%, #ecd5b0 50%, #d4b896 100%);
   border-radius: 28rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
-  color: #333;
-  max-width: 480rpx;
+  color: #4a3728;
+  max-width: 430rpx;
   min-width: 300rpx;
   position: relative;
   z-index: 3;
@@ -917,19 +963,20 @@ export default {
   height: 0;
   border-left: 16rpx solid transparent;
   border-right: 16rpx solid transparent;
-  border-top: 16rpx solid #ffc107;
+  border-top: 16rpx solid #d4b896;
   filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
 }
 
 .speech-text {
   line-height: 1.8;
   font-weight: 500;
+  white-space: pre-wrap;
 }
 
 .child-area {
   position: fixed;
   right: 20rpx;
-  bottom: 200rpx;
+  bottom: 120rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -939,8 +986,8 @@ export default {
 }
 
 .child-img {
-  width: 220rpx;
-  height: 280rpx;
+  width: 350rpx;
+  height: 600rpx;
   z-index: 2;
 }
 

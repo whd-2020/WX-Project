@@ -36,7 +36,7 @@ export default {
   mixins: [mixin],
   data() {
     return {
-      splashImage: '/static/images/games/game_home.png',
+      splashImage: '/static/images/games/JiaZaiYe.png',
       progress: 0,
       progressTimer: null,
       isProgressComplete: false, // 进度是否完成

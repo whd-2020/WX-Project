@@ -146,6 +146,9 @@ export default {
       showChildTip: false,
       childTipTimer: null,
       wrapTitleByComma: false,
+      showWelcomeText: true,
+      preloadedQuestion: null,
+      preloadedIcon: '',
     };
   },
   onLoad(options) {
@@ -170,7 +173,10 @@ export default {
       }
     }
     this.resetTimer();
-    this.fetchQuestion();
+    this.fetchQuestion(true);
+    setTimeout(() => {
+      this.playTyping('今天我们先来认识神奇的绳结，一个小结对应数字1，跟着练习，学会用绳结表示基础数字吧～');
+    }, 200);
   },
   computed: {
     // 获取目标数字文本
@@ -200,7 +206,8 @@ export default {
   methods: {
     // 打字机效果
     playTyping(text) {
-      this.fullText = text;
+      // 将逗号替换为换行符，实现逗号处换行
+      this.fullText = text.replace(/([，,])/g, '$1\n');
       this.displayText = '';
       this.showFullSpeech = false; // 重置展开状态
       // 重置小孩说话和提示
@@ -219,8 +226,31 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          // 打字机效果完成后，显示小孩说话
-          this.displayChildSpeech();
+          
+          // 判断是否是欢迎文字
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            // 欢迎文字展示完后，等待1秒再显示题目
+            setTimeout(() => {
+              if (this.preloadedQuestion) {
+                // 使用预加载的题目
+                this.question = this.preloadedQuestion;
+                this.wrapTitleByComma = false;
+                this.playTyping(this.question.title);
+                if (this.showGamePopup) {
+                  this.$nextTick(() => {
+                    this.updateTitleWrap();
+                  });
+                }
+              } else {
+                // 如果没有预加载的题目，重新获取
+                this.fetchQuestion();
+              }
+            }, 1000);
+          } else {
+            // 打字机效果完成后，显示小孩说话
+            this.displayChildSpeech();
+          }
           return;
         }
         this.displayText += this.fullText[index];
@@ -260,7 +290,7 @@ export default {
     },
 
     // 从后端获取本关的一道随机题（优先本地随机）
-    fetchQuestion() {
+    fetchQuestion(preload = false) {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.routeLevelId || this.levelId); // 使用保存的路由参数中的levelId
       const trackId = Number(this.trackId);
@@ -273,9 +303,14 @@ export default {
           targetNumber: 1,
           title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
         };
-        this.question = local;
-        this.wrapTitleByComma = false;
-        this.playTyping(local.title);
+        if (preload) {
+          this.preloadedQuestion = local;
+          this.preloadedIcon = '';
+        } else {
+          this.question = local;
+          this.wrapTitleByComma = false;
+          this.playTyping(local.title);
+        }
         return;
       }
       const params = {
@@ -352,22 +387,27 @@ export default {
             targetNumber: 1,
             title: '今日族长笑着对你说：用绳结表示数字 1，你会怎么打结呢？',
           };
-          this.question = local;
-          this.wrapTitleByComma = false;
-          this.showDefaultQuestionTip = true; // 显示默认题目提示
-          
-          // 清除之前的定时器（如果存在）
-          if (this.defaultQuestionTipTimer) {
-            clearTimeout(this.defaultQuestionTipTimer);
+          if (preload) {
+            this.preloadedQuestion = local;
+            this.preloadedIcon = '';
+          } else {
+            this.question = local;
+            this.wrapTitleByComma = false;
+            this.showDefaultQuestionTip = true; // 显示默认题目提示
+            
+            // 清除之前的定时器（如果存在）
+            if (this.defaultQuestionTipTimer) {
+              clearTimeout(this.defaultQuestionTipTimer);
+            }
+            
+            // 2秒后隐藏提示
+            this.defaultQuestionTipTimer = setTimeout(() => {
+              this.showDefaultQuestionTip = false;
+              this.defaultQuestionTipTimer = null;
+            }, 2000);
+            
+            this.playTyping(local.title);
           }
-          
-          // 2秒后隐藏提示
-          this.defaultQuestionTipTimer = setTimeout(() => {
-            this.showDefaultQuestionTip = false;
-            this.defaultQuestionTipTimer = null;
-          }, 2000);
-          
-          this.playTyping(local.title);
           return;
         }
         
@@ -390,7 +430,7 @@ export default {
             const content = JSON.parse(q.question_content);
             if (content.options && Array.isArray(content.options) && content.options.length > 0) {
               // 拼接：question_title + options[0]
-              elderSpeech = (q.question_title || '') + "," + content.options[0];
+              elderSpeech = content.options[0];
               // 保存 options[0] 用于弹窗标题
               questionTitle = content.options[0];
             }
@@ -433,18 +473,25 @@ export default {
           questionTitle = `点击绳子打结，表示数字${target}`;
         }
 
-        this.question = {
+        const questionData = {
           question_id: q.question_id,
           targetNumber: target,
           title: elderSpeech,
           questionTitle: questionTitle,
         };
-        this.wrapTitleByComma = false;
-        this.playTyping(this.question.title);
-        if (this.showGamePopup) {
-          this.$nextTick(() => {
-            this.updateTitleWrap();
-          });
+        
+        if (preload) {
+          this.preloadedQuestion = questionData;
+          this.preloadedIcon = '';
+        } else {
+          this.question = questionData;
+          this.wrapTitleByComma = false;
+          this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
       });
     },
