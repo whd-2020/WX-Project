@@ -243,7 +243,7 @@ export default {
     this.resetTimer();
     this.fetchQuestion(true);
     setTimeout(() => {
-      this.playTyping('辛苦小驿卒啦！驿站已统计好往来物资的总数量，根据给出的总数，用算筹分位摆出对应的两位数字，圆满完成全部核算任务吧～');
+      this.playTyping('恭喜你成为算筹大掌柜!市集已统计好往来物资的总数量,根据给出的总数,用算筹分位摆出对应的两位数字,圆满完成全部核算任务吧~');
     }, 200);
   },
   computed: {

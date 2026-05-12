@@ -270,7 +270,7 @@ export default {
     this.resetTimer();
     this.fetchQuestion(true);
     setTimeout(() => {
-      this.playTyping('你已经成长为靠谱的小管家！现在要记录部落全部物资的总数，用大结记十位、小结记个位，认真完成两位数记录任务，顺利完成本赛道所有挑战吧！');
+      this.playTyping('你已经成长为靠谱的部落物资小管家！现在要记录部落全部物资的总数，用绳结+对应标识标记，用大结表示几十、小结表示几个，认真完成两位数记录任务，顺利通关本赛道吧～');
     }, 200);
   },
   computed: {

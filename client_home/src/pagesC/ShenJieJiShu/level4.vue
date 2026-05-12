@@ -206,7 +206,7 @@ export default {
     this.resetTimer();
     this.fetchQuestion(true);
     setTimeout(() => {
-      this.playTyping('现在你要学习更实用的两位数计数方法，长按打出代表10的大绳结，分清十位和个位，按数字摆出对应的绳结吧！');
+      this.playTyping('挑战升级啦！遇到大数字不用慌，别忘了我们的秘诀：长按打出大结代表十，点击打出小结代表一，分清位置、认真打结，可不要弄混啦～');
     }, 200);
   },
   computed: {

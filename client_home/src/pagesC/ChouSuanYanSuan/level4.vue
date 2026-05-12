@@ -240,7 +240,7 @@ export default {
     this.resetTimer();
     this.fetchQuestion(true);
     setTimeout(() => {
-      this.playTyping('现在你要学习两位数的筹算技巧，记得区分十位和个位的摆放位置，规范摆放算筹，完成两位数字的表示练习吧～');
+      this.playTyping('现在你要学习两位数的筹算技巧,记得区分十位和个位的摆放位置,规范摆放算筹,完成两位数字表示练习吧~');
     }, 200);
   },
   computed: {

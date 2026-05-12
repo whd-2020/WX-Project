@@ -211,7 +211,7 @@ export default {
     this.fetchQuestion(true);
     // 延迟一下再显示欢迎文字，确保预加载完成
     setTimeout(() => {
-      this.playTyping('恭喜你成为新任小仓吏！县衙新进了各类粮草物资，根据任务给出的数量，用算筹准确摆出对应的数字吧～');
+      this.playTyping('恭喜你成为市井记账童!市集里的各个商铺都新进了各类货物,根据任务给出的数字,用算筹准确摆出对应的数量吧~');
     }, 200);
   },
   computed: {

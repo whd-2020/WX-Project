@@ -51,7 +51,7 @@
           </view>
         </view>
         <view class="card-content">
-          <text class="intro-text">欢迎来到汉代算术世界！古人发明了算筹，用整齐规范的摆放方式记录钱粮与物资总数。今天你将化身汉代小吏，学习传统筹算规则，根据任务给出的数字，用算筹摆出对应数值，感受古人严谨的计数智慧。</text>
+          <text class="intro-text">欢迎来到汉代算术世界！古人用小木棍，也就是算筹来算账。它们会变魔术：站着的小木棍代表1，躺下的小木棍代表5。走进汉代市集，看看这些小木棍是怎么组合出各种数字的吧！</text>
         </view>
         <view class="card-wood-bottom"></view>
       </view>

@@ -239,7 +239,7 @@ export default {
     this.fetchQuestion(true);
     // 延迟一下再显示欢迎文字，确保预加载完成
     setTimeout(() => {
-      this.playTyping('恭喜你成为部落小采手！我们今天收获了各类食物与物资，根据任务给出的数量，用绳结准确记录下来吧～');
+      this.playTyping('恭喜你成为部落小记录员！我们今天收获了各类食物与物资，根据任务给出的数量，用绳结+对应标识标记，把物资数量准确记录下来吧～');
     }, 200);
   },
   computed: {
