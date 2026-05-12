@@ -14,7 +14,7 @@
 
         <view class="sound-list">
           <view class="sound-item">
-            <text class="sound-item-text">关闭提示音</text>
+            <text class="sound-item-text">关闭音效</text>
             <switch :checked="disableTipSound" color="#2f80ff" @change="onToggleTipSound" />
           </view>
           <view class="sound-item">

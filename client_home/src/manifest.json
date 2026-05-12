@@ -73,7 +73,7 @@
   },
   "quickapp": {},
   "mp-weixin": {
-    "appid": "wx38a73a73346150dd",
+    "appid": "wx61f054fd283870b9",
     "cloudfunctionRoot": "/static/cloudfunctions-tcb/",
     "setting": {
       "urlCheck": false,
