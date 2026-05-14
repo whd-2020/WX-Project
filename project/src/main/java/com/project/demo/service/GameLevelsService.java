@@ -78,10 +78,10 @@ public class GameLevelsService extends BaseService<GameLevels> {
         starWrapper.eq("track_id", trackId);
         List<LevelStarRecord> starRecords = levelStarRecordMapper.selectList(starWrapper);
 
-        // 构建星星记录Map，key为level_id（关卡顺序）
+        // 构建星星记录Map，key为level_id（关卡顺序1-6）
         Map<Integer, LevelStarRecord> starMap = new HashMap<>();
         for (LevelStarRecord record : starRecords) {
-            Integer levelId = record.getLevel_id(); // 关卡顺序
+            Integer levelId = record.getLevel_id(); // 关卡顺序（1-6）
             if (levelId != null) {
                 starMap.put(levelId, record);
             }

@@ -1,28 +1,23 @@
 <template>
   <view class="digit-level-page">
 
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill"></image>
+    <image class="background-image" src="/static/img/comprehensive/BeiJing4.png" mode="aspectFill"></image>
 
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
 
-    <view class="scene">
+    <view class="scene" @click="openGamePopup">
       <view class="elder-area">
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit"></image>
       </view>
 
-      <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
-        </view>
+      <view class="child-area">
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit"></image>
       </view>
     </view>
 
@@ -268,6 +263,7 @@ export default {
       numbers: [],
       isAddMode: true,
       wrapTitleByComma: false,
+      showWelcomeText: true,
     };
   },
   computed: {
@@ -344,7 +340,9 @@ export default {
       }
     }
     this.resetTimer();
-    this.fetchQuestion();
+    setTimeout(() => {
+      this.playTyping('恭喜你成为能干的美食小店店长啦！今天要整理店铺货品、清点库存数量，同时帮顾客准备好对应商品。运用你学到的本领，顺利完成今日任务吧！')
+    }, 1000);
   },
   onShow() {
     if (this.question) {
@@ -408,10 +406,23 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          this.displayChildSpeech();
+          
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            setTimeout(() => {
+              this.fetchQuestion();
+            }, 1000);
+          } else {
+            this.displayChildSpeech();
+          }
           return;
         }
-        this.displayText += this.fullText[index];
+        let char = this.fullText[index];
+        if (char === '，' || char === ',') {
+          this.displayText += char + '\n';
+        } else {
+          this.displayText += char;
+        }
         index++;
       }, 80);
     },
@@ -478,6 +489,7 @@ export default {
       this.resetTimer();
       this.showFullSpeech = false;
       this.showGamePopup = false;
+      this.showWelcomeText = false;
       this.showChildSpeech = false;
       this.showChildTip = false;
       this.childSpeechText = '';
@@ -647,12 +659,19 @@ export default {
     generateRandomNumbers() {
       const correctAnswer = this.currentQuestion.correct_answer || {};
       const answer = correctAnswer.answer || '0';
-      const correctNum = parseInt(answer);
+      let correctNum = parseInt(answer);
+      
+      if (!Number.isFinite(correctNum) || correctNum < 0) {
+        correctNum = typeof this.displayIconCount === 'number' 
+          ? this.displayIconCount 
+          : 1;
+      }
+      
       const numbersSet = new Set();
       numbersSet.add(correctNum);
       
       while (numbersSet.size < 9) {
-        const randomNum = Math.floor(Math.random() * 50) + 1;
+        const randomNum = Math.floor(Math.random() * 101);
         numbersSet.add(randomNum);
       }
       
@@ -1125,7 +1144,7 @@ export default {
 .elder-area {
   position: fixed;
   left: 20rpx;
-  bottom: 200rpx;
+  top: 100rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -1191,7 +1210,7 @@ export default {
 .child-area {
   position: fixed;
   right: 20rpx;
-  bottom: 200rpx;
+  top: 200rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;

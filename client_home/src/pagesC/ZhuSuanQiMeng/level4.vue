@@ -1,24 +1,19 @@
 <template>
   <view class="abacus-level-page">
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/abacus/BeiJing3.png" mode="aspectFill" />
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
     <view class="scene">
       <view class="elder-area">
-        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
+        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="openGamePopup">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
       </view>
       <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
-        </view>
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
       </view>
     </view>
     <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
@@ -129,6 +124,8 @@ export default {
       showChildTip: false,
       childTipTimer: null,
       wrapTitleByComma: false,
+      showWelcomeText: true,
+      preloadedQuestion: null,
       hasInteracted: false,
       hintText: '',
       hintTimer: null,
@@ -159,7 +156,8 @@ export default {
       if (!Number.isNaN(tid) && tid > 0) this.trackId = tid;
     }
     this.resetTimer();
-    this.fetchQuestion();
+    this.fetchQuestion(true);
+    this.playTyping('现在你要学习两位数拨珠技巧，先拨个位再拨十位，分清档位不要弄错，根据给出的数字完成两位数字表示练习吧～');
   },
   computed: {
     targetNumberText() {
@@ -206,10 +204,34 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          this.displayChildSpeech();
+          
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            setTimeout(() => {
+              if (this.preloadedQuestion) {
+                this.question = this.preloadedQuestion;
+                this.wrapTitleByComma = false;
+                this.playTyping(this.question.title);
+                if (this.showGamePopup) {
+                  this.$nextTick(() => {
+                    this.updateTitleWrap();
+                  });
+                }
+              } else {
+                this.fetchQuestion();
+              }
+            }, 1000);
+          } else {
+            this.displayChildSpeech();
+          }
           return;
         }
-        this.displayText += this.fullText[index];
+        let char = this.fullText[index];
+        if (char === '，' || char === ',') {
+          this.displayText += char + '\n';
+        } else {
+          this.displayText += char;
+        }
         index++;
       }, 80);
     },
@@ -228,7 +250,7 @@ export default {
       if (this.elapsedTimer) { clearInterval(this.elapsedTimer); }
       this.elapsedTimer = setInterval(() => { this.elapsedSeconds += 1; }, 1000);
     },
-    fetchQuestion() {
+    fetchQuestion(preload = false) {
       const gamerId = Number(this.gamerId);
       const levelId = Number(this.routeLevelId || this.levelId);
       const trackId = Number(this.trackId);
@@ -239,9 +261,13 @@ export default {
           targetNumber: 1,
           title: '今日族长笑着对你说：用算盘表示数字 1，你会怎么拨珠呢？',
         };
-        this.question = local;
-        this.wrapTitleByComma = false;
-        this.playTyping(local.title);
+        if (preload) {
+          this.preloadedQuestion = local;
+        } else {
+          this.question = local;
+          this.wrapTitleByComma = false;
+          this.playTyping(local.title);
+        }
         return;
       }
       const params = { gamerId, levelId, trackId };
@@ -256,7 +282,7 @@ export default {
           setTimeout(() => {
             this.showAllCompleteModal = false;
             uni.redirectTo({ url: '/pages/track/abacus' });
-          }, 3000);
+          }, 200);
           return;
         }
         if (!json.result || !json.result.questions || json.result.questions.length === 0) {
@@ -265,16 +291,22 @@ export default {
             targetNumber: 1,
             title: '今日族长笑着对你说：用算盘表示数字 1，你会怎么拨珠呢？',
           };
-          this.question = local;
-          this.wrapTitleByComma = false;
-          this.showDefaultQuestionTip = true;
-          if (this.defaultQuestionTipTimer) clearTimeout(this.defaultQuestionTipTimer);
-          this.defaultQuestionTipTimer = setTimeout(() => { this.showDefaultQuestionTip = false; }, 2000);
-          this.playTyping(local.title);
+          if (preload) {
+            this.preloadedQuestion = local;
+          } else {
+            this.question = local;
+            this.wrapTitleByComma = false;
+            this.showDefaultQuestionTip = true;
+            if (this.defaultQuestionTipTimer) clearTimeout(this.defaultQuestionTipTimer);
+            this.defaultQuestionTipTimer = setTimeout(() => { this.showDefaultQuestionTip = false; }, 2000);
+            this.playTyping(local.title);
+          }
           return;
         }
-        this.showDefaultQuestionTip = false;
-        if (this.defaultQuestionTipTimer) clearTimeout(this.defaultQuestionTipTimer);
+        if (!preload) {
+          this.showDefaultQuestionTip = false;
+          if (this.defaultQuestionTipTimer) clearTimeout(this.defaultQuestionTipTimer);
+        }
         const list = json.result.questions;
         const q = list[Math.floor(Math.random() * list.length)];
         let target = 1;
@@ -313,18 +345,24 @@ export default {
           questionTitle = questionTitle.replace(/表示数字\d+/, `表示数字${target}`);
         }
 
-        this.question = {
+        const questionData = {
           question_id: q.question_id,
           targetNumber: target,
           title: elderSpeech.replace(/数字 \d+/, `数字 ${target}`),
           questionTitle: questionTitle,
         };
-        this.wrapTitleByComma = false;
-        this.playTyping(this.question.title);
-        if (this.showGamePopup) {
-          this.$nextTick(() => {
-            this.updateTitleWrap();
-          });
+        
+        if (preload) {
+          this.preloadedQuestion = questionData;
+        } else {
+          this.question = questionData;
+          this.wrapTitleByComma = false;
+          this.playTyping(this.question.title);
+          if (this.showGamePopup) {
+            this.$nextTick(() => {
+              this.updateTitleWrap();
+            });
+          }
         }
       });
     },
@@ -739,7 +777,7 @@ export default {
 .elder-area {
   position: fixed;
   left: 20rpx;
-  bottom: 200rpx;
+  bottom: 150rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -756,11 +794,11 @@ export default {
   margin-bottom: 20rpx;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #fff59d 0%, #ffeb3b 50%, #ffc107 100%);
+  background: linear-gradient(135deg, #fdf5e6 0%, #faebd7 50%, #f5deb3 100%);
   border-radius: 28rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
-  color: #333;
+  color: #5d4037;
   max-width: 480rpx;
   min-width: 300rpx;
   position: relative;
@@ -792,13 +830,14 @@ export default {
   height: 0;
   border-left: 16rpx solid transparent;
   border-right: 16rpx solid transparent;
-  border-top: 16rpx solid #ffc107;
+  border-top: 16rpx solid #f5deb3;
   filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
 }
 
 .speech-text {
   line-height: 1.8;
   font-weight: 500;
+  white-space: pre-wrap;
 }
 
 .child-area {

@@ -605,12 +605,19 @@ export default {
     generateRandomNumbers() {
       const correctAnswer = this.currentQuestion.correct_answer || {};
       const answer = correctAnswer.answer || '0';
-      const correctNum = parseInt(answer);
+      let correctNum = parseInt(answer);
+      
+      if (!Number.isFinite(correctNum) || correctNum < 0) {
+        correctNum = typeof this.displayIconCount === 'number' 
+          ? this.displayIconCount 
+          : 1;
+      }
+      
       const numbersSet = new Set();
       numbersSet.add(correctNum);
       
       while (numbersSet.size < 9) {
-        const randomNum = Math.floor(Math.random() * 50) + 1;
+        const randomNum = Math.floor(Math.random() * 101);
         numbersSet.add(randomNum);
       }
       

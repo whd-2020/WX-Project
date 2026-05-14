@@ -2,31 +2,24 @@
   <view class="rope-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/comprehensive/BeiJing4.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
 
-    <view class="scene">
-      <!-- 左侧：族长 -->
+    <view class="scene" @click="openGamePopup">
       <view class="elder-area">
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
       </view>
 
-      <!-- 右侧：小孩 -->
-      <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
-        </view>
+      <view class="child-area" >
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -214,6 +207,7 @@ export default {
       numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
       isAddMode: true,
       wrapTitleByComma: false,
+      showWelcomeText: true,
     }
   },
   onLoad(options) {
@@ -250,7 +244,9 @@ export default {
     }
     this.resetTimer();
     this.initAvailableNumbers();
-    this.fetchQuestion();
+    setTimeout(() => {
+      this.playTyping('小朋友好呀，我们来认识日常用到的数字宝宝，一个数字对应一份数量，跟着练习，牢牢记住每一个基础数字吧～')
+    }, 1000);
   },
   onShow() {
     // 确保每次显示页面时都初始化数据
@@ -339,11 +335,25 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          // 打字机效果完成后，显示小孩说话
-          this.displayChildSpeech();
+          
+          // 判断是否是欢迎文字
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            // 欢迎文字展示完后，等待1秒再显示题目
+            setTimeout(() => {
+              this.fetchQuestion();
+            }, 1000);
+          } else {
+            this.displayChildSpeech();
+          }
           return;
         }
-        this.displayText += this.fullText[index];
+        let char = this.fullText[index];
+        if (char === '，' || char === ',') {
+          this.displayText += char + '\n';
+        } else {
+          this.displayText += char;
+        }
         index++;
       }, 80);
     },
@@ -431,6 +441,7 @@ export default {
       this.resetTimer();
       this.showFullSpeech = false; // 重置展开状态
       this.showGamePopup = false; // 关闭游戏弹窗
+      this.showWelcomeText = false; // 关闭欢迎文字
       // 重置小孩说话和提示
       this.showChildSpeech = false;
       this.showChildTip = false;
@@ -1334,7 +1345,7 @@ export default {
 .elder-area {
   position: fixed;
   left: 20rpx;
-  bottom: 200rpx;
+  top: 100rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -1351,11 +1362,11 @@ export default {
   margin-bottom: 20rpx;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #fff59d 0%, #ffeb3b 50%, #ffc107 100%);
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
   border-radius: 28rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
-  color: #333;
+  color: #2e7d32;
   max-width: 480rpx;
   min-width: 300rpx;
   position: relative;
@@ -1388,7 +1399,7 @@ export default {
   height: 0;
   border-left: 16rpx solid transparent;
   border-right: 16rpx solid transparent;
-  border-top: 16rpx solid #ffc107;
+  border-top: 16rpx solid #a5d6a7;
   filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
 }
 
@@ -1400,7 +1411,7 @@ export default {
 .child-area {
   position: fixed;
   right: 20rpx;
-  bottom: 200rpx;
+  top: 200rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;

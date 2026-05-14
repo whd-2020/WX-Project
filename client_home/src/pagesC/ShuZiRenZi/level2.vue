@@ -2,31 +2,24 @@
   <view class="rope-level-page">
 
     <!-- 背景图片 -->
-    <image class="background-image" src="/static/img/rope/BeiJing1.png" mode="aspectFill" />
+    <image class="background-image" src="/static/img/comprehensive/BeiJing4.png" mode="aspectFill" />
 
     <!-- 默认题目提示 -->
     <view class="default-question-tip" v-if="showDefaultQuestionTip">
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
 
-    <view class="scene">
-      <!-- 左侧：族长 -->
+    <view class="scene" @click="openGamePopup">
       <view class="elder-area">
         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
-        <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
       </view>
 
-      <!-- 右侧：小孩 -->
-      <view class="child-area" @click="openGamePopup">
-        <view class="child-speech-bubble" v-if="showChildSpeech">
-          <text class="child-speech-text">{{ childSpeechText }}</text>
-        </view>
+      <view class="child-area" >
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
-        <image class="child-img" src="/static/img/rope/child.png" mode="aspectFit" />
       </view>
     </view>
 
@@ -214,6 +207,7 @@ export default {
       numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
       isAddMode: true,
       wrapTitleByComma: false,
+      showWelcomeText: true,
     }
   },
   onLoad(options) {
@@ -242,7 +236,9 @@ export default {
     }
     this.resetTimer();
     this.initAvailableNumbers();
-    this.fetchQuestion();
+    setTimeout(() => {
+      this.playTyping('太棒啦，现在我们来练习1到9的数字，根据给出的数量，找到并匹配正确的数字，牢牢记住每一个数字宝宝吧～')
+    }, 1000);
   },
   onShow() {
     if (!this.numbers || this.numbers.length === 0) {
@@ -323,10 +319,23 @@ export default {
         if (index >= this.fullText.length) {
           clearInterval(this.typingTimer);
           this.typingTimer = null;
-          this.displayChildSpeech();
+          
+          if (this.showWelcomeText) {
+            this.showWelcomeText = false;
+            setTimeout(() => {
+              this.fetchQuestion();
+            }, 1000);
+          } else {
+            this.displayChildSpeech();
+          }
           return;
         }
-        this.displayText += this.fullText[index];
+        let char = this.fullText[index];
+        if (char === '，' || char === ',') {
+          this.displayText += char + '\n';
+        } else {
+          this.displayText += char;
+        }
         index++;
       }, 80);
     },
@@ -401,6 +410,7 @@ export default {
       this.resetTimer();
       this.showFullSpeech = false;
       this.showGamePopup = false;
+      this.showWelcomeText = false;
       this.showChildSpeech = false;
       this.showChildTip = false;
       this.childSpeechText = '';
@@ -916,7 +926,7 @@ export default {
 .elder-area {
   position: fixed;
   left: 20rpx;
-  bottom: 200rpx;
+  top: 100rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -982,7 +992,7 @@ export default {
 .child-area {
   position: fixed;
   right: 20rpx;
-  bottom: 200rpx;
+  top: 200rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
