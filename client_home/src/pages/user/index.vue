@@ -56,6 +56,24 @@
       <view class="me-logout-btn" @click="sign_out">退出登录</view>
     </view>
 
+    <!-- 关于我们弹窗 -->
+    <view v-if="showAboutModal" class="about-modal-overlay" @click="showAboutModal = false">
+      <view class="about-modal" @click.stop>
+        <view class="about-modal-close" @click="showAboutModal = false">×</view>
+        <view class="about-modal-content">
+          <view class="about-title">关于我们</view>
+          <view class="about-body">
+            <text class="about-text"> 本游戏是一款融合数学启蒙与历史文化的教育类小游戏。</text>
+            <text class="about-text">我们带领孩子穿越远古、汉代、明代直至现代，还原结绳、算筹、算盘等传统计数工具，让小朋友在趣味动手操作中理解数字本源，见证并传承中华计算文明的智慧与演变。</text>
+          </view>
+          <view class="about-footer">
+            <text class="footer-text">版本号：V1.0</text>
+            <text class="footer-text">版权所有 © 2026 保留所有权利</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 简单的底部导航栏 -->
     <view class="custom-tabbar">
       <view
@@ -84,6 +102,7 @@
     data() {
       return {
         tabbarIndex: 0,
+        showAboutModal: false,
         quickList: [
           {
             key: 'track_rope',
@@ -122,7 +141,7 @@
           { key: 'my_info', title: '我的信息', icon: 'tn-icon-identity', action: 'nav', url: '/pages/user/info', needLogin: true },
           { key: 'system_sound', title: '系统音效', icon: 'tn-icon-lock', action: 'nav', url: '/pages/user/sound' },
           { key: 'feedback', title: '意见反馈', icon: 'tn-icon-comment-fill', action: 'toast' },
-          { key: 'about', title: '关于我们', icon: 'tn-icon-help', action: 'toast' },
+          { key: 'about', title: '关于我们', icon: 'tn-icon-help', action: 'about' },
         ],
       };
     },
@@ -170,8 +189,13 @@
         }
       },
       handleEntry(item) {
+        console.log('handleEntry item:', item);
         if (item && item.needLogin && !this.token) {
           this.toLogin();
+          return;
+        }
+        if (item.key === 'about') {
+          this.showAboutModal = true;
           return;
         }
         if (item && item.action === 'nav' && item.url) {
@@ -374,5 +398,100 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .about-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .about-modal {
+    width: 88%;
+    max-height: 80vh;
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 24rpx;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.15);
+  }
+
+  .about-modal-close {
+    position: absolute;
+    top: 20rpx;
+    right: 20rpx;
+    width: 60rpx;
+    height: 60rpx;
+    line-height: 56rpx;
+    text-align: center;
+    font-size: 48rpx;
+    color: #999;
+    z-index: 10;
+  }
+
+  .about-modal-content {
+    padding: 50rpx 40rpx 70rpx;
+  }
+
+  .about-title {
+    text-align: center;
+    font-size: 40rpx;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 40rpx;
+    position: relative;
+    padding-bottom: 20rpx;
+  }
+
+  .about-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80rpx;
+    height: 4rpx;
+    background: linear-gradient(90deg, #2f80ff, #6a9eff);
+    border-radius: 2rpx;
+  }
+
+  .about-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .about-text {
+    font-size: 30rpx;
+    color: #5a6c7d;
+    line-height: 1.8;
+    margin-bottom: 24rpx;
+    text-align: justify;
+    text-indent: 60rpx;
+    letter-spacing: 1rpx;
+  }
+
+  .about-footer {
+    margin-top: 30rpx;
+    padding-top: 30rpx;
+    border-top: 1rpx solid #e8eaed;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(47, 128, 255, 0.03);
+    border-radius: 0 0 24rpx 24rpx;
+  }
+
+  .footer-text {
+    font-size: 26rpx;
+    color: #8a9cad;
+    text-align: center;
+    margin-bottom: 10rpx;
   }
 </style>

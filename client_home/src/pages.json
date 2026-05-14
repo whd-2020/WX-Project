@@ -25,17 +25,7 @@
         "noAuth": true
       }
     },
-    {
-      "name": "搜索",
-      "path": "pages/search/index",
-      "style": {
-        "navigationBarTitleText": "搜索",
-        "enablePullDownRefresh": false
-      },
-      "meta": {
-        "noAuth": true
-      }
-    },
+    
     {
       "path": "pages/webview/webview",
       "style": {
@@ -73,18 +63,7 @@
         "navigationBarTitleText": "我的评论"
       }
     },
-    {
-      "path": "pages/notice/list",
-      "style": {
-        "navigationBarTitleText": "游戏公告列表"
-      }
-    },
-    {
-      "path": "pages/notice/details",
-      "style": {
-        "navigationBarTitleText": "游戏公告"
-      }
-    },
+    
     {
       "path": "pages/user/index",
       "style": {

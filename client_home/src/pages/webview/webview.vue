@@ -1,15 +1,15 @@
 <template>
   <view class="page_webview" :style="{ paddingTop: vuex_custom_bar_height + 'px' }">
-    <!-- 返回箭头 -->
     <view class="back-arrow" @click="goBack"></view>
     <!-- #ifndef MP -->
-    <tn-nav-bar>{{ title ? title : '智能客服聊天'}}</tn-nav-bar>
+    <tn-nav-bar>{{ pageTitle }}</tn-nav-bar>
     <view class="webview-container">
-      <web-view :src="url"></web-view>
+      <web-view id="inneriframe" :src="webUrl"> </web-view>
     </view>
     <!-- #endif -->
+
     <!-- #ifdef MP -->
-    <web-view :src="url"></web-view>
+    <web-view id="inneriframe" :src="webUrl"></web-view>
     <!-- #endif -->
   </view>
 </template>
@@ -20,23 +20,24 @@ export default {
   mixins: [mixin],
   data() {
     return {
-      url: '',
-	  title: ''
+      webUrl: '',
+      pageTitle: '网页'
     };
   },
-  onLoad(item) {
-    if (item.download) {
-      this.url = decodeURIComponent(item.url) + '#' + item.download;
-    } else {
-      this.url = decodeURIComponent(item.url);
+  onLoad(options) {
+    if (options.url) {
+      this.webUrl = decodeURIComponent(options.url);
     }
-	if(item.title){
-		this.title = item.title
-	}
+    if (options.title) {
+      this.pageTitle = decodeURIComponent(options.title);
+      uni.setNavigationBarTitle({
+        title: this.pageTitle
+      });
+    }
   },
 };
 </script>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 @import 'styles/pages/index.scss';
 </style>

@@ -20,8 +20,8 @@ public class WebAppConfig implements WebMvcConfigurer {
         InterceptorRegistration registration = registry.addInterceptor(loginInterceptor());
         //拦截的地址
         registration.addPathPatterns("/**");
-        //方行的地址
-//        registration.excludePathPatterns("/**");
+        //放行的地址
+        registration.excludePathPatterns("/upload/**");
         //根据需要拦截，一般设置所有地址拦截，放行公共连接
     }
 

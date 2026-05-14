@@ -292,7 +292,7 @@
             display: inline-block;
             width: 1rem;
             height: 1rem;
-            background: url('@/static/img/praise.png') no-repeat;
+            background: url('@/static/img/icon/like.png') no-repeat;
             background-size: 100% 100%;
           }
         }
@@ -1521,13 +1521,13 @@
         background-size: 100% 100%;
       }
       .cycle {
-        background-image: url('@/static/cycle.png');
+        background-color: #f0f0f0;
       }
       .singleCycle {
-        background-image: url('@/static/singleCycle.png');
+        background-color: #f0f0f0;
       }
       .random {
-        background-image: url('@/static/random.png');
+        background-color: #f0f0f0;
       }
     }
     .play_control {
@@ -1549,16 +1549,16 @@
         margin: 0 0.5rem;
       }
       .prev {
-        background-image: url('@/static/play-previous.png');
+        background-color: #f0f0f0;
       }
       .play {
-        background-image: url('@/static/play.png');
+        background-color: #f0f0f0;
       }
       .pause {
-        background-image: url('@/static/pause.png');
+        background-color: #f0f0f0;
       }
       .next {
-        background-image: url('@/static/play-next.png');
+        background-color: #f0f0f0;
       }
     }
   }

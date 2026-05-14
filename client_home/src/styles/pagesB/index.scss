@@ -271,7 +271,7 @@
         height: 100%;
         padding: 0;
         background-color: #b4f3e2;
-        background: url('/static/img/weixin.png') no-repeat;
+        background: #b4f3e2;
         background-size: 100% 100%;
       }
     }
@@ -550,14 +550,14 @@
     border: none !important;
   }
   .img-box .will {
-    background: url(../../static/img/weibo-n.png) no-repeat;
+    background: #f0f0f0;
   }
 
   .img-box .handoff {
-    background: url(../../static/img/switch.png) no-repeat;
+    background: #f0f0f0;
   }
   .img-box .arrive {
-    background: url(../../static/img/pier.jpg) no-repeat;
+    background: #f0f0f0;
   }
 
   .text-bl {
@@ -697,14 +697,14 @@
     border: none !important;
   }
   .img-box .will {
-    background: url(../../static/img/weixin-n.png) no-repeat;
+    background: #f0f0f0;
   }
 
   .img-box .handoff {
-    background: url(../../static/img/switch.png) no-repeat;
+    background: #f0f0f0;
   }
   .img-box .arrive {
-    background: url(../../static/img/pier.jpg) no-repeat;
+    background: #f0f0f0;
   }
 
   .text-bl {
@@ -843,14 +843,14 @@
     border: none !important;
   }
   .img-box .will {
-    background: url(../../static/img/qq-n.png) no-repeat;
+    background: #f0f0f0;
   }
 
   .img-box .handoff {
-    background: url(../../static/img/switch.png) no-repeat;
+    background: #f0f0f0;
   }
   .img-box .arrive {
-    background: url(../../static/img/pier.jpg) no-repeat;
+    background: #f0f0f0;
   }
 
   .text-bl {
@@ -1359,7 +1359,7 @@
     position: absolute;
     width: 35px;
     height: 35px;
-    background-image: url('../../static/you.jpg');
+    background-color: #f0f0f0;
     background-size: 100% cover;
   }
 
@@ -1404,7 +1404,7 @@
       position: absolute;
       width: 35px;
       height: 35px;
-      background-image: url(../../static/robot.png);
+
     }
 
     .centers-ft:before {
