@@ -186,11 +186,15 @@
 
   .tab-pane {
     height: 100%;
-    padding: 0 30rpx;
-    padding-bottom: calc(var(--window-bottom) + 50px);
+    padding: 0;
+    padding-top: calc(var(--status-bar-height) + 100rpx);
+    padding-bottom: 200rpx;
     box-sizing: border-box;
     position: relative;
     z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
 
     .search-wrapper {
       padding: 20rpx 0;
@@ -295,6 +299,8 @@
     left: 0;
     right: 0;
     height: 120rpx;
+    min-height: 120rpx;
+    max-height: 120rpx;
     background: #ffffff;
     display: flex;
     flex-direction: row;
@@ -302,7 +308,8 @@
     justify-content: space-around;
     box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
     z-index: 10000;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: 0;
+    box-sizing: border-box;
 
     .tabbar-item {
       flex: 1;
@@ -310,17 +317,21 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100%;
+      height: 120rpx;
+      min-height: 120rpx;
+      max-height: 120rpx;
 
        .tabbar-icon {
         width: 40rpx;
         height: 40rpx;
         margin-bottom: 10rpx;
+        flex-shrink: 0;
       }
 
       .tabbar-text {
         font-size: 28rpx;
         color: #999999;
+        flex-shrink: 0;
       }
 
       &.active .tabbar-text {
@@ -623,10 +634,9 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 20rpx;
     padding: 30rpx;
-    margin-top: 550rpx;
-    margin-bottom: 20rpx;
     position: relative;
-    z-index: 100;
+    z-index: 10;
+    margin-top: auto;
   }
 
   .game-slogan {
@@ -634,8 +644,7 @@
     font-size: 32rpx;
     font-weight: 600;
     color: #5c4a32;
-    margin-block: -10px;
-    // margin-bottom: 20rpx;
+    padding: 5rpx 0 10rpx;
     position: relative;
     z-index: 10;
   }
@@ -1181,6 +1190,8 @@
     left: 0;
     right: 0;
     height: 120rpx;
+    min-height: 120rpx;
+    max-height: 120rpx;
     background: #ffffff;
     display: flex;
     flex-direction: row;
@@ -1188,7 +1199,8 @@
     justify-content: space-around;
     box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
     z-index: 10000;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: 0;
+    box-sizing: border-box;
 
     .tabbar-item {
       flex: 1;
@@ -1196,17 +1208,21 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100%;
+      height: 120rpx;
+      min-height: 120rpx;
+      max-height: 120rpx;
 
        .tabbar-icon {
         width: 40rpx;
         height: 40rpx;
         margin-bottom: 10rpx;
+        flex-shrink: 0;
       }
 
       .tabbar-text {
         font-size: 28rpx;
         color: #999999;
+        flex-shrink: 0;
       }
 
       &.active .tabbar-text {

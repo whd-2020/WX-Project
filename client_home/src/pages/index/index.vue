@@ -19,7 +19,7 @@
       <!-- 背景图片 -->
       <image class="bg-image" src="/static/img/index/ShouYe.png"></image>
       <!-- 游戏特色卡片(开始) -->
-      <view class="game-features" style="position: relative; z-index: 10;">
+      <view class="game-features">
         <view class="feature-card" @click="$navTo('/pages/track/rope')">
           <view class="feature-image-wrapper">
             <image class="feature-image" src="/static/img/index/ShengJieJiShu.png"></image>
