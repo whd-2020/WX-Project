@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="rope-level-page">
 
     <!-- 背景图片 -->
@@ -9,9 +9,9 @@
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
 
-    <view class="scene" @click="openGamePopup">
+    <view class="scene" @click="handleOpenGamePopup">
       <view class="elder-area">
-        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
+        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="handleToggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
       </view>
@@ -24,7 +24,7 @@
     </view>
 
     <!-- 游戏弹窗 -->
-    <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
+    <view class="popup-mask" v-if="showGamePopup" @click="handleCloseGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <!-- 顶部题目区 -->
       <view class="rope-area">
@@ -52,7 +52,7 @@
                 v-for="(item, index) in droppedItems"
                 :key="index"
                 class="dropped-item"
-                @click="removeDroppedItem(index)"
+                @click="handleRemoveDroppedItem(index)"
               >
                 {{ item }}
               </text>
@@ -71,10 +71,10 @@
 
         <!-- 添加/移除切换按钮和清空按钮 -->
         <view v-if="currentQuestion.question_type === 'drag_item'" class="toggle-btn-container">
-          <view class="toggle-btn" :class="{ 'toggle-btn-large': needToggleMode }" @click="toggleMode">
+          <view class="toggle-btn" :class="{ 'toggle-btn-large': needToggleMode }" @click="handleToggleMode">
             {{ isAddMode ? '添加' : '移除' }}
           </view>
-          <view class="clear-btn" @click="clearDroppedItems">
+          <view class="clear-btn" @click="handleClearDroppedItems">
             清空
           </view>
         </view>
@@ -96,18 +96,18 @@
             </view>
           </view>
           <view
-            v-else-if="currentQuestion.question_type === 'drag_item'"
-            class="item-resources"
-          >
-            <view
-              v-for="(item, index) in items"
-              :key="index"
-              class="item-card"
-              @click="toggleItem(item.icon)"
+              v-else-if="currentQuestion.question_type === 'drag_item'"
+              class="item-resources"
             >
-              {{ item.icon }}
+              <view
+                v-for="(item, index) in items"
+                :key="index"
+                class="item-card"
+                @click="handleToggleItem(item.icon)"
+              >
+                {{ item.icon }}
+              </view>
             </view>
-          </view>
         </view>
       </view>
 
@@ -117,14 +117,14 @@
           class="btn-submit"
           :class="{ 'btn-disabled': !isAnswerCorrect }"
           type="primary"
-          @click="submitAnswer"
+          @click="handleSubmitAnswer"
           :disabled="!isAnswerCorrect"
         >提交答案</button>
       </view>
     </view>
 
     <!-- 自定义成功弹窗 -->
-    <view class="success-modal" v-if="showSuccessModal" @click="closeSuccessModal">
+    <view class="success-modal" v-if="showSuccessModal" @click="handleCloseSuccessModal">
       <view class="modal-content" @click.stop>
         <view class="modal-icon">✓</view>
         <view class="modal-title">{{ successMessage }}</view>
@@ -139,7 +139,7 @@
           </text>
         </view>
         <view class="modal-time">用时：{{ formatTime(elapsedSeconds) }}</view>
-        <button class="modal-btn" @click="closeSuccessModal">继续挑战</button>
+        <button class="modal-btn" @click="handleCloseSuccessModal">继续挑战</button>
       </view>
     </view>
 
@@ -300,6 +300,62 @@ export default {
     },
   },
   methods: {
+    handleToggleSpeech() {
+      this.playClickSound();
+      this.showFullSpeech = !this.showFullSpeech;
+    },
+    handleOpenGamePopup() {
+      this.playClickSound();
+      this.openGamePopup();
+    },
+    handleCloseGamePopup() {
+      this.playClickSound();
+      this.closeGamePopup();
+    },
+    handleRemoveDroppedItem(index) {
+      this.playClickSound();
+      this.removeDroppedItem(index);
+    },
+    handleToggleMode() {
+      this.playClickSound();
+      this.toggleMode();
+    },
+    handleClearDroppedItems() {
+      this.playClickSound();
+      this.clearDroppedItems();
+    },
+    handleToggleItem(icon) {
+      this.playClickSound();
+      this.toggleItem(icon);
+    },
+    handleSubmitAnswer() {
+      this.playClickSound();
+      this.submitAnswer();
+    },
+    handleCloseSuccessModal() {
+      this.playClickSound();
+      this.closeSuccessModal();
+    },
+    handleToggleItem(icon) {
+      this.playClickSound();
+      this.toggleItem(icon);
+    },
+    handleRemoveDroppedItem(index) {
+      this.playClickSound();
+      this.removeDroppedItem(index);
+    },
+    handleToggleMode() {
+      this.playClickSound();
+      this.toggleMode();
+    },
+    handleClearDroppedItems() {
+      this.playClickSound();
+      this.clearDroppedItems();
+    },
+    handleCloseSuccessModal() {
+      this.playClickSound();
+      this.closeSuccessModal();
+    },
     playTyping(text) {
       this.fullText = text;
       this.displayText = '';

@@ -140,7 +140,7 @@
         ],
         settingList: [
           { key: 'my_info', title: '我的信息', icon: 'tn-icon-identity', action: 'nav', url: '/pages/user/info', needLogin: true },
-          { key: 'system_sound', title: '系统音效', icon: 'tn-icon-lock', action: 'nav', url: '/pages/user/sound' },
+          // { key: 'system_sound', title: '系统音效', icon: 'tn-icon-lock', action: 'nav', url: '/pages/user/sound' },
           { key: 'feedback', title: '意见反馈', icon: 'tn-icon-comment-fill', action: 'toast' },
           { key: 'about', title: '关于我们', icon: 'tn-icon-help', action: 'about' },
         ],
@@ -185,19 +185,23 @@
     },
     methods: {
       sign_out() {
+        this.playClickSound();
         this.$store.dispatch('auth/logOut').then((res) => {
         this.$Router.replaceAll('/pagesB/account/login');
         });
       },
       toLogin() {
+        this.playClickSound();
         this.$Router.replace('/pagesB/account/login');
       },
       handleHeaderClick() {
+        this.playClickSound();
         if (!store.state.app.token) {
           this.toLogin();
         }
       },
       handleEntry(item) {
+        this.playClickSound();
         console.log('handleEntry item:', item);
         if (item && item.needLogin && !store.state.app.token) {
           this.toLogin();

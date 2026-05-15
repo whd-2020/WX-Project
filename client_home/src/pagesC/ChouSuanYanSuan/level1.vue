@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
@@ -11,8 +11,8 @@
 
     <view class="scene">
       <!-- 右侧：椅子 -->
-      <view class="child-area" @click="openGamePopup">
-         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
+      <view class="child-area" @click="handleOpenGamePopup">
+         <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="handleToggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
         <view class="child-tip" v-if="showChildTip">
@@ -23,7 +23,7 @@
     </view>
 
     <!-- 游戏弹窗 -->
-    <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
+    <view class="popup-mask" v-if="showGamePopup" @click="handleCloseGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <!-- 筹算木棍互动区域 -->
       <view class="chouSuan-area">
@@ -39,7 +39,7 @@
               <view 
                 class="horizontal-stick-display" 
                 v-if="hasHorizontalStick"
-                @click="removeHorizontalStick"
+                @click="handleRemoveHorizontalStick"
               >
               </view>
               <view class="vertical-sticks-container">
@@ -47,7 +47,7 @@
                   v-for="(stick, index) in verticalSticks"
                   :key="stick.id"
                   class="vertical-stick-display"
-                  @click="removeVerticalStick(index)"
+                  @click="handleRemoveVerticalStick(index)"
                 >
                 </view>
               </view>
@@ -62,7 +62,7 @@
         
         <!-- 清空按钮 -->
         <view class="toggle-btn-container">
-          <view class="clear-btn" @click="resetAnswer">
+          <view class="clear-btn" @click="handleResetAnswer">
             清空
           </view>
         </view>
@@ -100,14 +100,14 @@
           class="btn-submit" 
           :class="{ 'btn-disabled': !canSubmit }"
           type="primary" 
-          @click="submitAnswer"
+          @click="handleSubmitAnswer"
           :disabled="!canSubmit"
         >提交答案</button>
       </view>
     </view>
 
     <!-- 自定义成功弹窗 -->
-    <view class="success-modal" v-if="showSuccessModal" @click="closeSuccessModal">
+    <view class="success-modal" v-if="showSuccessModal" @click="handleCloseSuccessModal">
       <view class="modal-content" @click.stop>
         <view class="modal-icon">✓</view>
         <view class="modal-title">{{ successMessage }}</view>
@@ -122,7 +122,7 @@
           </text>
         </view>
         <view class="modal-time">用时：{{ formatTime(successTime) }}</view>
-        <button class="modal-btn" @click="closeSuccessModal">继续挑战</button>
+        <button class="modal-btn" @click="handleCloseSuccessModal">继续挑战</button>
       </view>
     </view>
 
@@ -650,6 +650,7 @@ export default {
     
     // 处理横棍点击
     handleHorizontalStickClick() {
+      this.playClickSound();
       if (!this.hasHorizontalStick) {
         this.hasHorizontalStick = true;
       }
@@ -657,6 +658,7 @@ export default {
     
     // 处理竖棍点击
     handleVerticalStickClick() {
+      this.playClickSound();
       const maxVertical = this.hasHorizontalStick ? 4 : 5;
       if (this.verticalSticks.length < maxVertical) {
         const newStick = {

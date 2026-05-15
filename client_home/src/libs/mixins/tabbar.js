@@ -22,6 +22,9 @@ export default {
   methods: {
     // 切换导航
     switchTabbar(index) {
+      console.log('👆 用户点击了底部导航栏，准备播放点击音效...');
+      this.playClickSound();
+      
       const menu = this.tabbarList[index];
       if (menu.pagePath !== this.$Router.currentRoute.path) {
         this.$Router.pushTab(menu.pagePath);

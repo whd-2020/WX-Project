@@ -12,14 +12,14 @@
     <view class="scene">
       <!-- 左侧：族长 -->
       <view class="elder-area">
-        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
+        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="handleToggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
         <image class="elder-img" src="/static/img/rope/grandpa.png" mode="aspectFit" />
       </view>
 
       <!-- 右侧：小孩 -->
-      <view class="child-area" @click="openGamePopup">
+      <view class="child-area" @click="handleOpenGamePopup">
         <view class="child-speech-bubble" v-if="showChildSpeech">
           <text class="child-speech-text">{{ childSpeechText }}</text>
         </view>
@@ -37,7 +37,7 @@
       <view class="rope-area">
         <text class="rope-title" :class="{ 'rope-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
         <text class="rope-title-measure">{{ rawQuestionTitle }}</text>
-        <view class="rope-wrapper" @click="handleRopeClick">
+        <view class="rope-wrapper" @click="handleRopeClickWithSound">
           <image class="rope-image" src="/static/img/rope/ShengZi.png" mode="widthFix" />
           <view
             v-for="(knot, index) in knots"
@@ -214,6 +214,23 @@ export default {
     },
   },
   methods: {
+    handleToggleSpeech() {
+      this.playClickSound();
+      this.showFullSpeech = !this.showFullSpeech;
+    },
+    handleOpenGamePopup() {
+      this.playClickSound();
+      this.showGamePopup = true;
+      this.resetTimer();
+    },
+    handleRopeClickWithSound(e) {
+      this.playClickSound();
+      this.handleRopeClick(e);
+    },
+    closeGamePopup() {
+      this.playClickSound();
+      this.showGamePopup = false;
+    },
     // 打字机效果
     playTyping(text) {
       this.fullText = text.replace(/([，,])/g, '$1\n');

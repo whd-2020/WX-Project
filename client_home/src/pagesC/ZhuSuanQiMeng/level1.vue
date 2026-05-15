@@ -6,17 +6,17 @@
     </view>
     <view class="scene">
       <view class="elder-area">
-        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="openGamePopup">
+        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="handleToggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
       </view>
-      <view class="child-area" @click="openGamePopup">
+      <view class="child-area" @click="handleOpenGamePopup">
         <view class="child-tip" v-if="showChildTip">
           <text class="tip-text">点击这里，来试试吧</text>
         </view>
       </view>
     </view>
-    <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
+    <view class="popup-mask" v-if="showGamePopup" @click="handleCloseGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <view class="abacus-area">
         <text class="abacus-title" :class="{ 'abacus-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
@@ -33,11 +33,11 @@
           <view class="abacus-columns">
             <view v-for="(col, index) in 5" :key="col" class="abacus-column">
               <view class="abacus-rod"></view>
-              <view class="upper-bead-wrapper" :class="{ 'bead-hint': hintBeads[index] && hintBeads[index][0] }" @click="toggleBead(index, 'upper')">
+              <view class="upper-bead-wrapper" :class="{ 'bead-hint': hintBeads[index] && hintBeads[index][0] }" @click="handleToggleBead(index, 'upper')">
                 <view class="bead upper-bead" :class="{ active: beads[index][0].active }"></view>
               </view>
               <view class="lower-beads">
-                <view v-for="(row, rIndex) in 4" :key="row" class="lower-bead-wrapper" :class="{ 'lower-bead-wrapper--disabled': isLowerBeadDimmed(index, rIndex), 'bead-hint': hintBeads[index] && hintBeads[index][rIndex + 1] }" @click="toggleBead(index, 'lower', rIndex)">
+                <view v-for="(row, rIndex) in 4" :key="row" class="lower-bead-wrapper" :class="{ 'lower-bead-wrapper--disabled': isLowerBeadDimmed(index, rIndex), 'bead-hint': hintBeads[index] && hintBeads[index][rIndex + 1] }" @click="handleToggleBead(index, 'lower', rIndex)">
                   <view class="bead lower-bead" :class="{ active: beads[index][rIndex + 1].active }"></view>
                 </view>
               </view>
@@ -53,11 +53,11 @@
         </view>
       </view>
       <view class="bottom-bar">
-        <button class="btn-clear" @click="clearAbacus">清空</button>
-        <button class="btn-submit" :class="{ 'btn-disabled': !canSubmit }" type="primary" @click="submitAnswer" :disabled="!canSubmit">提交答案</button>
+        <button class="btn-clear" @click="handleClearAbacus">清空</button>
+        <button class="btn-submit" :class="{ 'btn-disabled': !canSubmit }" type="primary" @click="handleSubmitAnswer" :disabled="!canSubmit">提交答案</button>
       </view>
     </view>
-    <view class="success-modal" v-if="showSuccessModal" @click="closeSuccessModal">
+    <view class="success-modal" v-if="showSuccessModal" @click="handleCloseSuccessModal">
       <view class="modal-content" @click.stop>
         <view class="modal-icon">✓</view>
         <view class="modal-title">{{ successMessage }}</view>
@@ -65,7 +65,7 @@
           <text v-for="(star, index) in 3" :key="index" class="star" :class="{ 'star-active': index < successStarCount }">⭐</text>
         </view>
         <view class="modal-time">用时：{{ formatTime(successTime) }}</view>
-        <button class="modal-btn" @click="closeSuccessModal">继续挑战</button>
+        <button class="modal-btn" @click="handleCloseSuccessModal">继续挑战</button>
       </view>
     </view>
     <view class="success-modal" v-if="showAllCompleteModal">
@@ -190,6 +190,41 @@ export default {
     },
   },
   methods: {
+    handleToggleSpeech() {
+      this.playClickSound();
+      this.showFullSpeech = !this.showFullSpeech;
+    },
+    handleOpenGamePopup() {
+      this.playClickSound();
+      this.showGamePopup = true;
+      this.showChildTip = false;
+      if (this.childTipTimer) { clearTimeout(this.childTipTimer); this.childTipTimer = null; }
+      this.stopHintTimer();
+      this.$nextTick(() => {
+        this.updateTitleWrap();
+      });
+    },
+    handleCloseGamePopup() {
+      this.playClickSound();
+      this.showGamePopup = false;
+      this.stopHintTimer();
+    },
+    handleToggleBead(col, type, row = 0) {
+      this.playClickSound();
+      this.toggleBead(col, type, row);
+    },
+    handleClearAbacus() {
+      this.playClickSound();
+      this.clearAbacus();
+    },
+    handleSubmitAnswer() {
+      this.playClickSound();
+      this.submitAnswer();
+    },
+    handleCloseSuccessModal() {
+      this.playClickSound();
+      this.closeSuccessModal();
+    },
     playTyping(text) {
       this.fullText = text;
       this.displayText = '';

@@ -7,9 +7,9 @@
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
 
-    <view class="scene" @click="openGamePopup">
+    <view class="scene" @click="handleOpenGamePopup">
       <view class="elder-area">
-        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
+        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="handleToggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
       </view>
@@ -21,7 +21,7 @@
       </view>
     </view>
 
-    <view class="popup-mask" v-if="showGamePopup" @click="closeGamePopup"></view>
+    <view class="popup-mask" v-if="showGamePopup" @click="handleCloseGamePopup"></view>
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <view class="game-area">
         <view class="question-content">
@@ -119,11 +119,11 @@
 
         <!-- 添加/移除切换按钮和清空按钮 -->
         <view v-if="currentQuestion.question_type === 'drag_item'" class="toggle-btn-container">
-          <view class="toggle-btn" :class="{ 'toggle-btn-large': needToggleMode }" @click="toggleMode">
+          <view class="toggle-btn" :class="{ 'toggle-btn-large': needToggleMode }" @click="handleToggleMode">
             {{ isAddMode ? '添加' : '移除' }}
           </view>
           <view class="btn-spacing"></view>
-          <view class="clear-btn" @click="clearDroppedItems">
+          <view class="clear-btn" @click="handleClearDroppedItems">
             清空
           </view>
         </view>
@@ -150,7 +150,7 @@
             <!-- 圆形气泡包裹的图标堆（代表10） -->
             <view 
               class="item-card bubble-item"
-              @click="toggleItem(currentIcon, 'left')"
+              @click="handleToggleItem(currentIcon, 'left')"
             >
               <div class="bubble triangle-bubble">
                 <div class="triangle-row">
@@ -165,7 +165,7 @@
             <!-- 单个图标（代表1） -->
             <view 
               class="item-card single-item"
-              @click="toggleItem(currentIcon, 'right')"
+              @click="handleToggleItem(currentIcon, 'right')"
             >
               {{ currentIcon }}
             </view>
@@ -177,7 +177,7 @@
             class="btn-submit" 
             :class="{ 'btn-disabled': !isAnswerCorrect }"
             type="primary" 
-            @click="submitAnswer"
+            @click="handleSubmitAnswer"
             :disabled="!isAnswerCorrect"
           >
             提交
@@ -186,7 +186,7 @@
       </view>
     </view>
 
-    <view class="success-modal" v-if="showSuccessModal" @click="closeSuccessModal">
+    <view class="success-modal" v-if="showSuccessModal" @click="handleCloseSuccessModal">
       <view class="modal-content" @click.stop>
         <view class="modal-icon">✓</view>
         <view class="modal-title">{{ successMessage }}</view>
@@ -201,7 +201,7 @@
           </text>
         </view>
         <view class="modal-time">用时：{{ formatTime(elapsedSeconds) }}</view>
-        <button class="modal-btn" @click="closeSuccessModal">继续挑战</button>
+        <button class="modal-btn" @click="handleCloseSuccessModal">继续挑战</button>
       </view>
     </view>
 
@@ -355,6 +355,46 @@ export default {
     }
   },
   methods: {
+    handleToggleSpeech() {
+      this.playClickSound();
+      this.showFullSpeech = !this.showFullSpeech;
+    },
+    handleOpenGamePopup() {
+      this.playClickSound();
+      this.openGamePopup();
+    },
+    handleCloseGamePopup() {
+      this.playClickSound();
+      this.closeGamePopup();
+    },
+    handleNumberClick(num) {
+      this.playClickSound();
+      if (this.currentQuestion.question_type === 'drag_number') {
+        this.droppedItems = { left: [], right: [] };
+        this.droppedItems.right = [num];
+        this.selectedNumber = num;
+      }
+    },
+    handleSubmitAnswer() {
+      this.playClickSound();
+      this.submitAnswer();
+    },
+    handleCloseSuccessModal() {
+      this.playClickSound();
+      this.closeSuccessModal();
+    },
+    handleGoToNextLevel() {
+      this.playClickSound();
+      this.goToNextLevel();
+    },
+    handleToggleItem(icon, position) {
+      this.playClickSound();
+      this.toggleItem(icon, position);
+    },
+    handleRemoveDroppedItem(position, index) {
+      this.playClickSound();
+      this.removeDroppedItem(position, index);
+    },
     getCorrectCounts() {
       const correctAnswer = this.currentQuestion.correct_answer || {};
       const toNum = (v) => {

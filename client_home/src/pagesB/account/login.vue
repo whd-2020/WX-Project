@@ -72,6 +72,7 @@
        * 关闭弹窗
        */
       closeModal() {
+        this.playClickSound();
         uni.switchTab({
           url: '/pages/index/index'
         });
@@ -81,6 +82,7 @@
        * 切换隐私协议同意状态
        */
       toggleAgree() {
+        this.playClickSound();
         this.agreePrivacy = !this.agreePrivacy;
         this.showPrivacyError = false;
       },
@@ -89,6 +91,7 @@
        * 处理微信登录点击
        */
       handleWechatLogin() {
+        this.playClickSound();
         if (!this.agreePrivacy) {
           this.showPrivacyError = true;
           return;

@@ -187,11 +187,12 @@ export default {
   justify-content: center;
   box-shadow: 0 8rpx 24rpx rgba(255, 107, 107, 0.4);
   transition: all 0.3s ease;
-  animation: buttonFadeIn 0.5s ease-out;
+  animation: buttonFadeIn 0.5s ease-out, float 2s ease-in-out infinite;
   
   &:active {
     transform: scale(0.98);
     box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.3);
+    animation: none;
   }
 }
 
@@ -203,6 +204,15 @@ export default {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10rpx);
   }
 }
 

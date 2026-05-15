@@ -197,6 +197,7 @@ export default {
       }
     },
     startLevel(index) {
+      this.playClickSound();
       const level = this.levelList[index];
       if (!level) {
         uni.showToast({
@@ -235,6 +236,7 @@ export default {
     },
 
     closeIntroCard() {
+      this.playClickSound();
       this.showIntroCard = false;
       // 标记已经展示过，下次不自动显示
       uni.setStorageSync('comprehensive_intro_shown', true);

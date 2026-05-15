@@ -5,10 +5,21 @@ import './filters';
 import plugins from './plugins'; // plugins
 import { router, RouterMount } from './router/index';
 import TuniaoUI from './tuniao-ui';
+import AudioManager from '@/utils/audio-manager.js';
 // import './router/routeIntercept.js';
 
 Vue.config.productionTip = false;
 App.mpType = 'app';
+
+Vue.prototype.$audio = AudioManager;
+
+Vue.mixin({
+  methods: {
+    playClickSound() {
+      AudioManager.playClickSound();
+    }
+  }
+});
 
 Vue.use(router);
 // vuex简写方法

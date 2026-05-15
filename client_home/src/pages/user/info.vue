@@ -95,6 +95,7 @@ export default {
       this.nickname = e.detail.value;
     },
     changeAvatar() {
+      this.playClickSound();
       const _self = this;
       uni.chooseImage({
         count: 1,
@@ -137,6 +138,7 @@ export default {
       });
     },
     saveUserInfo() {
+      this.playClickSound();
       if (!this.hasChanges) {
         return;
       }

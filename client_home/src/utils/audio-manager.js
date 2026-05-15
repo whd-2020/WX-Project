@@ -3,6 +3,8 @@ const AudioManager = {
   _isPlaying: false,
   _bgmSrc: '/static/audio/bgm.mp3',
   _tipAudioContext: null,
+  _clickAudioContext: null,
+  _clickSrc: '/static/audio/click.mp3',
 
   _initBGM() {
     if (this._bgmAudioContext) {
@@ -107,6 +109,41 @@ const AudioManager = {
       } catch (e) {}
     });
     this._tipAudioContext.play();
+  },
+
+  playClickSound() {
+    console.log('🎵 [点击音效] 开始播放点击音效，音频路径:', this._clickSrc);
+    
+    if (this._clickAudioContext) {
+      try {
+        this._clickAudioContext.destroy();
+      } catch (e) {}
+    }
+    
+    this._clickAudioContext = uni.createInnerAudioContext();
+    this._clickAudioContext.src = this._clickSrc;
+    
+    this._clickAudioContext.onPlay(() => {
+      console.log('🎵 [点击音效] 音频开始播放成功!');
+    });
+    
+    this._clickAudioContext.onEnded(() => {
+      console.log('🎵 [点击音效] 音频播放结束');
+      try {
+        this._clickAudioContext.destroy();
+        this._clickAudioContext = null;
+      } catch (e) {}
+    });
+    this._clickAudioContext.onError((res) => {
+      console.error('❌ [点击音效] 音频加载失败:', res);
+      try {
+        this._clickAudioContext.destroy();
+        this._clickAudioContext = null;
+      } catch (e) {}
+    });
+    
+    console.log('🎵 [点击音效] 调用 play()');
+    this._clickAudioContext.play();
   },
 
   destroy() {

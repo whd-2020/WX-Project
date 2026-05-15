@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="rope-level-page">
 
     <!-- 背景图片 -->
@@ -9,9 +9,9 @@
       <text class="tip-text">⚠️ 当前为默认题目，请联系运维人员</text>
     </view>
 
-    <view class="scene" @click="openGamePopup">
+    <view class="scene" @click="handleOpenGamePopup">
       <view class="elder-area">
-        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="toggleSpeech">
+        <view class="speech-bubble" :class="{ 'expanded': showFullSpeech }" @click="handleToggleSpeech">
           <text class="speech-text">{{ displayText }}</text>
         </view>
       </view>
@@ -52,7 +52,7 @@
                 v-for="(item, index) in droppedItems"
                 :key="index"
                 class="dropped-item"
-                @click="removeDroppedItem(index)"
+                @click="handleRemoveDroppedItem(index)"
               >
                 {{ item }}
               </text>
@@ -71,10 +71,10 @@
         
         <!-- 添加/移除切换按钮和清空按钮 -->
         <view v-if="currentQuestion.question_type === 'drag_item'" class="toggle-btn-container">
-          <view class="toggle-btn" :class="{ 'toggle-btn-large': needToggleMode }" @click="toggleMode">
+          <view class="toggle-btn" :class="{ 'toggle-btn-large': needToggleMode }" @click="handleToggleMode">
             {{ isAddMode ? '添加' : '移除' }}
           </view>
-          <view class="clear-btn" @click="clearDroppedItems">
+          <view class="clear-btn" @click="handleClearDroppedItems">
             清空
           </view>
         </view>
@@ -103,7 +103,7 @@
               v-for="(item, index) in items"
               :key="index"
               class="item-card"
-              @click="toggleItem(item.icon)"
+              @click="handleToggleItem(item.icon)"
             >
               {{ item.icon }}
             </view>
@@ -314,6 +314,19 @@ export default {
     },
   },
   methods: {
+    handleToggleSpeech() {
+      this.playClickSound();
+      this.showFullSpeech = !this.showFullSpeech;
+    },
+    handleOpenGamePopup() {
+      this.playClickSound();
+      this.showGamePopup = true;
+      this.resetTimer();
+    },
+    closeGamePopup() {
+      this.playClickSound();
+      this.showGamePopup = false;
+    },
     // 打字机效果
     playTyping(text) {
       this.fullText = text;
@@ -1112,6 +1125,7 @@ export default {
 
     // 处理数字方块放置
     handleNumberDrop(num) {
+      this.playClickSound();
       this.droppedItems = [num];
       // 从availableNumbers中移除该数字
       this.availableNumbers = this.availableNumbers.filter(item => item.num !== num);
@@ -1119,11 +1133,13 @@ export default {
 
     // 切换添加/移除模式
     toggleMode() {
+      this.playClickSound();
       this.isAddMode = !this.isAddMode;
     },
 
     // 切换物品的添加/移除
     toggleItem(icon) {
+      this.playClickSound();
       if (this.isAddMode) {
         // 添加模式：最多添加12个物品
         if (this.droppedItems.length < 12) {
@@ -1137,11 +1153,13 @@ export default {
 
     // 移除答案区的物品
     removeDroppedItem(index) {
+      this.playClickSound();
       this.droppedItems.splice(index, 1);
     },
 
     // 清空所有物品
     clearDroppedItems() {
+      this.playClickSound();
       this.droppedItems = [];
     },
 

@@ -3,7 +3,7 @@
 	<view class="header_bg"></view>
     <tn-nav-bar fixed :isBack="false" :zIndex="999">
       <view class="nav-wrapper">
-        <view class="nav-user" @click="$navTo('/pages/user/info')">
+        <view class="nav-user" @click="handleUserClick">
           <!-- 头像：优先使用微信头像的完整https地址，其次再走资源拼接 -->
           <image :src="avatarUrl"></image>
         </view>
@@ -20,22 +20,22 @@
       <image class="bg-image" src="/static/img/index/ShouYe.png"></image>
       <!-- 游戏特色卡片(开始) -->
       <view class="game-features">
-        <view class="feature-card" @click="$navTo('/pages/track/rope')">
+        <view class="feature-card" @click="handleFeatureClick('/pages/track/rope')">
           <view class="feature-image-wrapper">
             <image class="feature-image" src="/static/img/index/ShengJieJiShu.png"></image>
           </view>
         </view>
-        <view class="feature-card" @click="$navTo('/pages/track/counting_rods')">
+        <view class="feature-card" @click="handleFeatureClick('/pages/track/counting_rods')">
           <view class="feature-image-wrapper">
             <image class="feature-image" src="/static/img/index/ChouSuanYanSuan.png"></image>
           </view>
         </view>
-        <view class="feature-card" @click="$navTo('/pages/track/abacus')">
+        <view class="feature-card" @click="handleFeatureClick('/pages/track/abacus')">
           <view class="feature-image-wrapper">
             <image class="feature-image" src="/static/img/index/ZhuSuanQiMeng.png"></image>
           </view>
         </view>
-        <view class="feature-card" @click="$navTo('/pages/track/comprehensive')">
+        <view class="feature-card" @click="handleFeatureClick('/pages/track/comprehensive')">
           <view class="feature-image-wrapper">
             <image class="feature-image" src="/static/img/index/ShuZiRenZhi.png"></image>
           </view>
@@ -133,6 +133,14 @@ export default {
     console.log('首页 created - tabbarList:', this.tabbarList);
   },
   methods: {
+    handleUserClick() {
+      this.playClickSound();
+      this.$navTo('/pages/user/info');
+    },
+    handleFeatureClick(url) {
+      this.playClickSound();
+      this.$navTo(url);
+    },
     getFullPath(path) {
       if (path) {
         const fullPath = this.pathList[path];

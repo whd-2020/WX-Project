@@ -202,6 +202,7 @@ export default {
       }
     },
     startLevel(index) {
+      this.playClickSound();
       const level = this.levelList[index];
       if (!level) {
         console.error('关卡数据不存在', index, this.levelList);
@@ -225,6 +226,7 @@ export default {
     },
 
     closeIntroCard() {
+      this.playClickSound();
       this.showIntroCard = false;
       // 标记已经展示过，下次不自动显示
       uni.setStorageSync('counting_rods_intro_shown', true);
