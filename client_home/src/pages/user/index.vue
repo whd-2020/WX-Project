@@ -1,12 +1,12 @@
 <template>
-  <view id="page_user" class="page_user" :class="{ 'has-logout': token }">
+  <view id="page_user" class="page_user" :class="{ 'has-logout': currentToken }">
     <view class="me-header" @click="handleHeaderClick">
       <view class="me-header-avatar">
         <image class="me-avatar" :src="avatarUrl" mode="aspectFill"></image>
       </view>
       <view class="me-header-info">
-        <view class="me-name">{{ token ? displayName : '点击登录' }}</view>
-        <view class="me-id" v-if="token && userIdValue">ID: {{ userIdValue }}</view>
+        <view class="me-name">{{ currentToken ? displayName : '点击登录' }}</view>
+        <view class="me-id" v-if="currentToken && userIdValue">ID: {{ userIdValue }}</view>
       </view>
     </view>
 
@@ -52,7 +52,7 @@
       </view>
     </view>
 
-    <view class="me-logout-wrap" v-if="token">
+    <view class="me-logout-wrap" v-if="currentToken">
       <view class="me-logout-btn" @click="sign_out">退出登录</view>
     </view>
 
@@ -96,6 +96,7 @@
 <script>
   import tabbar from '@/libs/mixins/tabbar.js';
   import mixin from '@/libs/mixins/page.js';
+  import store from '@/store';
 
   export default {
     mixins: [tabbar, mixin],
@@ -146,24 +147,32 @@
       };
     },
     computed: {
+      // 直接从store获取状态
+      currentToken() {
+        return store.state.app.token || '';
+      },
+      currentUserInfo() {
+        return store.state.app.userInfo || {};
+      },
       // 头像地址：如果是完整 http(s) 链接，直接用；否则走后端资源拼接；都没有时用默认图
       avatarUrl() {
-        const avatar = this.userInfo && this.userInfo.avatar;
+        const userInfo = this.currentUserInfo;
+        const avatar = userInfo.avatar || userInfo.avatarUrl;
         if (!avatar) {
-          return '/static/img/default.png';
+          return '/static/img/avatar.jpg';
         }
         if (/^https?:\/\//.test(avatar)) {
           return avatar;
         }
-        return this.$fullImgUrl(avatar) || '/static/img/default.png';
+        return this.$fullImgUrl(avatar) || '/static/img/avatar.jpg';
       },
       // 展示昵称：优先昵称，其次用户名
       displayName() {
-        const userInfo = this.userInfo || {};
-        return userInfo.nickname || userInfo.username || '游客';
+        const userInfo = this.currentUserInfo;
+        return userInfo.nickname || userInfo.nickName || userInfo.username || '游客';
       },
       userIdValue() {
-        const userInfo = this.userInfo || {};
+        const userInfo = this.currentUserInfo;
         return (
           userInfo.user_id ||
           userInfo.id ||
@@ -184,13 +193,13 @@
         this.$Router.replace('/pagesB/account/login');
       },
       handleHeaderClick() {
-        if (!this.token) {
+        if (!store.state.app.token) {
           this.toLogin();
         }
       },
       handleEntry(item) {
         console.log('handleEntry item:', item);
-        if (item && item.needLogin && !this.token) {
+        if (item && item.needLogin && !store.state.app.token) {
           this.toLogin();
           return;
         }

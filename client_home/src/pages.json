@@ -495,21 +495,22 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": ""
+        "text": "首页",
+        "iconPath": "static/images/tabbar/index.png",
+        "selectedIconPath": "static/images/tabbar/index-active.png"
       },
       {
         "pagePath": "pages/user/index",
-        "text": ""
+        "text": "我的",
+        "iconPath": "static/images/tabbar/user.png",
+        "selectedIconPath": "static/images/tabbar/user-active.png"
       }
     ]
   },
   "easycom": {
     "autoscan": true,
     "custom": {
-      "tui-(.*)": "@/components/thorui/tui-$1/tui-$1.vue",
-      "^tn-(.*)": "@/tuniao-ui/components/tn-$1/tn-$1.vue",
-      "^c-(.*)": "@/custom-ui/c-$1/c-$1.vue",
-      "^u-(.*)": "@dcloudio/uniui/lib/u-$1/u-$1.vue"
+      "^tn-(.*)": "@/tuniao-ui/components/tn-$1/tn-$1.vue"
     }
   }
 }

@@ -43,6 +43,7 @@
 <script>
   import mixin from '@/libs/mixins/page.js';
   import {wechatLoginApi} from '@/api/login.js';
+  import store from '@/store';
 
   export default {
     mixins: [mixin],
@@ -144,19 +145,28 @@
                       console.log('后端 wechatLoginApi 返回结果:', res);
                       if (res.result && res.result.obj) {
                         let user = res.result.obj;
+                        console.log('登录用户数据:', user);
+                        console.log('用户组:', user.user_group);
+                        console.log('允许的用户组:', this.allow_user);
+                        console.log('是否包含:', this.allow_user.includes(user.user_group));
                         if (this.allow_user.includes(user.user_group)) {
                           // 缓存token
+                          console.log('准备设置token:', user.token);
                           this.$u.vuex('token', user.token);
                           // 存储用户信息
+                          console.log('准备设置userInfo:', user);
                           this.$u.vuex('userInfo', user);
                           // 设置权限集
+                          console.log('准备设置userGroup:', user.user_group);
                           this.$u.vuex('userGroup', user.user_group);
 
                           console.log('---微信登录成功---, 最终 userInfo:', user);
+                          console.log('当前store状态:', JSON.stringify(store.state.app, null, 2));
                           this.$toast('登录成功', 'success');
 
-                          // 根据 isNewUser 判断跳转目标
+                          // 使用nextTick确保状态完全更新后再跳转
                           setTimeout(() => {
+                            console.log('跳转前store状态:', JSON.stringify(store.state.app, null, 2));
                             if (user.isNewUser) {
                               // 新用户跳转到设置页面完善信息
                               console.log('新用户，跳转到设置页面');
@@ -170,7 +180,7 @@
                                 url: '/pages/index/index'
                               });
                             }
-                          }, 800);
+                          }, 1000);
                         } else {
                           this.$toast('该账号无权限登录', 'error');
                         }

@@ -62,6 +62,7 @@
 <script>
 import mixin from '@/libs/mixins/page.js';
 import { getLevelProgressApi } from '@/api/game.js';
+import store from '@/store';
 
 export default {
   mixins: [mixin],
@@ -92,7 +93,10 @@ export default {
   },
   methods: {
     getGamerId() {
-      if (!this.token) {
+      const token = store.state.app.token;
+      const userInfo = store.state.app.userInfo || {};
+      
+      if (!token) {
         uni.showToast({
           title: '请先登录',
           icon: 'none'
@@ -104,7 +108,6 @@ export default {
         }, 1500);
         return;
       }
-      const userInfo = this.userInfo || {};
       const userId = userInfo.user_id;
       if (!userId) {
         uni.showToast({

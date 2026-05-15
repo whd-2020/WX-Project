@@ -197,7 +197,11 @@ function addDefineProperty(tyoe, name, func) {
    * @return {String} 加密后的字符串
    */
   const stringPrototypeMd5 = function () {
-    return $.md5(this + '');
+    if (typeof $ !== 'undefined' && $.md5) {
+      return $.md5(this + '');
+    }
+    console.warn('MD5 is not available');
+    return this;
   };
   addDefineProperty(String, 'md5', stringPrototypeMd5);
   /**
@@ -207,15 +211,19 @@ function addDefineProperty(tyoe, name, func) {
    * @returns {String}
    */
   const stringPrototypeAesEncode = function (key, iv) {
-    iv = iv || '';
-    var clearEncoding = 'utf8';
-    var cipherEncoding = 'base64';
-    var cipherChunks = [];
-    var cipher = createCipheriv('aes-256-ecb', key, iv);
-    cipher.setAutoPadding(true);
-    cipherChunks.push(cipher.update(this + '', clearEncoding, cipherEncoding));
-    cipherChunks.push(cipher.final(cipherEncoding));
-    return cipherChunks.join('');
+    if (typeof createCipheriv !== 'undefined') {
+      iv = iv || '';
+      var clearEncoding = 'utf8';
+      var cipherEncoding = 'base64';
+      var cipherChunks = [];
+      var cipher = createCipheriv('aes-256-ecb', key, iv);
+      cipher.setAutoPadding(true);
+      cipherChunks.push(cipher.update(this + '', clearEncoding, cipherEncoding));
+      cipherChunks.push(cipher.final(cipherEncoding));
+      return cipherChunks.join('');
+    }
+    console.warn('AES encode is not available');
+    return this;
   };
   addDefineProperty(String, 'aes_encode', stringPrototypeAesEncode);
   /**
@@ -224,15 +232,19 @@ function addDefineProperty(tyoe, name, func) {
    * @returns {String}
    */
   const stringPrototypeAesDecode = function (key, iv) {
-    iv = iv || '';
-    var clearEncoding = 'utf8';
-    var cipherEncoding = 'base64';
-    var cipherChunks = [];
-    var decipher = createDecipheriv('aes-256-ecb', key, iv);
-    decipher.setAutoPadding(true);
-    cipherChunks.push(decipher.update(this + '', cipherEncoding, clearEncoding));
-    cipherChunks.push(decipher.final(clearEncoding));
-    return cipherChunks.join('');
+    if (typeof createDecipheriv !== 'undefined') {
+      iv = iv || '';
+      var clearEncoding = 'utf8';
+      var cipherEncoding = 'base64';
+      var cipherChunks = [];
+      var decipher = createDecipheriv('aes-256-ecb', key, iv);
+      decipher.setAutoPadding(true);
+      cipherChunks.push(decipher.update(this + '', cipherEncoding, clearEncoding));
+      cipherChunks.push(decipher.final(clearEncoding));
+      return cipherChunks.join('');
+    }
+    console.warn('AES decode is not available');
+    return this;
   };
   addDefineProperty(String, 'aes_decode', stringPrototypeAesDecode);
   /**
@@ -240,7 +252,11 @@ function addDefineProperty(tyoe, name, func) {
    * @return {String} 拼音
    */
   const stringPrototypePinyin = function () {
-    return pinyin(this).join('');
+    if (typeof pinyin !== 'undefined') {
+      return pinyin(this).join('');
+    }
+    console.warn('Pinyin is not available');
+    return this;
   };
   addDefineProperty(String, 'pinyin', stringPrototypePinyin);
   /**
@@ -248,18 +264,22 @@ function addDefineProperty(tyoe, name, func) {
    * @return {String} 拼音
    */
   const stringPrototypePinyinS = function () {
-    var arr = pinyin(this);
-    var str = '';
-    for (var i = 0; i < arr.length; i++) {
-      var ar = arr[i];
-      if (ar.length > 0) {
-        var o = ar[0];
-        str += o.charAt(0).toLocaleUpperCase() + o.substring(1);
-      } else {
-        str += ' ';
+    if (typeof pinyin !== 'undefined') {
+      var arr = pinyin(this);
+      var str = '';
+      for (var i = 0; i < arr.length; i++) {
+        var ar = arr[i];
+        if (ar.length > 0) {
+          var o = ar[0];
+          str += o.charAt(0).toLocaleUpperCase() + o.substring(1);
+        } else {
+          str += ' ';
+        }
       }
+      return str;
     }
-    return str;
+    console.warn('Pinyin is not available');
+    return this;
   };
   addDefineProperty(String, 'pinyinS', stringPrototypePinyinS);
   /**
@@ -282,14 +302,15 @@ function addDefineProperty(tyoe, name, func) {
   const stringPrototypeToUrl = function () {
     var arr = this.split('&');
     var obj = {};
-    arr.func(function (o) {
+    for (var i = 0; i < arr.length; i++) {
+      var o = arr[i];
       var ar = o.split('=');
       if (ar.length > 1) {
         obj[ar[0]] = decodeURI(ar[1]);
       } else {
         obj[ar[0]] = null;
       }
-    });
+    }
     return obj;
   };
   addDefineProperty(String, 'toUrl', stringPrototypeToUrl);

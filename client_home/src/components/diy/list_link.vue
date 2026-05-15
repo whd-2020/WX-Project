@@ -5,7 +5,7 @@
       <view class="link-list-item" v-for="(o, index) in list" :key="index">
         <view class="link-list-warp" @click="openUrl(o[vm.url])">
           <view class="img-box">
-            <image class="img" :src="$fullImgUrl(o[vm.img]) || '/static/img/default.png'"></image>
+            <image class="img" :src="$fullImgUrl(o[vm.img]) || '/static/img/avatar.jpg'"></image>
           </view>
           <view class="name-box"
             ><text>{{ o[vm.name] }}</text></view

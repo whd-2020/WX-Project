@@ -29,6 +29,7 @@
 
 <script>
   import mixin from '@/libs/mixins/page.js';
+  import AudioManager from '@/utils/audio-manager.js';
   export default {
     mixins: [mixin],
     data() {
@@ -49,6 +50,7 @@
       onToggleBgm(e) {
         this.disableBgm = !!(e && e.detail && e.detail.value);
         uni.setStorageSync('disable_bgm', this.disableBgm ? 1 : 0);
+        AudioManager.refreshBGMState();
       },
     },
   };

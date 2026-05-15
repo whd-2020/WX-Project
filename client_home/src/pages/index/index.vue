@@ -1,5 +1,5 @@
 <template>
-  <view id="home" class="page_home"">
+  <view id="home" class="page_home">
 	<view class="header_bg"></view>
     <tn-nav-bar fixed :isBack="false" :zIndex="999">
       <view class="nav-wrapper">
@@ -76,6 +76,7 @@ import Notice from '@/components/common/notice.vue';
 import mixin from '@/libs/mixins/page.js';
 import tabbar from '@/libs/mixins/tabbar.js';
 import * as HomeApi from '@/api/home';
+import store from '@/store';
 
 export default {
   mixins: [mixin, tabbar],
@@ -100,21 +101,32 @@ export default {
     };
   },
   computed: {
+    // 直接从store获取用户信息（绕过mixin映射问题）
+    currentUserInfo() {
+      return store.state.app.userInfo || {};
+    },
+    currentToken() {
+      return store.state.app.token || '';
+    },
+    currentUserGroup() {
+      return store.state.app.userGroup || '游客';
+    },
     // 头像地址：如果是完整 http(s) 链接，直接用；否则走后端资源拼接；都没有时用默认图
     avatarUrl() {
-      const avatar = this.userInfo && this.userInfo.avatar;
+      const userInfo = this.currentUserInfo;
+      const avatar = userInfo.avatar || userInfo.avatarUrl;
       if (!avatar) {
-        return '/static/img/default.png';
+        return '/static/img/avatar.jpg';
       }
       if (/^https?:\/\//.test(avatar)) {
         return avatar;
       }
-      return this.$fullImgUrl(avatar) || '/static/img/default.png';
+      return this.$fullImgUrl(avatar) || '/static/img/avatar.jpg';
     },
-    // 展示用昵称：优先昵称，其次用户名
+    // 展示用昵称：优先昵称，其次用户名（兼容多种字段名）
     displayName() {
-      const userInfo = this.userInfo || {};
-      return userInfo.nickname || userInfo.username || '游客';
+      const userInfo = this.currentUserInfo;
+      return userInfo.nickname || userInfo.nickName || userInfo.username || '游客';
     },
   },
   created() {
@@ -218,6 +230,14 @@ export default {
 	}
   },
   onShow() {
+    console.log('========== 首页 onShow ==========');
+    console.log('直接读取store.state.app:', JSON.stringify(store.state.app, null, 2));
+    console.log('currentUserInfo:', JSON.stringify(this.currentUserInfo, null, 2));
+    console.log('currentToken:', this.currentToken);
+    console.log('currentUserGroup:', this.currentUserGroup);
+    console.log('displayName计算:', this.displayName);
+    console.log('avatarUrl计算:', this.avatarUrl);
+    console.log('========== 结束 ==========');
     this.get_slides();
     this.get_menu();
     this.get_notice();

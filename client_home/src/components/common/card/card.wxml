@@ -1,0 +1,5 @@
+<view class="card-title-box">
+  <text class="card-title">{{ title }}</text>
+  <view @click="clickMore" v-if="url" class="more"> 更多 </view>
+</view>
+<slot></slot>

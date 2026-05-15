@@ -1,26 +1,8 @@
 import { mapState } from 'vuex';
 import store from '@/store';
 
-// 尝试将用户在根目录中的store/index.js的vuex的state变量加载到全局变量中
-let $tStoreKey = [];
-try {
-  $tStoreKey = store.state ? Object.keys(store.state.app) : [];
-} catch (e) {}
-module.exports = {
-  beforeCreate() {
-    // 将vuex方法挂在在$t中
-    // 使用方法:
-    // 修改vuex的state中的user.name变量为图鸟小菜 => this.$u.vuex('user.name', '图鸟小菜')
-    // 修改vuexde state中的version变量为1.0.1 => this.$u.vuex('version', 1.0.1)
-    this.$u.vuex = (name, value) => {
-      this.$store.commit('app/setUniVuex', {
-        name,
-        value,
-      });
-    };
-  },
+export default {
   computed: {
-    // 将vuex的state中的变量结构到全局混入mixin中
-    ...mapState('app', $tStoreKey),
+    ...mapState('app', ['token', 'userInfo', 'userGroup', 'userAuth', 'supportChat', 'vuex_version', 'vuex_custom_nav_bar', 'vuex_status_bar_height', 'vuex_custom_bar_height', 'vuex_safe_area_bottom', 'pathList']),
   },
 };

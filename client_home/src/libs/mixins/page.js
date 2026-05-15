@@ -175,11 +175,15 @@ export default {
      * @return {Object} 返回事件特定值
      */
     events: function events(name, param1, param2, param3) {
-      if (this[name]) {
-        if (param3) {
+      if (this[name] && typeof this[name] === 'function') {
+        if (param3 !== undefined) {
           return this[name](param1, param2, param3);
-        } else {
+        } else if (param2 !== undefined) {
           return this[name](param1, param2);
+        } else if (param1 !== undefined) {
+          return this[name](param1);
+        } else {
+          return this[name]();
         }
       } else {
         return null;
@@ -196,7 +200,7 @@ export default {
      */
     funcs: function funcs(name, param1, param2, param3) {
       var f = this[name];
-      if (f) {
+      if (f && typeof f === 'function') {
         if (param1 === undefined) {
           return f();
         } else if (param2 === undefined) {
@@ -429,7 +433,7 @@ export default {
       var ret;
       if (!msg) {
         ret = this.events('init_main', pm, func);
-      } else if (func) {
+      } else if (func && typeof func === 'function') {
         func();
       }
       return ret;
@@ -1005,9 +1009,10 @@ export default {
 
     /**
      * @description 上传文件
+     * @param {Object} param 上传参数
      * @param {Function} func 回调函数
      */
-    upload_main: function upload_main(func) {
+    upload_main: function upload_main(param, func) {
       var url = '';
       if (this.url) {
         url = this.url + 'method=upload';
@@ -1018,6 +1023,7 @@ export default {
       if (!param) {
         param = this.form;
       }
+      var msg = this.events('upload_check', param);
       if (msg) {
         this.$toast(msg, 'danger');
       } else {

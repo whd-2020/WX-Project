@@ -250,6 +250,5 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-@import '/static/css/editor.css';
 @import 'styles/pagesB/index.scss';
 </style>

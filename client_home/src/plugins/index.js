@@ -13,6 +13,7 @@ import auth from './auth';
 import './sdk.js';
 import './expand.js';
 import component from './component.js';
+import store from '@/store';
 const $u = {
   http,
   router,
@@ -22,6 +23,14 @@ const $u = {
   debounce,
   throttle,
   timeFormat,
+  vuex(name, value) {
+    console.log('$u.vuex - setting:', name, '=', value);
+    store.commit('app/setUniVuex', {
+      name,
+      value,
+    });
+    console.log('$u.vuex - after set, store state:', JSON.stringify(store.state.app[name], null, 2));
+  },
 };
 uni.$u = $u;
 uni.db = db;

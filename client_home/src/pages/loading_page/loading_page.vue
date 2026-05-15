@@ -30,16 +30,15 @@
 </template>
 
 <script>
-import mixin from '@/libs/mixins/page.js';
+import AudioManager from '@/utils/audio-manager.js';
 
 export default {
-  mixins: [mixin],
   data() {
     return {
       splashImage: '/static/images/games/JiaZaiYe.png',
       progress: 0,
       progressTimer: null,
-      isProgressComplete: false, // 进度是否完成
+      isProgressComplete: false,
     };
   },
   onLoad() {
@@ -52,9 +51,8 @@ export default {
   },
   methods: {
     startProgress() {
-      // 模拟加载进度，可以根据实际需求调整速度
-      const duration = 3000; // 总时长3秒
-      const interval = 30; // 每30ms更新一次
+      const duration = 3000;
+      const interval = 30;
       const increment = (100 / duration) * interval;
       
       this.progressTimer = setInterval(() => {
@@ -64,7 +62,6 @@ export default {
           this.progress = 100;
           clearInterval(this.progressTimer);
           
-          // 进度完成后，显示开始游戏按钮
           setTimeout(() => {
             this.isProgressComplete = true;
           }, 300);
@@ -73,7 +70,7 @@ export default {
     },
     
     navigateToHome() {
-      // 跳转到首页（首页是tabBar页面，使用switchTab）
+      AudioManager.playBGM();
       uni.switchTab({
         url: '/pages/index/index',
         success: () => {
@@ -81,7 +78,6 @@ export default {
         },
         fail: (err) => {
           console.error('跳转失败', err);
-          // 如果switchTab失败，尝试使用redirectTo
           uni.redirectTo({
             url: '/pages/index/index'
           });

@@ -1,7 +1,52 @@
 {
   "description": "微信小程序项目配置",
   "packOptions": {
-    "ignore": []
+    "ignore": [
+      {
+        "type": "file",
+        "value": "static/iconfont/iconfont.js"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/iconfont.json"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/demo_index.html"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/demo.css"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/iconfont.cssb"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/iconfont.ttf"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/iconfont.woff"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/iconfont.woff2"
+      },
+      {
+        "type": "file",
+        "value": "static/iconfont/iconfont.css"
+      },
+      {
+        "type": "file",
+        "value": "static/css/editor.css"
+      },
+      {
+        "type": "file",
+        "value": "static/css/iconfont.css"
+      }
+    ]
   },
   "setting": {
     "urlCheck": false,

@@ -10,7 +10,7 @@
         <view class="left_block">
           <image
             class="image"
-            :src="$fullImgUrl(o[vm.avatar]) || '/static/img/default.png'"
+            :src="$fullImgUrl(o[vm.avatar]) || '/static/img/avatar.jpg'"
           ></image>
         </view>
         <view class="right_block">

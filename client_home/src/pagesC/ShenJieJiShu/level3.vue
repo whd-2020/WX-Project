@@ -156,7 +156,7 @@
 
 <script>
 import mixin from '@/libs/mixins/page.js';
-import { audioManager } from '@/utils';
+import audioManager from '@/utils/audio-manager.js';
 
 export default {
   mixins: [mixin],
