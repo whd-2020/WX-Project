@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
@@ -961,7 +961,7 @@ export default {
 }
 
 .speech-bubble {
-  margin-bottom: 0;
+  margin-bottom: 60px;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
   background: linear-gradient(135deg, #f5e6d3 0%, #ecd5b0 50%, #d4b896 100%);

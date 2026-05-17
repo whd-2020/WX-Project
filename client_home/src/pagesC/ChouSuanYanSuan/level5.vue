@@ -27,7 +27,7 @@
     <view class="game-popup" v-if="showGamePopup" @click.stop>
       <!-- 筹算木棍互动区域 -->
       <view class="chouSuan-area">
-        <text class="chouSuan-title" :class="{ 'chouSuan-title--wrap': wrapTitleByComma }">{{ displayQuestionTitle }}</text>
+        <text class="chouSuan-title chouSuan-title--wrap">{{ displayQuestionTitle }}</text>
         <text class="chouSuan-title-measure">{{ rawQuestionTitle }}</text>
 
         <!-- 答题展示区域 -->
@@ -283,7 +283,6 @@ export default {
       return (this.question && this.question.questionTitle ? this.question.questionTitle : '点击放置木棍') || '';
     },
     displayQuestionTitle() {
-      if (!this.wrapTitleByComma) return this.rawQuestionTitle;
       return String(this.rawQuestionTitle).replace(/([，,])\s*/g, '$1\n');
     },
   },
@@ -321,12 +320,12 @@ export default {
       this.closeSuccessModal();
     },
     playTyping(text) {
-      this.fullText = text;
+      // 先处理文本，在逗号后添加换行符
+      this.fullText = text.replace(/([，,])\s*/g, '$1\n');
       this.displayText = '';
       this.showFullSpeech = false;
       this.showChildSpeech = false;
       this.showChildTip = false;
-      this.childSpeechText = '';
       if (this.childTipTimer) {
         clearTimeout(this.childTipTimer);
         this.childTipTimer = null;
@@ -570,23 +569,7 @@ export default {
     updateTitleWrap() {
       if (!this.showGamePopup) return;
       const title = String(this.rawQuestionTitle || '');
-      if (!/[，,]/.test(title)) {
-        this.wrapTitleByComma = false;
-        return;
-      }
-      const sys = uni.getSystemInfoSync ? uni.getSystemInfoSync() : null;
-      const windowWidth = sys && sys.windowWidth ? sys.windowWidth : 375;
-      const paddingPx = (40 * 2 * windowWidth) / 750;
-      const query = uni.createSelectorQuery().in(this);
-      query.select('.chouSuan-title').boundingClientRect();
-      query.select('.chouSuan-title-measure').boundingClientRect();
-      query.exec((res) => {
-        const titleRect = res && res[0] ? res[0] : null;
-        const measureRect = res && res[1] ? res[1] : null;
-        if (!titleRect || !measureRect) return;
-        const available = Math.max(0, (titleRect.width || 0) - paddingPx);
-        this.wrapTitleByComma = (measureRect.width || 0) > available;
-      });
+      this.wrapTitleByComma = /[，,]/.test(title);
     },
 
     addTensHorizontalStick() {
@@ -1050,12 +1033,13 @@ export default {
 
 .speech-bubble:not(.expanded) .speech-text {
   display: block;
-  white-space: normal;
+  white-space: pre-line;
   word-break: break-all;
 }
 
 .speech-bubble.expanded .speech-text {
   display: block;
+  white-space: pre-line;
 }
 
 .speech-bubble::before {
@@ -1075,6 +1059,7 @@ export default {
 .speech-text {
   line-height: 1.8;
   font-weight: 500;
+  white-space: pre-line;
 }
 
 .child-area {

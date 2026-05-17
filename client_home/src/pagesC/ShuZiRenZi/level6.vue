@@ -1110,8 +1110,9 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
   color: #2e7d32;
-  max-width: 480rpx;
-  min-width: 300rpx;
+  max-width: 650rpx;
+  min-width: 500rpx;
+  width: 90%;
   position: relative;
   z-index: 3;
   cursor: pointer;

@@ -52,7 +52,7 @@
                 v-for="(item, index) in droppedItems"
                 :key="index"
                 class="dropped-item"
-                @click="handleRemoveDroppedItem(index)"
+                @click="removeDroppedItem(index)"
               >
                 {{ item }}
               </text>
@@ -63,18 +63,10 @@
             </view>
           </view>
         </view>
-        
-        <!-- 提示信息 -->
-        <view v-if="currentQuestion.question_type === 'drag_item'" class="tip-message">
-          {{ getTipMessage() }}
-        </view>
-        
-        <!-- 添加/移除切换按钮和清空按钮 -->
+
+        <!-- 清空按钮 -->
         <view v-if="currentQuestion.question_type === 'drag_item'" class="toggle-btn-container">
-          <view class="toggle-btn" :class="{ 'toggle-btn-large': needToggleMode }" @click="handleToggleMode">
-            {{ isAddMode ? '添加' : '移除' }}
-          </view>
-          <view class="clear-btn" @click="handleClearDroppedItems">
+          <view class="clear-btn" @click="clearDroppedItems">
             清空
           </view>
         </view>
@@ -103,7 +95,7 @@
               v-for="(item, index) in items"
               :key="index"
               class="item-card"
-              @click="handleToggleItem(item.icon)"
+              @click="toggleItem(item.icon)"
             >
               {{ item.icon }}
             </view>
@@ -205,7 +197,6 @@ export default {
       isDragging: false,
       availableNumbers: [],
       numbers: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
-      isAddMode: true,
       wrapTitleByComma: false,
       showWelcomeText: true,
     }
@@ -1133,23 +1124,11 @@ export default {
       this.availableNumbers = this.availableNumbers.filter(item => item.num !== num);
     },
 
-    // 切换添加/移除模式
-    toggleMode() {
-      this.playClickSound();
-      this.isAddMode = !this.isAddMode;
-    },
-
     // 切换物品的添加/移除
     toggleItem(icon) {
       this.playClickSound();
-      if (this.isAddMode) {
-        // 添加模式：最多添加12个物品
-        if (this.droppedItems.length < 12) {
-          this.droppedItems.push(icon);
-        }
-      } else {
-        // 移除模式：点击答题区移除
-        // 这里不需要做任何操作，因为点击答题区的逻辑已经在removeDroppedItem方法中实现了
+      if (this.droppedItems.length < 12) {
+        this.droppedItems.push(icon);
       }
     },
 
@@ -1165,29 +1144,7 @@ export default {
       this.droppedItems = [];
     },
 
-    // 获取提示信息
-    getTipMessage() {
-      const maxCount = parseInt(this.currentQuestion.correct_answer?.answer || 0);
-      const currentCount = this.droppedItems.length;
-      
-      if (this.isAddMode) {
-        if (currentCount < maxCount) {
-          return '请添加物品';
-        } else if (currentCount > maxCount) {
-          return '物品数量超过了，点击切换到移除模式';
-        } else {
-          return '数量正确，点击提交试试';
-        }
-      } else {
-        if (currentCount < maxCount) {
-          return '物品数量不够，点击切换到添加模式';
-        } else if (currentCount > maxCount) {
-          return '请移除多余的物品';
-        } else {
-          return '数量正确，点击提交试试';
-        }
-      }
-    },
+
 
     // 返回上一页
     goBack() {
@@ -1281,79 +1238,30 @@ export default {
 /* 按钮容器样式 */
 .toggle-btn-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   margin: 20rpx 40rpx;
-}
-
-/* 添加/移除切换按钮样式 */
-.toggle-btn {
-  padding: 15rpx 40rpx;
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  border-radius: 25rpx;
-  font-size: 26rpx;
-  font-weight: 600;
-  text-align: center;
-  box-shadow: 0 6rpx 16rpx rgba(76, 175, 80, 0.3);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  line-height: 1.5;
-  min-width: 180rpx;
-}
-
-.toggle-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8rpx 20rpx rgba(76, 175, 80, 0.4);
-}
-
-.toggle-btn:active {
-  transform: scale(0.98);
-  box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
-}
-
-/* 需要切换模式时的按钮样式 */
-.toggle-btn-large {
-  transform: scale(1.1);
-  animation: pulse 1.5s infinite;
-  box-shadow: 0 8rpx 24rpx rgba(76, 175, 80, 0.5);
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1.1);
-  }
-  50% {
-    transform: scale(1.15);
-  }
-  100% {
-    transform: scale(1.1);
-  }
 }
 
 /* 清空按钮样式 */
 .clear-btn {
-  padding: 15rpx 40rpx;
+  padding: 20rpx 80rpx;
   background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
   color: white;
-  border-radius: 25rpx;
-  font-size: 26rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
   font-weight: 600;
   text-align: center;
   box-shadow: 0 6rpx 16rpx rgba(244, 67, 54, 0.3);
   cursor: pointer;
   transition: all 0.3s ease;
   line-height: 1.5;
-  min-width: 180rpx;
-}
-
-.clear-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 8rpx 20rpx rgba(244, 67, 54, 0.4);
+  min-width: 200rpx;
 }
 
 .clear-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
   box-shadow: 0 4rpx 12rpx rgba(244, 67, 54, 0.3);
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
 }
 
 .scene {
@@ -1388,8 +1296,9 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
   color: #2e7d32;
-  max-width: 480rpx;
-  min-width: 300rpx;
+  max-width: 650rpx;
+  min-width: 500rpx;
+  width: 90%;
   position: relative;
   z-index: 3;
   cursor: pointer;

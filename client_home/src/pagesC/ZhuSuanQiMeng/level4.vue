@@ -876,11 +876,11 @@ export default {
 .child-area {
   position: fixed;
   right: 20rpx;
-  bottom: 200rpx;
+  top: 200rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: flex-end;
   cursor: pointer;
 }
@@ -927,7 +927,7 @@ export default {
 .child-tip {
   position: absolute;
   top: -80rpx;
-  right: 0;
+  right: 240px;
   padding: 12rpx 20rpx;
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
   border-radius: 20rpx;

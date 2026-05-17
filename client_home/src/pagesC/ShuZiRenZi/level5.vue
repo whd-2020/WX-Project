@@ -341,7 +341,7 @@ export default {
     }
     this.resetTimer();
     setTimeout(() => {
-      this.playTyping('恭喜你成为能干的美食小店店长啦！今天要整理店铺货品、清点库存数量，同时帮顾客准备好对应商品。运用你学到的本领，顺利完成今日任务吧！')
+      this.playTyping('恭喜你成为能干的美食小店店长啦！今天要整理店铺货品、清点库存数量，同时帮顾客准备好对应商品，运用你学到的本领，顺利完成今日任务吧！')
     }, 1000);
   },
   onShow() {
@@ -1208,8 +1208,9 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
   color: #2e7d32;
-  max-width: 480rpx;
-  min-width: 300rpx;
+  max-width: 650rpx;
+  min-width: 500rpx;
+  width: 90%;
   position: relative;
   z-index: 3;
   cursor: pointer;

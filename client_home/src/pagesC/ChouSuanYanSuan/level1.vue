@@ -255,6 +255,38 @@ export default {
     },
   },
   methods: {
+    handleToggleSpeech() {
+      this.playClickSound();
+      this.showFullSpeech = !this.showFullSpeech;
+    },
+    handleOpenGamePopup() {
+      this.playClickSound();
+      this.openGamePopup();
+    },
+    handleCloseGamePopup() {
+      this.playClickSound();
+      this.closeGamePopup();
+    },
+    handleRemoveHorizontalStick() {
+      this.playClickSound();
+      this.removeHorizontalStick();
+    },
+    handleRemoveVerticalStick(index) {
+      this.playClickSound();
+      this.removeVerticalStick(index);
+    },
+    handleResetAnswer() {
+      this.playClickSound();
+      this.resetAnswer();
+    },
+    handleSubmitAnswer() {
+      this.playClickSound();
+      this.submitAnswer();
+    },
+    handleCloseSuccessModal() {
+      this.playClickSound();
+      this.closeSuccessModal();
+    },
     // 打字机效果
     playTyping(text) {
       this.fullText = text;
@@ -1017,7 +1049,7 @@ export default {
 }
 
 .speech-bubble {
-  margin-bottom: 0;
+  margin-bottom: 60px;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
   background: linear-gradient(135deg, #f5e6d3 0%, #ecd5b0 50%, #d4b896 100%);
