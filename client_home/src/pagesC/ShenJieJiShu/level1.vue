@@ -592,6 +592,8 @@ export default {
       if (!this.gamerId || !this.question.question_id) {
         // 没有 gamerId 或题目ID，使用前端判断
         if (isCorrectFront) {
+          // 答对了：播放成功音效
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           // 答对了：显示弹窗
           const actualTime = usedTime;
           let encouragement = '';
@@ -662,6 +664,8 @@ export default {
         console.log('当前 elapsedSeconds:', this.elapsedSeconds);
         
         if (isCorrect) {
+          // 答对了：播放成功音效
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           // 答对了：重新计算用时（使用实际经过的秒数，更准确）
           // 注意：elapsedSeconds 是整数秒，usedTime 是精确的秒数（带小数）
           const actualTime = usedTime; // 使用提交时的精确时间

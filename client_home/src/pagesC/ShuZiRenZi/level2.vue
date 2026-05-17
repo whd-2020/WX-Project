@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="rope-level-page">
 
     <!-- 背景图片 -->
@@ -535,12 +535,14 @@ export default {
           }
 
           this.showGamePopup = false;
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           this.successMessage = encouragement;
           this.successStarCount = stars;
           this.successTime = Math.round(actualTime);
           this.showSuccessModal = true;
           this.$forceUpdate();
         } else {
+          // 答错了：显示提示
           let errorMessage = '再试试，数字不对哦～';
           if (this.question.question_type === 'drag_item') {
             errorMessage = '再试试，数量不对哦～';
@@ -599,6 +601,7 @@ export default {
           }
 
           this.showGamePopup = false;
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           this.successMessage = encouragement;
           this.successStarCount = starCount;
           this.successTime = Math.round(actualTime);

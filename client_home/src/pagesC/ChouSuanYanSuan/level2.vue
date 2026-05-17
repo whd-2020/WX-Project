@@ -664,6 +664,8 @@ export default {
         if (isCorrectFront) {
           const actualTime = usedTime;
           let encouragement = '';
+          // 答对了：播放成功音效
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           if (stars === 3) {
             encouragement = '太厉害了！1分钟内完成，获得3颗星！';
           } else if (stars === 2) {
@@ -731,6 +733,8 @@ export default {
           console.log('计算出的星级 starCount:', starCount, '（用时:', actualTime, '秒）');
 
           let encouragement = '';
+          // 答对了：播放成功音效
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           if (starCount === 3) {
             encouragement = '太厉害了！1分钟内完成，获得3颗星！';
           } else if (starCount === 2) {

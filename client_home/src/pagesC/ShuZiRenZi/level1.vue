@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="rope-level-page">
 
     <!-- 背景图片 -->
@@ -547,6 +547,7 @@ export default {
           
           // 关闭游戏弹窗
           this.showGamePopup = false;
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           this.successMessage = encouragement;
           this.successStarCount = stars;
           this.successTime = Math.round(actualTime);
@@ -620,6 +621,7 @@ export default {
           
           // 关闭游戏弹窗
           this.showGamePopup = false;
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           // 显示自定义成功弹窗
           this.successMessage = encouragement;
           this.successStarCount = starCount;

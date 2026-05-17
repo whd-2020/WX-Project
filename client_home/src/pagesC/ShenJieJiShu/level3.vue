@@ -104,18 +104,7 @@
       </view>
     </view>
 
-    <!-- 答错提示弹窗 -->
-    <view class="error-modal" v-if="showErrorModal" @click.stop>
-      <view class="error-content" @click.stop>
-        <view class="error-icon">✗</view>
-        <view class="error-title">有点小问题哦～</view>
-        <view class="error-message">再想一想，你可以的！</view>
-        <view class="error-buttons">
-          <button class="error-btn retry-btn" @click="retryQuestion">重新尝试</button>
-          <button class="error-btn next-btn" @click="skipQuestion">换一题</button>
-        </view>
-      </view>
-    </view>
+    
 
     <!-- 自定义成功弹窗 -->
     <view class="success-modal" v-if="showSuccessModal" @click="closeSuccessModal">
@@ -181,8 +170,7 @@ export default {
       successMessage: '',
       successStarCount: 0,
       successTime: 0,
-      // 答错弹窗相关
-      showErrorModal: false,
+      
       // 所有题目满3星弹窗
       showAllCompleteModal: false,
       // 是否显示默认题目提示
@@ -254,20 +242,25 @@ export default {
       }
       return '';
     },
-    // 判断是否可以提交（是否达到目标结数）
+    // 判断是否可以提交（答案是否正确）
     canSubmit() {
-      if (!this.question) {
+      if (!this.question || !this.question.correct_answer) {
         return false;
       }
       if (this.isComboQuestion) {
-        return this.ropes.length > 0 && this.ropes.every(r => r.knots && r.knots.length > 0);
+        if (!this.ropes || this.ropes.length === 0) return false;
+        const correctAnswer = this.question.correct_answer;
+        if (!correctAnswer || !Array.isArray(correctAnswer.items)) return false;
+        return this.ropes.every(rope => {
+          const correctItem = correctAnswer.items.find(item => item.decoration === rope.decoration);
+          return correctItem && rope.knots && rope.knots.length === correctItem.count;
+        });
       }
-      if (!this.question.targetNumber) {
-        return false;
-      }
-      const target = Number(this.question.targetNumber);
-      const current = this.knots.length;
-      return current === target;
+      const correctAnswer = this.question.correct_answer;
+      if (!correctAnswer) return false;
+      const target = Number(correctAnswer.count) || Number(this.question.targetNumber);
+      if (isNaN(target)) return false;
+      return this.knots.length === target;
     },
     // 选中装饰物的图标
     selectedDecorationIcon() {
@@ -783,6 +776,8 @@ export default {
         }
 
         if (isCorrect) {
+          // 答对了：播放成功音效
+          audioManager.playTipSound('/static/audio/pass.mp3');
           const starCount = this.calculateStars(true, actualTime);
 
           let encouragement = '';
@@ -802,41 +797,16 @@ export default {
           this.successTime = Math.round(actualTime);
           this.showSuccessModal = true;
         } else {
-          this.showGamePopup = false;
-          this.showErrorModal = true;
+          if (this.isComboQuestion) {
+            this.ropes.forEach(rope => {
+              rope.knots = [];
+            });
+          } else {
+            this.knots = [];
+          }
+          this.resetTimer();
         }
       });
-    },
-
-    retryQuestion() {
-      this.showErrorModal = false;
-      if (this.isComboQuestion) {
-        this.ropes.forEach(rope => {
-          rope.knots = [];
-        });
-      } else {
-        this.knots = [];
-      }
-      this.resetTimer();
-    },
-
-    skipQuestion() {
-      this.showErrorModal = false;
-      this.showGamePopup = false;
-      this.knots = [];
-      this.ropes = [];
-      this.selectedDecoration = null;
-      this.currentDecorations = [];
-      this.resetTimer();
-      this.showFullSpeech = false;
-      this.showChildSpeech = false;
-      this.showChildTip = false;
-      this.childSpeechText = '';
-      if (this.childTipTimer) {
-        clearTimeout(this.childTipTimer);
-        this.childTipTimer = null;
-      }
-      this.fetchNextQuestion();
     },
 
     fetchNextQuestion() {
@@ -1734,81 +1704,5 @@ export default {
   text-shadow: 0 1rpx 3rpx rgba(255, 255, 255, 0.8);
 }
 
-/* 答错弹窗样式 */
-.error-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 300;
-}
-
-.error-content {
-  width: 80%;
-  max-width: 500rpx;
-  background: #fff;
-  border-radius: 24rpx;
-  padding: 60rpx 40rpx 40rpx;
-  text-align: center;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.2);
-}
-
-.error-icon {
-  width: 100rpx;
-  height: 100rpx;
-  line-height: 100rpx;
-  margin: 0 auto 30rpx;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: #fff;
-  font-size: 60rpx;
-  border-radius: 50%;
-  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.3);
-}
-
-.error-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20rpx;
-}
-
-.error-message {
-  font-size: 26rpx;
-  color: #666;
-  margin-bottom: 40rpx;
-}
-
-.error-buttons {
-  display: flex;
-  gap: 20rpx;
-  justify-content: center;
-}
-
-.error-btn {
-  flex: 1;
-  height: 80rpx;
-  line-height: 80rpx;
-  border: none;
-  border-radius: 40rpx;
-  font-size: 28rpx;
-  font-weight: 600;
-}
-
-.retry-btn {
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
-}
-
-.next-btn {
-  background: linear-gradient(135deg, #2196f3 0%, #42a5f5 100%);
-  color: #fff;
-  box-shadow: 0 4rpx 12rpx rgba(33, 150, 243, 0.3);
-}
 </style>
 

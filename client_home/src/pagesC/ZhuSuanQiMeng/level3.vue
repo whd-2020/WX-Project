@@ -648,6 +648,7 @@ export default {
           this.successMessage = encouragement;
           this.successStarCount = stars;
           this.successTime = Math.round(actualTime);
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           this.showSuccessModal = true;
           this.$forceUpdate();
         } else {
@@ -688,6 +689,7 @@ export default {
           this.successMessage = encouragement;
           this.successStarCount = starCount;
           this.successTime = Math.round(actualTime);
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           this.showSuccessModal = true;
           this.$forceUpdate();
         } else {

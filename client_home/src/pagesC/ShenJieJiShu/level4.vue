@@ -626,6 +626,8 @@ export default {
 
       if (!this.gamerId || !this.question.question_id) {
         if (isCorrectFront) {
+          // 答对了：播放成功音效
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           const actualTime = usedTime;
           let encouragement = '';
           if (stars === 3) {
@@ -688,6 +690,8 @@ export default {
         }
 
         if (isCorrect) {
+          // 答对了：播放成功音效
+          this.$audio.playTipSound('/static/audio/pass.mp3');
           const actualTime = usedTime;
           const starCount = this.calculateStars(true, actualTime);
           let encouragement = '';

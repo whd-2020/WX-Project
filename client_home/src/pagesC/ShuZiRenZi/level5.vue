@@ -670,6 +670,7 @@ export default {
       }
 
       this.showGamePopup = false;
+      this.$audio.playTipSound('/static/audio/pass.mp3');
       this.successMessage = encouragement;
       this.successStarCount = stars;
       this.successTime = Math.round(time);

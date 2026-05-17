@@ -8,7 +8,7 @@
           <view class="sound-item">
             <view class="sound-item-left">
               <text class="sound-icon">🔊</text>
-              <text class="sound-label">点击音效</text>
+              <text class="sound-label">系统音效</text>
             </view>
             <view class="sound-item-right">
               <switch 
@@ -32,10 +32,6 @@
               />
             </view>
           </view>
-        </view>
-        
-        <view class="sound-tip">
-          <text class="tip-text">全局生效，实时控制</text>
         </view>
       </view>
     </view>
@@ -62,14 +58,12 @@ export default {
       this.bgmEnabled = this.$audio.isBgmEnabled();
     },
     toggleClickSound(e) {
-      this.playClickSound();
       const enabled = e.detail.value;
       this.clickSoundEnabled = enabled;
       this.$audio.setClickSoundEnabled(enabled);
       this.$toast(enabled ? '点击音效已开启' : '点击音效已关闭');
     },
     toggleBgm(e) {
-      this.playClickSound();
       const enabled = e.detail.value;
       this.bgmEnabled = enabled;
       this.$audio.setBgmEnabled(enabled);

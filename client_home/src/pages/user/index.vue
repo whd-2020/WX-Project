@@ -92,7 +92,7 @@
               <text class="section-text">3. 通关所有关卡可解锁更多成就和奖励</text>
             </view>
             <view class="gameplay-section">
-              <text class="section-title">⭐ 关卡介绍</text>
+              <text class="section-title">⭐ 赛道介绍</text>
               <text class="section-text">• 结绳计数：学习远古人类用绳结记事的方法</text>
               <text class="section-text">• 筹算演算：体验古代算筹计数与计算</text>
               <text class="section-text">• 珠算启蒙：认识算盘并学习基础拨珠方法</text>
