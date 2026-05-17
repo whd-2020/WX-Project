@@ -811,8 +811,8 @@ export default {
 
 .elder-area {
   position: fixed;
-  left: 20rpx;
-  bottom: 150rpx;
+  left: 230rpx;
+  top: 15rpx;
   z-index: 2;
   display: flex;
   flex-direction: column;
@@ -826,7 +826,7 @@ export default {
 }
 
 .speech-bubble {
-  margin-bottom: 20rpx;
+  margin-top: 20rpx;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
   background: linear-gradient(135deg, #fdf5e6 0%, #faebd7 50%, #f5deb3 100%);

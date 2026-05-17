@@ -4,10 +4,12 @@ import AudioManager from '@/utils/audio-manager.js';
 export default {
   onLaunch: function () {
     console.log('App Launch');
+    AudioManager.initClickSound();
   },
   onShow: function () {
     console.log('App Show');
     AudioManager.playBGM();
+    AudioManager.initClickSound();
   },
   onHide: function () {
     console.log('App Hide');

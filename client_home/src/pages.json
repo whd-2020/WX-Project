@@ -57,12 +57,6 @@
         "backgroundColor": "#000000"
       }
     },
-    {
-      "path": "pages/user/comment",
-      "style": {
-        "navigationBarTitleText": "我的评论"
-      }
-    },
     
     {
       "path": "pages/user/index",

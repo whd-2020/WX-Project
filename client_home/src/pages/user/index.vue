@@ -74,6 +74,53 @@
       </view>
     </view>
 
+    <!-- 游戏玩法弹窗 -->
+    <view v-if="showGamePlayModal" class="gameplay-modal-overlay" @click="showGamePlayModal = false">
+      <view class="gameplay-modal" @click.stop>
+        <view class="gameplay-modal-close" @click="showGamePlayModal = false">×</view>
+        <scroll-view class="gameplay-modal-content" scroll-y>
+          <view class="gameplay-title">游戏玩法</view>
+          <view class="gameplay-body">
+            <view class="gameplay-section">
+              <text class="section-title">🎯 游戏目标</text>
+              <text class="section-text">通过体验不同历史时期的计数工具，了解数学发展历史，掌握基础数学概念。</text>
+            </view>
+            <view class="gameplay-section">
+              <text class="section-title">🎮 操作方式</text>
+              <text class="section-text">1. 点击首页下方快捷功能进入对应游戏关卡</text>
+              <text class="section-text">2. 按照游戏内提示完成各项操作任务</text>
+              <text class="section-text">3. 通关所有关卡可解锁更多成就和奖励</text>
+            </view>
+            <view class="gameplay-section">
+              <text class="section-title">⭐ 关卡介绍</text>
+              <text class="section-text">• 结绳计数：学习远古人类用绳结记事的方法</text>
+              <text class="section-text">• 筹算演算：体验古代算筹计数与计算</text>
+              <text class="section-text">• 珠算启蒙：认识算盘并学习基础拨珠方法</text>
+              <text class="section-text">• 数字认知：综合练习与数字概念巩固</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+
+    <!-- 意见反馈弹窗 -->
+    <view v-if="showFeedbackModal" class="feedback-modal-overlay" @click="showFeedbackModal = false">
+      <view class="feedback-modal" @click.stop>
+        <view class="feedback-modal-close" @click="showFeedbackModal = false">×</view>
+        <view class="feedback-modal-content">
+          <view class="feedback-title">意见反馈</view>
+          <view class="feedback-body">
+            <text class="feedback-text">感谢您的使用！如果在使用过程中遇到问题，或者有任何关于内容、玩法的建议，欢迎通过以下方式告诉我们：</text>
+            <view class="feedback-email">
+              <text class="email-label">📧 反馈邮箱：</text>
+              <text class="email-address" selectable="true">support@gushuxinyu.com</text>
+            </view>
+            <text class="feedback-text feedback-note">我们会认真查看每一条反馈，持续优化产品</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 简单的底部导航栏 -->
     <view class="custom-tabbar">
       <view
@@ -97,6 +144,7 @@
   import tabbar from '@/libs/mixins/tabbar.js';
   import mixin from '@/libs/mixins/page.js';
   import store from '@/store';
+  import AudioManager from '@/utils/audio-manager.js';
 
   export default {
     mixins: [tabbar, mixin],
@@ -104,6 +152,8 @@
       return {
         tabbarIndex: 0,
         showAboutModal: false,
+        showGamePlayModal: false,
+        showFeedbackModal: false,
         quickList: [
           {
             key: 'track_rope',
@@ -140,8 +190,9 @@
         ],
         settingList: [
           { key: 'my_info', title: '我的信息', icon: 'tn-icon-identity', action: 'nav', url: '/pages/user/info', needLogin: true },
-          // { key: 'system_sound', title: '系统音效', icon: 'tn-icon-lock', action: 'nav', url: '/pages/user/sound' },
-          { key: 'feedback', title: '意见反馈', icon: 'tn-icon-comment-fill', action: 'toast' },
+          { key: 'system_sound', title: '系统音效', icon: 'tn-icon-sound', action: 'nav', url: '/pages/user/sound' },
+          { key: 'game_play', title: '游戏玩法', icon: 'tn-icon-play', action: 'gamePlay', needLogin: true },
+          { key: 'feedback', title: '意见反馈', icon: 'tn-icon-comment-fill', action: 'feedback' },
           { key: 'about', title: '关于我们', icon: 'tn-icon-help', action: 'about' },
         ],
       };
@@ -201,14 +252,26 @@
         }
       },
       handleEntry(item) {
-        this.playClickSound();
         console.log('handleEntry item:', item);
+        if (item.key === 'system_sound') {
+          AudioManager.playClickSoundForce();
+        } else {
+          this.playClickSound();
+        }
         if (item && item.needLogin && !store.state.app.token) {
           this.toLogin();
           return;
         }
         if (item.key === 'about') {
           this.showAboutModal = true;
+          return;
+        }
+        if (item.key === 'game_play') {
+          this.showGamePlayModal = true;
+          return;
+        }
+        if (item.key === 'feedback') {
+          this.showFeedbackModal = true;
           return;
         }
         if (item && item.action === 'nav' && item.url) {
@@ -422,8 +485,11 @@
     background: rgba(0, 0, 0, 0.5);
     z-index: 9999;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding-top: 100rpx;
+    padding-bottom: 240rpx;
+    box-sizing: border-box;
   }
 
   .about-modal {
@@ -506,5 +572,205 @@
     color: #8a9cad;
     text-align: center;
     margin-bottom: 10rpx;
+  }
+
+  .gameplay-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 120rpx;
+    padding-bottom: 240rpx;
+    box-sizing: border-box;
+  }
+
+  .gameplay-modal {
+    width: 88%;
+    max-height: calc(100vh - 360rpx);
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 24rpx;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gameplay-modal-close {
+    position: absolute;
+    top: 20rpx;
+    right: 20rpx;
+    width: 60rpx;
+    height: 60rpx;
+    line-height: 56rpx;
+    text-align: center;
+    font-size: 48rpx;
+    color: #999;
+    z-index: 10;
+  }
+
+  .gameplay-modal-content {
+    padding: 50rpx 40rpx;
+    height: 900rpx;
+  }
+
+  .gameplay-title {
+    text-align: center;
+    font-size: 40rpx;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 30rpx;
+    position: relative;
+    padding-bottom: 20rpx;
+  }
+
+  .gameplay-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80rpx;
+    height: 4rpx;
+    background: linear-gradient(90deg, #2f80ff, #6a9eff);
+    border-radius: 2rpx;
+  }
+
+  .gameplay-body {
+    padding-top: 10rpx;
+  }
+
+  .gameplay-section {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 30rpx;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .section-title {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #2f80ff;
+    margin-bottom: 16rpx;
+  }
+
+  .section-text {
+    font-size: 28rpx;
+    color: #5a6c7d;
+    line-height: 1.8;
+    margin-bottom: 8rpx;
+    text-align: justify;
+  }
+
+  .feedback-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .feedback-modal {
+    width: 88%;
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 24rpx;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.15);
+  }
+
+  .feedback-modal-close {
+    position: absolute;
+    top: 20rpx;
+    right: 20rpx;
+    width: 60rpx;
+    height: 60rpx;
+    line-height: 56rpx;
+    text-align: center;
+    font-size: 48rpx;
+    color: #999;
+    z-index: 10;
+  }
+
+  .feedback-modal-content {
+    padding: 50rpx 40rpx 60rpx;
+  }
+
+  .feedback-title {
+    text-align: center;
+    font-size: 40rpx;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 40rpx;
+    position: relative;
+    padding-bottom: 20rpx;
+  }
+
+  .feedback-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80rpx;
+    height: 4rpx;
+    background: linear-gradient(90deg, #2f80ff, #6a9eff);
+    border-radius: 2rpx;
+  }
+
+  .feedback-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .feedback-text {
+    font-size: 30rpx;
+    color: #5a6c7d;
+    line-height: 1.8;
+    margin-bottom: 30rpx;
+    text-align: justify;
+  }
+
+  .feedback-email {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30rpx;
+    background: rgba(47, 128, 255, 0.08);
+    border-radius: 16rpx;
+    margin-bottom: 30rpx;
+  }
+
+  .email-label {
+    font-size: 28rpx;
+    color: #5a6c7d;
+    margin-bottom: 12rpx;
+  }
+
+  .email-address {
+    font-size: 34rpx;
+    font-weight: 600;
+    color: #2f80ff;
+  }
+
+  .feedback-note {
+    text-align: center;
+    color: #7f8c8d;
+    font-style: italic;
+    margin-bottom: 0;
   }
 </style>

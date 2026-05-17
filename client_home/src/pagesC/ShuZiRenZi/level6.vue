@@ -1086,12 +1086,13 @@ export default {
 
 .elder-area {
   position: fixed;
-  left: 20rpx;
+  left: 50%;
   bottom: 200rpx;
+  transform: translateX(-50%);
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .elder-img {
@@ -1104,11 +1105,11 @@ export default {
   margin-bottom: 20rpx;
   margin-left: 10rpx;
   padding: 24rpx 28rpx;
-  background: linear-gradient(135deg, #fff59d 0%, #ffeb3b 50%, #ffc107 100%);
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
   border-radius: 28rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
-  color: #333;
+  color: #2e7d32;
   max-width: 480rpx;
   min-width: 300rpx;
   position: relative;
@@ -1141,7 +1142,7 @@ export default {
   height: 0;
   border-left: 16rpx solid transparent;
   border-right: 16rpx solid transparent;
-  border-top: 16rpx solid #ffc107;
+  border-top: 16rpx solid #a5d6a7;
   filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.15));
 }
 

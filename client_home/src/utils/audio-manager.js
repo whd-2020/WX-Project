@@ -5,6 +5,46 @@ const AudioManager = {
   _tipAudioContext: null,
   _clickAudioContext: null,
   _clickSrc: '/static/audio/click.mp3',
+  _clickAudioReady: false,
+  _clickAudioLoading: false,
+
+  _storageKeys: {
+    bgm: 'bgmEnabled',
+    click: 'clickSoundEnabled'
+  },
+
+  isBgmEnabled() {
+    try {
+      const val = uni.getStorageSync(this._storageKeys.bgm);
+      return val !== false;
+    } catch (e) {
+      console.warn('读取背景音乐设置失败:', e);
+      return true;
+    }
+  },
+
+  isClickSoundEnabled() {
+    try {
+      const val = uni.getStorageSync(this._storageKeys.click);
+      return val !== false;
+    } catch (e) {
+      console.warn('读取点击音效设置失败:', e);
+      return true;
+    }
+  },
+
+  setBgmEnabled(enabled) {
+    uni.setStorageSync(this._storageKeys.bgm, enabled);
+    if (enabled) {
+      this.playBGM();
+    } else {
+      this.stopBGM();
+    }
+  },
+
+  setClickSoundEnabled(enabled) {
+    uni.setStorageSync(this._storageKeys.click, enabled);
+  },
 
   _initBGM() {
     if (this._bgmAudioContext) {
@@ -37,8 +77,7 @@ const AudioManager = {
   },
 
   playBGM() {
-    const disable = !!uni.getStorageSync('disable_bgm');
-    if (disable) return;
+    if (!this.isBgmEnabled()) return;
     if (!this._bgmAudioContext) {
       this._initBGM();
     }
@@ -75,17 +114,15 @@ const AudioManager = {
   },
 
   refreshBGMState() {
-    const disable = !!uni.getStorageSync('disable_bgm');
-    if (disable) {
-      this.pauseBGM();
-    } else {
+    if (this.isBgmEnabled()) {
       this.playBGM();
+    } else {
+      this.stopBGM();
     }
   },
 
   playTipSound(src) {
-    const disable = !!uni.getStorageSync('disable_tip_sound');
-    if (disable) return;
+    if (!this.isClickSoundEnabled()) return;
     
     if (this._tipAudioContext) {
       try {
@@ -111,8 +148,10 @@ const AudioManager = {
     this._tipAudioContext.play();
   },
 
-  playClickSound() {
-    console.log('🎵 [点击音效] 开始播放点击音效，音频路径:', this._clickSrc);
+  initClickSound() {
+    if (this._clickAudioLoading || this._clickAudioReady) return;
+    
+    this._clickAudioLoading = true;
     
     if (this._clickAudioContext) {
       try {
@@ -122,40 +161,90 @@ const AudioManager = {
     
     this._clickAudioContext = uni.createInnerAudioContext();
     this._clickAudioContext.src = this._clickSrc;
+    this._clickAudioContext.loop = false;
     
-    this._clickAudioContext.onPlay(() => {
-      console.log('🎵 [点击音效] 音频开始播放成功!');
+    this._clickAudioContext.onCanplay(() => {
+      this._clickAudioReady = true;
+      this._clickAudioLoading = false;
     });
     
     this._clickAudioContext.onEnded(() => {
-      console.log('🎵 [点击音效] 音频播放结束');
       try {
-        this._clickAudioContext.destroy();
-        this._clickAudioContext = null;
-      } catch (e) {}
-    });
-    this._clickAudioContext.onError((res) => {
-      console.error('❌ [点击音效] 音频加载失败:', res);
-      try {
-        this._clickAudioContext.destroy();
-        this._clickAudioContext = null;
-      } catch (e) {}
+        if (this._clickAudioContext) {
+          this._clickAudioContext.seek(0);
+        }
+      } catch (e) {
+        console.warn('重置点击音效失败:', e);
+        this._clickAudioReady = false;
+        this._clickAudioLoading = false;
+      }
     });
     
-    console.log('🎵 [点击音效] 调用 play()');
-    this._clickAudioContext.play();
+    this._clickAudioContext.onError((res) => {
+      console.warn('点击音效加载失败:', res && res.errMsg ? res.errMsg : res);
+      this._clickAudioReady = false;
+      this._clickAudioLoading = false;
+      if (this._clickAudioContext) {
+        try {
+          this._clickAudioContext.destroy();
+        } catch (e) {}
+        this._clickAudioContext = null;
+      }
+    });
+  },
+
+  playClickSound() {
+    if (!this.isClickSoundEnabled()) return;
+    this._playClickSoundInternal();
+  },
+
+  playClickSoundForce() {
+    this._playClickSoundInternal();
+  },
+
+  _playClickSoundInternal() {
+    if (!this._clickAudioReady) {
+      this.initClickSound();
+      return;
+    }
+    
+    if (!this._clickAudioContext) {
+      this.initClickSound();
+      return;
+    }
+    
+    try {
+      this._clickAudioContext.seek(0);
+      this._clickAudioContext.play();
+    } catch (e) {
+      console.warn('播放点击音效失败:', e);
+      this._clickAudioReady = false;
+      this.initClickSound();
+    }
   },
 
   destroy() {
     if (this._bgmAudioContext) {
-      this._bgmAudioContext.destroy();
+      try {
+        this._bgmAudioContext.destroy();
+      } catch (e) {}
       this._bgmAudioContext = null;
       this._isPlaying = false;
     }
     if (this._tipAudioContext) {
-      this._tipAudioContext.destroy();
+      try {
+        this._tipAudioContext.destroy();
+      } catch (e) {}
       this._tipAudioContext = null;
     }
+    if (this._clickAudioContext) {
+      try {
+        this._clickAudioContext.destroy();
+      } catch (e) {}
+      this._clickAudioContext = null;
+    }
+    this._clickAudioReady = false;
+    this._clickAudioLoading = false;
   }
 };
 

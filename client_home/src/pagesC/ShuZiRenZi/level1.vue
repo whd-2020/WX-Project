@@ -1362,12 +1362,13 @@ export default {
 
 .elder-area {
   position: fixed;
-  left: 20rpx;
+  left: 50%;
   top: 100rpx;
+  transform: translateX(-50%);
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
 }
 
 .elder-img {
