@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
@@ -978,12 +978,8 @@ export default {
 }
 
 .speech-bubble:not(.expanded) .speech-text {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: block;
+  white-space: normal;
   word-break: break-all;
 }
 
