@@ -900,7 +900,7 @@ export default {
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15), 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
   font-size: 26rpx;
   color: #333;
-  max-width: 480rpx;
+  max-width: 600rpx;
   min-width: 300rpx;
   position: relative;
   z-index: 3;

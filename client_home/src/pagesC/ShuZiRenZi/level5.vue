@@ -699,8 +699,11 @@ export default {
 
     generateRandomNumbers() {
       const correctAnswer = this.currentQuestion.correct_answer || {};
-      const answer = correctAnswer.answer || '0';
-      let correctNum = parseInt(answer);
+      let correctNum = 0;
+      
+      if (correctAnswer.answer !== undefined && correctAnswer.answer !== null) {
+        correctNum = parseInt(String(correctAnswer.answer));
+      }
       
       if (!Number.isFinite(correctNum) || correctNum < 0) {
         correctNum = typeof this.displayIconCount === 'number' 
@@ -718,6 +721,11 @@ export default {
       
       this.numbers = Array.from(numbersSet).map(num => num.toString());
       this.numbers.sort(() => Math.random() - 0.5);
+      
+      if (!this.numbers.includes(String(correctNum))) {
+        this.numbers[0] = String(correctNum);
+        this.numbers.sort(() => Math.random() - 0.5);
+      }
     },
     fetchQuestion() {
       const gamerId = Number(this.gamerId);
@@ -811,6 +819,9 @@ export default {
 
         this.question = q;
         this.wrapTitleByComma = false;
+        this.$nextTick(() => {
+          this.generateRandomNumbers();
+        });
         this.playTyping(q.question_content.options[0]);
         if (this.showGamePopup) {
           this.$nextTick(() => {
