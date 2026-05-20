@@ -3,7 +3,7 @@
     <view class="track-content">
       <image
         class="track-bg"
-        src="/static/img/index/ZhuSuanQiMeng.png"
+        src="/static/images/games/ZhuSuanQiMeng.png"
         mode="aspectFill"
       />
       <view class="track-info">

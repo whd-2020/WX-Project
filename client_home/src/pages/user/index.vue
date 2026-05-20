@@ -158,7 +158,7 @@
           {
             key: 'track_rope',
             title: '结绳计数',
-            img: '/static/img/rope/ShengZi.png',
+            img: '/static/img/index/ShengJieJiShu.png',
             bg: '#BFD7FF',
             action: 'nav',
             url: '/pages/track/rope',
@@ -166,7 +166,7 @@
           {
             key: 'track_counting_rods',
             title: '筹算演算',
-            img: '/static/images/games/basic_counting_rods.png',
+            img: '/static/img/index/ChouSuanYanSuan.png',
             bg: '#BFE8C9',
             action: 'nav',
             url: '/pages/track/counting_rods',
@@ -182,7 +182,7 @@
           {
             key: 'track_comprehensive',
             title: '数字认知',
-            img: '/static/images/games/level_challenge.png',
+            img: '/static/img/index/ShuZiRenZhi.png',
             bg: '#BFE7FF',
             action: 'nav',
             url: '/pages/track/comprehensive',
@@ -389,18 +389,20 @@
   }
 
   .me-quick-icon {
-    width: 92rpx;
-    height: 92rpx;
-    border-radius: 46rpx;
+    width: 100rpx;
+    height: 100rpx;
+    border-radius: 50rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 12rpx;
+    overflow: hidden;
   }
 
   .me-quick-img {
-    width: 58rpx;
-    height: 58rpx;
+    width: 90%;
+    height: 90%;
+    object-fit: cover;
   }
 
   .me-quick-icon-text {
