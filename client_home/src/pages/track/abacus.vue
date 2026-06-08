@@ -25,7 +25,7 @@
             :key="level.levelId || index"
             @click="startLevel(index)"
           >
-            <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
+            <text class="level-name">{{ `关卡${['一','二','三','四','五'][index] || index + 1}：${level.levelName}` }}</text>
             <text
               class="level-status"
               :class="{
@@ -92,6 +92,17 @@ export default {
     }
   },
   methods: {
+    getFixedLevelName(levelNo) {
+      const names = {
+        1: '初识感知关',
+        2: '个位数基础练习关',
+        3: '账房小学徒任务关',
+        4: '两位数进阶练习关',
+        5: '账房先生任务关'
+      };
+      return names[levelNo] || `关卡 ${levelNo}`;
+    },
+
     getGamerId() {
       const token = store.state.app.token;
       const userInfo = store.state.app.userInfo || {};
@@ -173,6 +184,7 @@ export default {
               ...level,
               levelId,
               levelOrder,
+              levelName: this.getFixedLevelName(levelOrder),
               isCompleted: isCompleted ? 1 : 0,
               isUnlocked: isUnlocked ? 1 : 0,
               totalStars,

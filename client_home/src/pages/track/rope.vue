@@ -25,7 +25,7 @@
             :key="level.levelId || index"
             @click="startLevel(index)"
           >
-            <text class="level-name">{{ level.levelName || `关卡 ${index + 1}` }}</text>
+            <text class="level-name">{{ `关卡${['一','二','三','四','五'][index] || index + 1}：${level.levelName}` }}</text>
             <text
               class="level-status"
               :class="{
@@ -73,7 +73,14 @@ export default {
       levelList: [],
       loading: true,
       gamerId: null,
-      showIntroCard: false
+      showIntroCard: false,
+      levelNames: [
+        '初识感知关',
+        '个位数基础练习关',
+        '个位数情景任务关｜部落小记录员',
+        '两位数进阶练习关',
+        '两位数情景任务关｜部落物资小管家'
+      ]
     };
   },
   onLoad(options) {
@@ -156,6 +163,18 @@ export default {
       });
     },
 
+    // 固定的关卡名称映射
+    getFixedLevelName(levelNo) {
+      const names = {
+        1: '初识感知关',
+        2: '个位数基础练习关',
+        3: '部落小记录员任务关',
+        4: '两位数进阶练习关',
+        5: '部落物资小管家任务关'
+      };
+      return names[levelNo] || `关卡 ${levelNo}`;
+    },
+
     async loadLevelProgress() {
       if (!this.gamerId) {
         return;
@@ -177,6 +196,7 @@ export default {
               ...level,
               levelId,
               levelOrder,
+              levelName: this.getFixedLevelName(levelOrder),
               isCompleted: isCompleted ? 1 : 0,
               isUnlocked: isUnlocked ? 1 : 0,
               totalStars,
@@ -348,7 +368,7 @@ export default {
 }
 
 .level-name {
-  font-size: 32rpx;
+  font-size: 26rpx;
   font-weight: 500;
   color: #333;
 }
