@@ -658,7 +658,7 @@ public class QuestionBankService extends BaseService<QuestionBank> {
     }
 
     /**
-     * 计算并保存关卡星级
+     * 计算并保存关卡星级-累加星数
      * @param gamerId 玩家ID
      * @param levelId 关卡ID
      * @param trackId 赛道ID
