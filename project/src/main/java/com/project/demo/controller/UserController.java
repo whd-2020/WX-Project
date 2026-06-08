@@ -2,7 +2,6 @@ package com.project.demo.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.project.demo.entity.AccessToken;
 import com.project.demo.entity.User;
 import com.project.demo.entity.UserGroup;
 import com.project.demo.entity.Gamer;
@@ -238,22 +237,20 @@ public class UserController extends BaseController<User, UserService> {
         }
 						String md5password = password;
 				            if (byUsername.getPassword().equals(md5password)) {
-                // 存储Token到数据库
-                AccessToken accessToken = new AccessToken();
-                accessToken.setToken(UUID.randomUUID().toString().replaceAll("-", ""));
-                accessToken.setUser_id(byUsername.getUserId());
+                // 生成Token并存储到Redis
+                String token = UUID.randomUUID().toString().replaceAll("-", "");
+                Integer userId = byUsername.getUserId();
 
                 try {
                     Duration duration = Duration.ofSeconds(7200L);
-                    redisTemplate.opsForValue().set(accessToken.getToken(), accessToken,duration);
+                    redisTemplate.opsForValue().set(token, userId, duration);
                 } catch (Exception e) {
-                    log.warn("Redis连接失败，Token存储到数据库失败: {}", e.getMessage());
-                    // 即使Redis失败也继续登录流程
+                    log.warn("Redis连接失败，Token存储失败: {}", e.getMessage());
                 }
 
                 // 返回用户信息
                 JSONObject user = JSONObject.parseObject(JSONObject.toJSONString(byUsername));
-                user.put("token", accessToken.getToken());
+                user.put("token", token);
                 JSONObject ret = new JSONObject();
                 ret.put("obj",user);
                 return success(ret);
@@ -356,11 +353,11 @@ public class UserController extends BaseController<User, UserService> {
             return 0;
         }
         try{
-            AccessToken byToken = (AccessToken) redisTemplate.opsForValue().get(token);
-            if(byToken == null){
+            Integer userId = (Integer) redisTemplate.opsForValue().get(token);
+            if(userId == null){
                 return 0;
             }
-            return byToken.getUser_id();
+            return userId;
         }catch (Exception e){
             // Redis 超时/连接异常时，不要把接口打成 500，降级为未登录
             log.error("[tokenGetUserId] redis读取失败，降级为未登录，token={}", token, e);
@@ -540,20 +537,18 @@ public class UserController extends BaseController<User, UserService> {
         }
 
         // 生成Token
-        AccessToken accessToken = new AccessToken();
-        accessToken.setToken(UUID.randomUUID().toString().replaceAll("-", ""));
-        accessToken.setUser_id(user.getUserId());
+        String token = UUID.randomUUID().toString().replaceAll("-", "");
 
         try {
             Duration duration = Duration.ofSeconds(7200L);
-            redisTemplate.opsForValue().set(accessToken.getToken(), accessToken, duration);
+            redisTemplate.opsForValue().set(token, user.getUserId(), duration);
         } catch (Exception e) {
-            log.warn("Redis连接失败，Token存储到数据库失败: {}", e.getMessage());
+            log.warn("Redis连接失败，Token存储失败: {}", e.getMessage());
         }
 
         // 返回用户信息
         JSONObject userJson = JSONObject.parseObject(JSONObject.toJSONString(user));
-        userJson.put("token", accessToken.getToken());
+        userJson.put("token", token);
         userJson.put("isNewUser", isNewUser);
         JSONObject ret = new JSONObject();
         ret.put("obj", userJson);

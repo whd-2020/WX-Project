@@ -67,37 +67,16 @@
 </template>
 
 <script>
-import Search from '@/components/businessCp/search.vue';
-              import Card from '@/components/common/card.vue';
-import list_menu from '@/components/diy/list_menu.vue';
-import Slide from '@/components/common/slide.vue';
-import Notice from '@/components/common/notice.vue';
-
 import mixin from '@/libs/mixins/page.js';
 import tabbar from '@/libs/mixins/tabbar.js';
-import * as HomeApi from '@/api/home';
 import store from '@/store';
 
 export default {
   mixins: [mixin, tabbar],
-  components: {
-    Search,
-    Card,
-                  list_menu,
-    Slide,
-    Notice,
-  },
   data() {
     return {
       tabIndex: 0,
-      isExpand: false,
-      expandStyle: {
-        whiteSpace: 'nowrap',
-      },
       tabbarIndex: 0,
-                    list_slide: [],
-      list_menu: [],
-      list_notice: [],
     };
   },
   computed: {
@@ -141,114 +120,6 @@ export default {
       this.playClickSound();
       this.$navTo(url);
     },
-    getFullPath(path) {
-      if (path) {
-        const fullPath = this.pathList[path];
-        if (fullPath) {
-          return fullPath + path;
-        } else {
-          return '/pagesC' + path;
-        }
-      }
-      return '';
-    },
-    onClickTab(val) {
-      this.tabIndex = val;
-    },
-                            
-    /**
-     *  获取轮播图
-     */
-    get_slides() {
-      HomeApi.gethomeSlidesListApi().then((res) => {
-        if (res.result && res.result.list) {
-          this.list_slide = res.result.list;
-        }
-      });
-    },
-
-    /**
-     *  获取导航栏
-     */
-    get_menu() {
-      const user_group = this.userGroup;
-      HomeApi.getMenuListApi({
-        size: '0',
-        get: 1,
-        user_group,
-        position: 'top',
-      }).then((res) => {
-        if (res.result && res.result.list) {
-          this.list_menu = res.result.list;
-        }
-      });
-    },
-
-    /**
-     *  获取公告列表
-     */
-    get_notice() {
-      HomeApi.getHomeNoticeListApi({ page: 1, size: 3 }).then((res) => {
-        if (res.result && res.result.list) {
-          // console.log('公告', res.result.list);
-          this.list_notice = res.result.list;
-          this.list_notice.map((o) => {
-            o['praise_len'];
-          });
-          this.get_praise(this.list_notice, 'notice', 'notice_id');
-        }
-      });
-    },
-    /**
-     *  获取点赞数
-     *  @param {Object} list
-     */
-    get_praise(list, table, idName) {
-      if (list) {
-        for (let i = 0; i < list.length; i++) {
-          list[i].praise_len = 0;
-        }
-
-        HomeApi.getPraiseListApi({
-          source_table: table,
-          groupby: 'source_id',
-        }).then((res) => {
-          if (res.result && res.result.list) {
-            res.result.list.map((o) => {
-              for (let i = 0; i < list.length; i++) {
-                let oj = list[i];
-                if (oj[idName] === o['source_id']) {
-                  oj['praise_len'] = o['count'];
-                  break;
-                }
-              }
-            });
-          } else if (res.error) {
-            // console.error(res.error);
-          }
-        });
-      }
-    },
-	clickMore(url){
-		if(url == "/article/index" || url == "/forum/index"){
-			this.$navToTab(this.getFullPath(url))
-		}else{
-			this.$navTo(this.getFullPath(url))
-		}
-	}
-  },
-  onShow() {
-    console.log('========== 首页 onShow ==========');
-    console.log('直接读取store.state.app:', JSON.stringify(store.state.app, null, 2));
-    console.log('currentUserInfo:', JSON.stringify(this.currentUserInfo, null, 2));
-    console.log('currentToken:', this.currentToken);
-    console.log('currentUserGroup:', this.currentUserGroup);
-    console.log('displayName计算:', this.displayName);
-    console.log('avatarUrl计算:', this.avatarUrl);
-    console.log('========== 结束 ==========');
-    this.get_slides();
-    this.get_menu();
-    this.get_notice();
   },
 };
 </script>

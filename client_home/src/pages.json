@@ -37,28 +37,6 @@
     },
 
     {
-      "path": "pages/media/music",
-      "style": {
-        "navigationBarTitleText": "音乐",
-        "backgroundColor": "#000000"
-      }
-    },
-    {
-      "path": "pages/media/image",
-      "style": {
-        "navigationBarTitleText": "图片预览",
-        "backgroundColor": "#000000"
-      }
-    },
-    {
-      "path": "pages/media/video",
-      "style": {
-        "navigationBarTitleText": "视频",
-        "backgroundColor": "#000000"
-      }
-    },
-    
-    {
       "path": "pages/user/index",
       "style": {
         "navigationBarTitleText": "我的"
@@ -133,24 +111,6 @@
       "root": "pagesB",
       "pages": [
         {
-          "path": "comment/table",
-          "style": {
-            "navigationBarTitleText": "评论管理"
-          }
-        },
-        {
-          "path": "comment/edit",
-          "style": {
-            "navigationBarTitleText": "评论"
-          }
-        },
-        {
-          "path": "comment/view",
-          "style": {
-            "navigationBarTitleText": "查看评论"
-          }
-        },
-        {
           "path": "account/register",
           "style": {
             "navigationBarTitleText": "注册"
@@ -178,27 +138,12 @@
           "meta": {
             "noAuth": false
           }
-        },
-        {
-          "path": "account/forgot",
-          "style": {
-            "navigationBarTitleText": "找回密码"
-          },
-          "meta": {
-            "noAuth": true
-          }
         }
       ]
     },
     {
       "root": "pagesC",
       "pages": [
-        {
-          "path": "game_levels/list",
-          "style": {
-            "navigationBarTitleText": "游戏关卡列表"
-          }
-        },
         {
           "path": "game_levels/details",
           "style": {
@@ -236,12 +181,6 @@
           }
         },
         {
-          "path": "ShenJieJiShu/level6",
-          "style": {
-            "navigationBarTitleText": "结绳计数 · 第六关"
-          }
-        },
-        {
           "path": "ZhuSuanQiMeng/level1",
           "style": {
             "navigationBarTitleText": "珠算 · 第一关"
@@ -269,12 +208,6 @@
           "path": "ZhuSuanQiMeng/level5",
           "style": {
             "navigationBarTitleText": "珠算 · 第五关"
-          }
-        },
-        {
-          "path": "ZhuSuanQiMeng/level6",
-          "style": {
-            "navigationBarTitleText": "珠算 · 第六关"
           }
         },
         {
@@ -308,12 +241,6 @@
           }
         },
         {
-          "path": "ShuZiRenZi/level6",
-          "style": {
-            "navigationBarTitleText": "数字认知 · 第六关"
-          }
-        },
-        {
           "path": "ChouSuanYanSuan/level1",
           "style": {
             "navigationBarTitleText": "筹算 · 第一关"
@@ -344,130 +271,9 @@
           }
         },
         {
-          "path": "ChouSuanYanSuan/level6",
-          "style": {
-            "navigationBarTitleText": "筹算 · 第六关"
-          }
-        },
-
-        {
           "path": "game_record/edit",
           "style": {
             "navigationBarTitleText": "游戏记录"
-          }
-        },
-        {
-          "path": "game_record/list",
-          "style": {
-            "navigationBarTitleText": "游戏记录列表"
-          }
-        },
-        {
-          "path": "props/list",
-          "style": {
-            "navigationBarTitleText": "道具商店列表"
-          }
-        },
-        {
-          "path": "props/details",
-          "style": {
-            "navigationBarTitleText": "道具商店"
-          }
-        },
-        {
-          "path": "purchase_record/edit",
-          "style": {
-            "navigationBarTitleText": "购买记录"
-          }
-        },
-        {
-          "path": "achievements/list",
-          "style": {
-            "navigationBarTitleText": "玩家成就列表"
-          }
-        },
-        {
-            "path": "gamer/table",
-            "style": {
-              "navigationBarTitleText": "游戏玩家列表"
-            }
-        },
-        {
-            "path": "gamer/view",
-            "style": {
-              "navigationBarTitleText": "游戏玩家详情"
-            }
-        },
-        {
-            "path": "game_levels/table",
-            "style": {
-              "navigationBarTitleText": "游戏关卡列表"
-            }
-        },
-        {
-            "path": "game_levels/view",
-            "style": {
-              "navigationBarTitleText": "游戏关卡详情"
-            }
-        },
-        {
-            "path": "game_record/table",
-            "style": {
-              "navigationBarTitleText": "游戏记录列表"
-            }
-        },
-        {
-            "path": "game_record/view",
-            "style": {
-              "navigationBarTitleText": "游戏记录详情"
-            }
-        },
-        {
-            "path": "props/table",
-            "style": {
-              "navigationBarTitleText": "道具商店列表"
-            }
-        },
-        {
-            "path": "props/view",
-            "style": {
-              "navigationBarTitleText": "道具商店详情"
-            }
-        },
-        {
-            "path": "purchase_record/table",
-            "style": {
-              "navigationBarTitleText": "购买记录列表"
-            }
-        },
-        {
-            "path": "purchase_record/view",
-            "style": {
-              "navigationBarTitleText": "购买记录详情"
-            }
-        },
-        {
-            "path": "game_achievements/table",
-            "style": {
-              "navigationBarTitleText": "游戏成就列表"
-            }
-        },
-        {
-            "path": "game_achievements/view",
-            "style": {
-              "navigationBarTitleText": "游戏成就详情"
-            }
-        },
-        {
-          "path": "achievements/table",
-          "style": {
-            "navigationBarTitleText": "玩家成就列表"
-          }
-        },
-        {
-          "path": "achievements/view",
-          "style": {
-            "navigationBarTitleText": "玩家成就详情"
           }
         }
             ]
