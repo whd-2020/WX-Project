@@ -73,18 +73,6 @@
             <text v-else-if="$check_field('get','player_screen_name')">{{ form['player_screen_name'] }}</text>
           </view>
                     </view>
-            <view v-if="$check_field('set', 'gold_coin_rewards') || $check_field('add', 'gold_coin_rewards') ||  $check_field('get', 'gold_coin_rewards')" class="custom-from-item">
-          <view class="label">
-            <text>
-              金币奖励
-            </text>
-          </view>
-              <!-- 文本 -->
-                  <view class="content">
-            <input type="text" id="form_gold_coin_rewards" v-model="form['gold_coin_rewards']" placeholder="请输入金币奖励" v-if="(form['gold_coin_rewards'] && $check_field('set','gold_coin_rewards')) || (!form['gold_coin_rewards'] && $check_field('add','gold_coin_rewards'))" :disabled="disabledObj['gold_coin_rewards_isDisabled']" />
-            <text v-else-if="$check_field('get','gold_coin_rewards')">{{ form['gold_coin_rewards'] }}</text>
-          </view>
-                    </view>
             <view v-if="$check_field('set', 'game_time') || $check_field('add', 'game_time') ||  $check_field('get', 'game_time')" class="custom-from-item">
           <view class="label">
             <text>
@@ -165,7 +153,6 @@ export default {
             gamer: 0,
             player_avatar: "",
             player_screen_name: "",
-            gold_coin_rewards: 0,
             game_time: 0,
             number_of_steps_used: 0,
             total_game_score: 0,
@@ -177,7 +164,6 @@ export default {
             gamer: 0, // 游戏玩家
             player_avatar:  '', // 玩家头像
             player_screen_name:  '', // 玩家网名
-            gold_coin_rewards:  0 , // 金币奖励
             game_time:  0 , // 游戏时间
             number_of_steps_used:  0 , // 使用步数
             total_game_score:  0 , // 游戏总分
@@ -191,7 +177,6 @@ export default {
             gamer: 0, // 游戏玩家
             player_avatar:  '', // 玩家头像
             player_screen_name:  '', // 玩家网名
-            gold_coin_rewards:  0 , // 金币奖励
             game_time:  0 , // 游戏时间
             number_of_steps_used:  0 , // 使用步数
             total_game_score:  0 , // 游戏总分

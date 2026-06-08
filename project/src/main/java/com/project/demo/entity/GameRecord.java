@@ -36,9 +36,6 @@ public class GameRecord implements Serializable {
     // 玩家网名
     @TableField(value = "`player_screen_name`")
     private String player_screen_name;
-    // 金币奖励
-    @TableField(value = "`gold_coin_rewards`")
-    private Double gold_coin_rewards;
     // 游戏时间
     @TableField(value = "`game_time`")
     private Double game_time;

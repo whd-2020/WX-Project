@@ -10,15 +10,6 @@
           <input type="text" id="form_player_screen_name" v-model="form['player_screen_name']" @blur="handleBlur($event.target.value,'player_screen_name')"  placeholder="请输入玩家网名" />
         </view>
               </view>
-        <view v-if="$check_register_field('add', 'gold_coin_balance', '/gamer/view')" class="diy_register_field col-md-6">
-      <view class="diy_title">
-        <text> 金币余额 </text>
-      </view>
-                  <!-- 文本 -->
-        <view class="diy_field diy_text">
-          <input type="text" id="form_gold_coin_balance" v-model="form['gold_coin_balance']" @blur="handleBlur($event.target.value,'gold_coin_balance')"  placeholder="请输入金币余额" />
-        </view>
-              </view>
     </view>
 </template>
 

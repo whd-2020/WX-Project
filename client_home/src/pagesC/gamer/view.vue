@@ -52,13 +52,6 @@
             {{ form['player_screen_name'] }}
           </text>
                     </uni-forms-item>
-        <uni-forms-item v-if="$check_field('get','gold_coin_balance') || ($check_field('add','gold_coin_balance') || $check_field('set','gold_coin_balance'))" label="金币余额" name="gold_coin_balance">
-                      <uni-easyinput type="text" v-model="form['gold_coin_balance']" v-if="(form['gamer_id'] && $check_field('set','gold_coin_balance')) || (!form['gamer_id'] && $check_field('add','gold_coin_balance'))" :disabled="disabledObj['gold_coin_balance_isDisabled']" />
-          <!-- 仅查看 -->
-          <text v-else-if="$check_field('get','gold_coin_balance')">
-            {{ form['gold_coin_balance'] }}
-          </text>
-                    </uni-forms-item>
       </uni-forms>
       <view class="form-footer" v-if="$check_action('/gamer/view','set') || ($check_action('/gamer/view','add') || $check_option('/gamer/table','examine'))">
         <view class="me-btn btn-submit" @click="submit_()"> 提交 </view>
@@ -123,13 +116,11 @@ export default {
       url_get_obj: "~/api/gamer/get_obj?",
       url_upload: "~/api/gamer/upload?",
       player_screen_name: null,
-      gold_coin_balance: null,
       query: {
         "gamer_id": 0,
       },
       form: {
           "player_screen_name":  '', // 玩家网名
-            "gold_coin_balance":  0 , // 金币余额
           "user_id": 0,
         "gamer_id": 0, // ID
       },
@@ -199,11 +190,9 @@ export default {
     },
     close_(type) {
       if (type == 'player_screen_name') this['player_screen_name'] = this.form['player_screen_name'] = "";
-      if (type == 'gold_coin_balance') this['gold_coin_balance'] = this.form['gold_coin_balance'] = "";
     },
     submit_() {
       if (this['player_screen_name'] !== null) this.form['player_screen_name'] = this['player_screen_name']
-      if (this['gold_coin_balance'] !== null) this.form['gold_coin_balance'] = this['gold_coin_balance']
       console.log(this.form)
       this.submit();
     },

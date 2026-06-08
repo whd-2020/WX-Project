@@ -41,10 +41,6 @@ public class GameRecordController extends BaseController<GameRecord, GameRecordS
     public Map<String, Object> add(HttpServletRequest request) throws IOException {
         Map<String,Object> paramMap = service.readBody(request.getReader());
         this.addMap(paramMap);
-        String sql = "SELECT MAX(game_record_id) AS max FROM "+"`game_record`";
-        Integer max = service.selectBaseCount(sql);
-        sql = "UPDATE `gamer` INNER JOIN `game_record` ON gamer.player_screen_name=game_record.player_screen_name SET gamer.gold_coin_balance= gamer.gold_coin_balance + game_record.gold_coin_rewards WHERE game_record.game_record_id="+max;
-        service.updateBaseSql(sql);
         return success(1);
     }
 

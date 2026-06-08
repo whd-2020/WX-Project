@@ -32,14 +32,6 @@
               <span>{{ o['player_screen_name'] }}</span>
             </view>
             </view>
-          <view class="item-row " v-if="1 && $check_field('get','gold_coin_balance')">
-            <view class="label" v-if="true">
-              <span>金币余额</span>
-            </view>
-              <view class="value">
-              <span>{{ o['gold_coin_balance'] }}</span>
-            </view>
-            </view>
           <view class="content">
           </view>
           <view class="operate-bar">

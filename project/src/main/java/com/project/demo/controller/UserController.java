@@ -519,7 +519,6 @@ public class UserController extends BaseController<User, UserService> {
                     gamer.setPlayer_screen_name(screenName);
                     gamer.setUserId(user.getUserId());
                     gamer.setExamine_state("已通过");
-                    gamer.setGold_coin_balance(0.0);
                     gamerService.save(gamer);
                     log.info("[微信登录] 为用户自动创建 gamer 记录成功: userId={}, playerScreenName={}", user.getUserId(), screenName);
                 } catch (Exception e) {

@@ -51,16 +51,6 @@
                     </span>
                 </view>
                 </view>
-                <view v-if="$check_field('get', 'gold_coin_rewards')" class="info-item  field_text ">
-                <view class="diy_title">
-                  <span>金币奖励</span>
-                </view>
-                    <view class="diy_field diy_number">
-                    <span>
-                        {{ obj['gold_coin_rewards'] }}
-                    </span>
-                </view>
-                </view>
                 <view v-if="$check_field('get', 'level_description')" class="info-item field_text ">
                 <view class="diy_title">
                   <span>关卡说明</span>
@@ -129,7 +119,6 @@
                   limit_number_of_steps: 0,
                   elimination_quantity: 0,
                   game_duration: 0,
-                  gold_coin_rewards: 0,
                   level_description: "",
             },
         // 评论列表初始化
