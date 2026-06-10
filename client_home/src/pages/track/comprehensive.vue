@@ -240,10 +240,6 @@ export default {
         this.$navTo(`/pagesC/ShuZiRenZi/level4?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
       } else if (levelNo === 5) {
         this.$navTo(`/pagesC/ShuZiRenZi/level5?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
-      } else if (levelNo === 6) {
-        this.$navTo(`/pagesC/ShuZiRenZi/level6?track_id=${this.trackId}&level_id=${levelId}&gamer_id=${this.gamerId}`);
-      } else {
-        this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${levelId}&level_name=${encodeURIComponent(levelName)}`);
       }
     },
 

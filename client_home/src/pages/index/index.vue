@@ -45,7 +45,6 @@
       <view class="game-slogan">在游戏中解锁古代算数智慧</view>
 	  <view class="home_recommend">
               	  </view>
-      <!-- 底部“游戏公告”和“更多”区域已移除 -->
     </view>
     <!-- 简单的底部导航栏 -->
     <view class="custom-tabbar">
@@ -110,8 +109,22 @@ export default {
   },
   created() {
     console.log('首页 created - tabbarList:', this.tabbarList);
+    this.initUserInfo();
   },
   methods: {
+    async initUserInfo() {
+      const token = store.state.app.token;
+      if (token) {
+        try {
+          await store.dispatch('auth/getUserInfo');
+          console.log('用户信息获取成功');
+        } catch (error) {
+          console.log('获取用户信息失败:', error);
+        }
+      } else {
+        console.log('未登录，使用默认用户信息');
+      }
+    },
     handleUserClick() {
       this.playClickSound();
       this.$navTo('/pages/user/info');

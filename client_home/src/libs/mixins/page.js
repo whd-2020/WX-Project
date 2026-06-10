@@ -1375,26 +1375,9 @@ export default {
       }
     },
     download_file(url) {
-      // #ifdef H5 || APP-VUE
+      // #ifdef H5
       window.open(url, '_blank');
-      return;
       // #endif
-      // #ifdef !H5 && APP-VUE
-      uni.navigateTo({
-        url:
-          '/pages/webview/webview?url=' +
-          getApp().globalData.host +
-          '/download.html&download=' +
-          url,
-      });
-      // #endif
-      // if (uni.getSystemInfoSync().uniPlatform === 'mp-weixin') {
-      // 	uni.navigateTo({
-      // 		url: '/pages/webview/webview?url=' + url
-      // 	});
-      // } else {
-      //     window.open(url, '_blank')
-      // }
     },
     /**
      * 返回上一页

@@ -46,7 +46,6 @@ export default {
         '/exam_subject/list': '/pagesA',
         '/article/index': '/pages',
         '/forum/index': '/pages',
-        '/webview/urlview': '/pages',
         '/rubbish/index': '/pagesB',
       },
       token: lifeData.token ? lifeData.token : '',

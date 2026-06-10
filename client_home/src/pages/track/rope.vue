@@ -248,11 +248,7 @@ export default {
 
       console.log('关卡已解锁，准备跳转');
       const levelNo = Number(level.levelOrder || level.levelId || 0);
-      if (levelNo >= 1 && levelNo <= 6) {
-        this.$navTo(`/pagesC/ShenJieJiShu/level${levelNo}?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
-        return;
-      }
-      this.$navTo(`/pagesC/game_levels/details?track_code=${this.trackCode}&level_id=${level.levelId}&level_name=${level.levelName}`);
+      this.$navTo(`/pagesC/ShenJieJiShu/level${levelNo}?track_id=${this.trackId}&level_id=${level.levelId}&gamer_id=${this.gamerId}`);
     },
 
     closeIntroCard() {

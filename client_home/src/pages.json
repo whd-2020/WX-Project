@@ -25,16 +25,6 @@
         "noAuth": true
       }
     },
-    
-    {
-      "path": "pages/webview/webview",
-      "style": {
-        "navigationBarTitleText": "网址跳转"
-      },
-      "meta": {
-        "noAuth": true
-      }
-    },
 
     {
       "path": "pages/user/index",
@@ -96,18 +86,6 @@
   ],
   "subPackages": [
     {
-      "root": "pagesA",
-      "pages": [
-        {
-          "path": "user_center/index",
-          "style": {
-            "navigationBarTitleText": "",
-            "enablePullDownRefresh": false
-          }
-        }
-      ]
-    },
-    {
       "root": "pagesB",
       "pages": [
         {
@@ -144,12 +122,6 @@
     {
       "root": "pagesC",
       "pages": [
-        {
-          "path": "game_levels/details",
-          "style": {
-            "navigationBarTitleText": "游戏关卡"
-          }
-        },
         {
           "path": "ShenJieJiShu/level1",
           "style": {
@@ -269,14 +241,8 @@
           "style": {
             "navigationBarTitleText": "筹算 · 第五关"
           }
-        },
-        {
-          "path": "game_record/edit",
-          "style": {
-            "navigationBarTitleText": "游戏记录"
-          }
         }
-            ]
+      ]
     }
   ],
   "globalStyle": {

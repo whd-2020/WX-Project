@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <view class="chouSuan-level-page">
 
     <!-- 背景图片 -->
@@ -50,7 +50,7 @@
                 <view class="vertical-sticks-container">
                   <view
                     v-for="(stick, index) in tensVerticalSticks"
-                    :key="'tens-' + stick.id"
+                    :key="stick.id"
                     class="vertical-stick-display"
                     @click.stop="removeTensVerticalStick(index)"
                   >
@@ -74,7 +74,7 @@
                 <view class="vertical-sticks-container">
                   <view
                     v-for="(stick, index) in onesVerticalSticks"
-                    :key="'ones-' + stick.id"
+                    :key="stick.id"
                     class="vertical-stick-display"
                     @click.stop="removeOnesVerticalStick(index)"
                   >
